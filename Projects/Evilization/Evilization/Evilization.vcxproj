@@ -44,8 +44,8 @@
     <OutDir>..\..\..\Evilization\Debug\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\Common Files\Include;..\..\..\Common Files\Include\lua;..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
-    <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
+    <IncludePath>..\..\..\Common Files\Include;..\..\..\Common Files\Include\lua;..\..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
+    <LibraryPath>..\..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\..\..\Evilization\Release</OutDir>
