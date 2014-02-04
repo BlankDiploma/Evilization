@@ -48,11 +48,11 @@
     <LibraryPath>..\..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\..\Evilization\Release</OutDir>
+    <OutDir>..\..\..\Evilization</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib</LibraryPath>
-    <IncludePath>..\..\..\Common Files\Include;..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
+    <LibraryPath>..\..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
+    <IncludePath>..\..\..\Common Files\Include;..\..\..\Common Files\Include\lua;..\..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -90,7 +90,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;FLEX_RENDERER_SINGLE_THREAD;LUABIND_NO_RTTINDEBUG;_WINDOWS;NOTOKENS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -100,7 +100,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
-      <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib luad.lib luabindd.lib libfbxsdk-md.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib lua.lib luabind.lib %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
