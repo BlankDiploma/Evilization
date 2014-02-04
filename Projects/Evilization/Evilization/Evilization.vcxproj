@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0363E928-0A7D-45A2-BBF5-EDBBAF297C9A}</ProjectGuid>
+    <RootNamespace>Evilization</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.50727.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>..\..\..\Evilization\Debug\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\..\Common Files\Include;..\..\..\Common Files\Include\lua;..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
+    <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>..\..\..\Evilization\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib</LibraryPath>
+    <IncludePath>..\..\..\Common Files\Include;..\..\DX9 SDK\include;$(IncludePath);.</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;FLEX_RENDERER_SINGLE_THREAD;LUABIND_NO_RTTI_DEBUG;_WINDOWS;NOTOKENS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib luad.lib luabindd_noRTTI.lib %(AdditionalOptions)</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PreBuildEvent>
+      <Command>"$(ProjectDir)..\..\..\Common Files\StructParse.exe" $(ProjectDir) "..\..\..\Common Files\Include"
+
+</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>StructParse</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;FLEX_RENDERER_SINGLE_THREAD;LUABIND_NO_RTTINDEBUG;_WINDOWS;NOTOKENS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib luad.lib luabindd.lib libfbxsdk-md.lib %(AdditionalOptions)</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PreBuildEvent>
+      <Command>"$(ProjectDir)..\..\..\Common Files\StructParse.exe" $(ProjectDir) "..\..\..\Common Files\Include"
+
+</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Common Files\Include\DefLibrary.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\EArray.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\FlexLua.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\FlexRenderer.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\mtrand.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\PerlinMap.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\StructParse.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\StructParseEnum.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\TextureLibrary.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\UIlib.cpp" />
+    <ClCompile Include="Evilization.cpp" />
+    <ClCompile Include="GameState.cpp" />
+    <ClCompile Include="HexFeatures.cpp" />
+    <ClCompile Include="HexMap.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="StringTag.cpp" />
+    <ClCompile Include="techtree.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Common Files\Include\DefLibrary.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\EArray.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\FlexLua.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\FlexRenderer.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\mtrand.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\PerlinMap.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\strhashmap.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\StructParse.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\StructParseEnum.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\StructParseLuabind.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\TextureLibrary.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\UILib.h" />
+    <ClInclude Include="Evilization.h" />
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="HexFeatures.h" />
+    <ClInclude Include="HexMap.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="StringTag.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="techtree.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Evilization.ico" />
+    <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Evilization.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,105 @@
+#include "stdafx.h"
+
+#include "AutoEnums.h"
+
+
+void PopulateAutoEnumTables()
+{
+	htUITextFlags[L"CenterX"] = 1;
+	htUITextFlagsReverse[1] = L"CenterX";
+	htUITextFlags[L"CenterY"] = 2;
+	htUITextFlagsReverse[2] = L"CenterY";
+	htUITextFlags[L"Wrap"] = 4;
+	htUITextFlagsReverse[4] = L"Wrap";
+	htUITextFlags[L"DropShadow"] = 8;
+	htUITextFlagsReverse[8] = L"DropShadow";
+	htUIAnchorFlags[L"Left"] = 1;
+	htUIAnchorFlagsReverse[1] = L"Left";
+	htUIAnchorFlags[L"Top"] = 2;
+	htUIAnchorFlagsReverse[2] = L"Top";
+	htUIAnchorFlags[L"Right"] = 4;
+	htUIAnchorFlagsReverse[4] = L"Right";
+	htUIAnchorFlags[L"Bottom"] = 8;
+	htUIAnchorFlagsReverse[8] = L"Bottom";
+	htUILayoutType[L"None"] = 0;
+	htUILayoutTypeReverse[0] = L"None";
+	htUILayoutType[L"LUA"] = 1;
+	htUILayoutTypeReverse[1] = L"LUA";
+	htUILayoutType[L"Grid"] = 2;
+	htUILayoutTypeReverse[2] = L"Grid";
+	htUIBoxType[L"Box"] = 0;
+	htUIBoxTypeReverse[0] = L"Box";
+	htUIBoxType[L"Text"] = 1;
+	htUIBoxTypeReverse[1] = L"Text";
+	htUIBoxType[L"Button"] = 2;
+	htUIBoxTypeReverse[2] = L"Button";
+	htUIBoxType[L"Layout"] = 3;
+	htUIBoxTypeReverse[3] = L"Layout";
+	htUIRenderLayer[L"Color"] = 0;
+	htUIRenderLayerReverse[0] = L"Color";
+	htUIRenderLayer[L"Ninepatch"] = 1;
+	htUIRenderLayerReverse[1] = L"Ninepatch";
+	htUIRenderLayer[L"Bar"] = 2;
+	htUIRenderLayerReverse[2] = L"Bar";
+	htUIRenderLayer[L"Func"] = 3;
+	htUIRenderLayerReverse[3] = L"Func";
+	htUIRenderLayer[L"TexturePortion"] = 4;
+	htUIRenderLayerReverse[4] = L"TexturePortion";
+	htHexDirection[L"W"] = 0;
+	htHexDirectionReverse[0] = L"W";
+	htHexDirection[L"NW"] = 1;
+	htHexDirectionReverse[1] = L"NW";
+	htHexDirection[L"NE"] = 2;
+	htHexDirectionReverse[2] = L"NE";
+	htHexDirection[L"E"] = 3;
+	htHexDirectionReverse[3] = L"E";
+	htHexDirection[L"SE"] = 4;
+	htHexDirectionReverse[4] = L"SE";
+	htHexDirection[L"SW"] = 5;
+	htHexDirectionReverse[5] = L"SW";
+	htHexDirection[L"ThisIsSoFuckingStupid"] = 6;
+	htHexDirectionReverse[6] = L"ThisIsSoFuckingStupid";
+	htHexDirection[L"MAX"] = 7;
+	htHexDirectionReverse[7] = L"MAX";
+	htunitOrderType[L"Sleep"] = 0;
+	htunitOrderTypeReverse[0] = L"Sleep";
+	htunitOrderType[L"Move"] = 1;
+	htunitOrderTypeReverse[1] = L"Move";
+	htunitOrderType[L"Melee"] = 2;
+	htunitOrderTypeReverse[2] = L"Melee";
+	htunitOrderType[L"AutoExplore"] = 3;
+	htunitOrderTypeReverse[3] = L"AutoExplore";
+	htlaborType[L"None"] = 0;
+	htlaborTypeReverse[0] = L"None";
+	htlaborType[L"Harvest"] = 1;
+	htlaborTypeReverse[1] = L"Harvest";
+	htlaborType[L"Construction"] = 2;
+	htlaborTypeReverse[2] = L"Construction";
+	htlaborType[L"Expression"] = 3;
+	htlaborTypeReverse[3] = L"Expression";
+	htbuildingType[L"None"] = 0;
+	htbuildingTypeReverse[0] = L"None";
+	htbuildingType[L"City"] = 1;
+	htbuildingTypeReverse[1] = L"City";
+	htbuildingType[L"Improvement"] = 2;
+	htbuildingTypeReverse[2] = L"Improvement";
+}
+
+StringIntHash htUITextFlags;
+IntStringHash htUITextFlagsReverse;
+StringIntHash htUIAnchorFlags;
+IntStringHash htUIAnchorFlagsReverse;
+StringIntHash htUILayoutType;
+IntStringHash htUILayoutTypeReverse;
+StringIntHash htUIBoxType;
+IntStringHash htUIBoxTypeReverse;
+StringIntHash htUIRenderLayer;
+IntStringHash htUIRenderLayerReverse;
+StringIntHash htHexDirection;
+IntStringHash htHexDirectionReverse;
+StringIntHash htunitOrderType;
+IntStringHash htunitOrderTypeReverse;
+StringIntHash htlaborType;
+IntStringHash htlaborTypeReverse;
+StringIntHash htbuildingType;
+IntStringHash htbuildingTypeReverse;
