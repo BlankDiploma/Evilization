@@ -48,7 +48,7 @@
     <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib\VS 2012;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\..\Evilization\</OutDir>
+    <OutDir>..\..\..\Evilization\Release</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>..\..\DX9 SDK\lib\x86;$(LibraryPath);..\..\..\Common Files\lib</LibraryPath>
