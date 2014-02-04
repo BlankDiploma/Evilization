@@ -1,0 +1,207 @@
+techTreeDef Evil
+{
+	eaNames Authority, Violence, Fear, Exploitation, Manacles, Greed, Monsters, Torture, Anatomy, Seafaring, Hypnotism, Bloodsport, Mining, Husbandry, Colossi, Humanoids, Mana_Crystals, Scrying, Piracy, Reanimation, Soul_Vessel, Artificing, Incubation, Spellweaving, Curses, Abominations, Afterlife, Demonology, Plague, Cults
+}
+
+techTreeNodeDef Authority
+{
+	hEraDef ancient
+	eaGrants slave_quarters
+}
+
+techTreeNodeDef Violence
+{
+	hEraDef ancient
+	eaGrants barbarian
+}
+
+techTreeNodeDef Fear
+{
+	hEraDef ancient
+	eaGrants walls
+}
+
+techTreeNodeDef Exploitation
+{
+	eaRequiredNames Authority
+	hEraDef ancient
+	eaGrants caravan, deforestation
+}
+
+techTreeNodeDef Manacles
+{
+	eaRequiredNames Authority
+	hEraDef ancient
+	eaGrants chain_gang 
+}
+
+techTreeNodeDef Greed
+{
+	eaRequiredNames Exploitation
+	hEraDef ancient
+	eaGrants bribery, thief, vault
+}
+
+techTreeNodeDef Monsters
+{
+	eaRequiredNames Violence, Fear
+	hEraDef ancient
+	eaGrants minotaur, medusa
+}
+
+techTreeNodeDef Torture
+{
+	eaRequiredNames Fear
+	hEraDef ancient
+	eaGrants torture_chamber
+}
+
+techTreeNodeDef Anatomy
+{
+	eaRequiredNames Torture
+	hEraDef ancient
+	eaGrants embalming_chamber
+}
+
+techTreeNodeDef Seafaring
+{
+	eaRequiredNames Exploitation
+	hEraDef ancient
+	eaGrants sea_serpent
+}
+
+techTreeNodeDef Hypnotism
+{
+	eaRequiredNames Greed, Seafaring
+	hEraDef ancient
+	eaGrants siren
+}
+
+techTreeNodeDef Bloodsport
+{
+	eaRequiredNames Manacles, Violence
+	hEraDef ancient
+	eaGrants arena, raiders
+}
+
+techTreeNodeDef Mining
+{
+	eaRequiredNames Bloodsport, Greed
+	hEraDef ancient
+	eaGrants mine_shaft, armory, walls
+}
+ 
+techTreeNodeDef Husbandry
+{
+	eaRequiredNames Anatomy, Monsters
+	hEraDef ancient
+	eaGrants manticore, harpy 
+}
+ 
+techTreeNodeDef Colossi
+{
+	eaRequiredNames Monsters, Bloodsport
+	hEraDef ancient
+	eaGrants cyclops
+}
+
+techTreeNodeDef Humanoids
+{
+	eaRequiredNames Husbandry, Mining
+	hEraDef fantasy
+	eaGrants orc goblin
+}
+
+techTreeNodeDef Mana_Crystals
+{
+	eaRequiredNames Mining
+	hEraDef fantasy
+	eaGrants mana_mines
+}
+
+techTreeNodeDef Scrying
+{
+	eaRequiredNames Hypnotism 
+	hEraDef fantasy
+	eaGrants dark_tower
+}
+
+techTreeNodeDef Piracy
+{
+	eaRequiredNames Seafaring 
+	hEraDef fantasy
+	eaGrants pirate_frigate
+}
+
+techTreeNodeDef Reanimation
+{
+	eaRequiredNames Anatomy  
+	hEraDef fantasy
+	eaGrants skeleton, mausoleum
+}
+
+techTreeNodeDef Soul_Vessel
+{
+	eaRequiredNames Reanimation, Artificing
+	hEraDef fantasy
+	eaGrants lich
+}
+
+techTreeNodeDef Artificing
+{
+	eaRequiredNames Mana_Crystals, Humanoids
+	hEraDef fantasy
+	eaGrants arcane_workshop
+}
+
+techTreeNodeDef Incubation
+{
+	eaRequiredNames Mana_Crystals 
+	hEraDef fantasy
+	eaGrants dragon
+}
+
+techTreeNodeDef Spellweaving
+{
+	eaRequiredNames Scrying 
+	hEraDef fantasy
+	eaGrants sorceress
+}
+
+techTreeNodeDef Curses
+{
+	eaRequiredNames Spellweaving, Piracy 
+	hEraDef fantasy
+	eaGrants wight
+}
+
+techTreeNodeDef Abominations
+{
+	eaRequiredNames Curses, Incubation, Soul_Vessel 
+	hEraDef fantasy
+	eaGrants dracolich
+}
+
+techTreeNodeDef Afterlife
+{
+	eaRequiredNames Soul_Vessel 
+	hEraDef inquisition
+}
+
+techTreeNodeDef Demonology
+{
+	eaRequiredNames Cults 
+	hEraDef inquisition
+}
+
+techTreeNodeDef Plague
+{
+	eaRequiredNames Abominations 
+	hEraDef inquisition
+}
+
+techTreeNodeDef Cults
+{
+	eaRequiredNames Spellweaving 
+	hEraDef inquisition
+}

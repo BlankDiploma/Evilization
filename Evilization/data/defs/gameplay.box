@@ -1,0 +1,306 @@
+UIBoxDef Gameplay
+{
+	fWidthPct 1.0
+	fHeightPct 1.0
+
+	eaChildren CityLabelLayout
+	{
+		Anchor Top Left
+	}
+	eaChildren Minimap
+	{
+		Anchor Bottom right
+	}
+	eaChildren UnitPane
+	{
+		Anchor Bottom left
+	}
+	eaChildren TechInfo
+	{
+		Anchor Top Left
+	}
+	eaChildren NotificationLayout
+	{
+		Anchor Bottom Right
+		Y -292
+	}
+}
+
+UILayoutDef CityLabelLayout
+{
+	listFunc <& return Gameplay_GetOnscreenTilesWithCities() &>
+	pointFunc <& return Gameplay_TilePtToScreen(Tile_GetLoc(Layout_GetVarAsTile())) &>
+	fWidthPct 1.0
+	fHeightPct 1.0
+	eType Layout
+	eLayoutType LUA
+	eaChildren CityLabel
+	{
+		X 0
+		Y -32
+		Anchor top left
+	}
+}
+
+UIButtonDef CityLabel
+{
+	Width 128
+	Height 24
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 4
+		mouseoverIdx 5
+		pressedIdx 6
+	}
+	clickFunc <& City_DetailedView(Tile_GetCity(Layout_GetVarAsTile())) &>
+	
+	textFlags CenterX CenterY
+	textFunc <& return City_FormatString(Tile_GetCity(Layout_GetVarAsTile()), "{name}") &>
+	hFont courier_new
+	textcolor 0 255 0
+}
+
+UIBoxDef UnitPane
+{
+	Width 300
+	Height 200
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+	eaChildren Portrait
+	{
+		X 4
+		Y 4
+		Anchor Top left
+	}
+	eaChildren UnitText
+	{
+		Anchor Top Right
+		Y 28
+	}
+	eaChildren SleepButton
+	{
+		Anchor Top Right
+		Y 4
+		X -4
+	}
+	eaChildren AutoexploreButton
+	{
+		Anchor Top Right
+		Y 36
+		X -4
+	}
+}
+
+UIButtonDef SleepButton
+{
+	Width 74
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	clickFunc <& SelectedUnit_IssueOrder(0) &>
+	
+	textFlags CenterX CenterY
+	text "Sleep"
+	hFont courier_new
+	textcolor 0 0 0
+}
+
+UIButtonDef AutoexploreButton
+{
+	Width 74
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	clickFunc <& SelectedUnit_IssueOrder(3) &>
+	
+	textFlags CenterX CenterY
+	text "Explore"
+	hFont courier_new
+	textcolor 0 0 0
+}
+
+UIBoxDef Portrait
+{
+	Width 64
+	Height 64
+	eaLayers Func
+	{
+		renderFunc <& SelectedUnit_Render() &>
+	}
+}
+
+UITextDef UnitText
+{
+	Width 260
+	Height 200
+	eType Text
+	hFont courier_new
+	textcolor 255 255 255
+	textFunc <&  return Unit_FormatString(Player_GetSelectedUnit(), "    {name}{\n}{\n}{\n}{\n}{mov}/{maxmov} movement remaining{\n}  {str} combat strength") &>
+}
+
+UIBoxDef Minimap
+{
+	Width 260
+	Height 292
+	eaLayers Color
+	{
+		Color 51 51 51
+	}
+	eaChildren EndTurnButton
+	{
+		X 2
+		Y 2
+		Anchor Top Left
+	}
+	eaChildren MinimapTex
+	{
+		Anchor Bottom right
+		X -2
+		Y -2
+	}
+}
+
+UIButtonDef MinimapTex
+{
+	Width 256
+	Height 256
+	eType Button
+	eaLayers Func
+	{
+		renderFunc <& Minimap_Render() &>
+	}
+	clickFunc <& Minimap_Click() &>
+}
+
+UIButtonDef EndTurnButton
+{
+	Width 256
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	clickFunc <& Player_EndTurn() &>
+	
+	textFlags CenterX CenterY
+	text "End Turn"
+	hFont courier_new
+	textcolor 255 0 0
+}
+
+UIButtonDef TechInfo
+{
+	Width 256
+	Height 128
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 6	
+		mouseoverIdx 6
+		pressedIdx 6
+	}
+	eaLayers Bar
+	{
+		hTex interfacenines
+		fullbarIdx 14
+		barPctFunc <& return Player_GetCurrentTechPct() &>
+	}
+	clickFunc <& TechTree_ShowUI() &>
+	
+	
+	textFlags CenterX CenterY DROPSHADOW
+	textFunc <& return Player_GetCurrentTechName() &>
+	hFont courier_new
+	textcolor 255 255 255
+}
+
+UILayoutDef NotificationLayout
+{
+	listFunc <& return Gameplay_GetNotificationList() &>
+	eType Layout
+	eLayoutType Grid
+	
+	Width 256
+	Height 512
+	eaChildren Notification
+	{
+		Anchor Bottom
+	}
+}
+
+UIButtonDef Notification
+{
+	Width 256
+	Height 64
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	
+	clickFunc <& Notification_Focus(Layout_GetVarAsNotification()) &>
+	rClickFunc <& Notification_Dismiss(Layout_GetVarAsNotification()) &>
+	
+	eaChildren NotificationIcon
+	{
+		Anchor Left
+	}
+	eaChildren NotificationText
+	{
+		Anchor Right
+	}
+}
+
+UIBoxDef NotificationIcon
+{
+	Width 64
+	Height 64
+	eaLayers TexturePortion
+	{
+		textureFunc <& return Notification_GetIcon(Layout_GetVarAsNotification()) &>
+	}
+}
+
+UITextDef NotificationText
+{
+	Width 192
+	Height 64
+	eType Text
+	
+	textFlags CenterX CenterY Dropshadow
+	textFunc <& return Notification_GetText(Layout_GetVarAsNotification()) &>
+	hFont courier_new
+	textcolor 255 255 255
+}

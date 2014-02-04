@@ -1,0 +1,168 @@
+GameTexturePortion house
+{
+	hTex interface
+	rSrc 160 25 234 101
+	offset -27 -26
+}
+ 
+GameTexturePortion terrain_tundra
+{
+	hTex terrain
+	rSrc 128 288 256 416
+	offset 0 0
+}
+ 
+GameTexturePortion icon_research
+{
+	hTex interface
+	rSrc 64 128 96 160
+	offset 0 0
+}
+ 
+GameTexturePortion selectedtile
+{
+	hTex interface
+	rSrc 0 0 128 128
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_shallow
+{
+	hTex terrain
+	rSrc 0 0 128 128
+	offset 0 0
+}
+ 
+GameTexturePortion labor_dig
+{
+	hTex interface
+	rSrc 64 160 128 224
+	offset 0 0
+}
+ 
+GameTexturePortion labor_empty_marker
+{
+	hTex interface
+	rSrc 20 290 44 302
+	offset -20 -64
+}
+ 
+GameTexturePortion stickfigure
+{
+	hTex interface
+	rSrc 128 17 160 109
+	offset -48 -18
+}
+ 
+GameTexturePortion terrain_grass
+{
+	hTex terrain
+	rSrc 128 0 256 128
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_ocean
+{
+	hTex terrain
+	rSrc 256 288 384 416
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_taiga
+{
+	hTex terrain
+	rSrc 134 128 268 288
+	offset 4 32
+}
+ 
+GameTexturePortion path
+{
+	hTex interface
+	rSrc 234 22 266 54
+	offset -48 -48
+}
+ 
+GameTexturePortion terrain_badlands
+{
+	hTex terrain
+	rSrc 256 0 384 128
+	offset 0 0
+}
+ 
+GameTexturePortion icon_gold
+{
+	hTex interface
+	rSrc 32 128 64 160
+	offset 0 0
+}
+ 
+GameTexturePortion labor_empty
+{
+	hTex interface
+	rSrc 0 224 64 288
+	offset 0 0
+}
+ 
+GameTexturePortion pathblip
+{
+	hTex interface
+	rSrc 266 10 322 66
+	offset -36 -36
+}
+ 
+GameTexturePortion pathend
+{
+	hTex interface
+	rSrc 322 0 398 76
+	offset -26 -26
+}
+ 
+GameTexturePortion terrain_swamp
+{
+	hTex terrain
+	rSrc 268 128 396 256
+	offset 0 0
+}
+ 
+GameTexturePortion icon_production
+{
+	hTex interface
+	rSrc 0 128 32 160
+	offset 0 0
+}
+ 
+GameTexturePortion labor_build
+{
+	hTex interface
+	rSrc 64 224 128 288
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_desert
+{
+	hTex terrain
+	rSrc 384 0 512 128
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_forest
+{
+	hTex terrain
+	rSrc 0 128 134 288
+	offset 4 32
+}
+ 
+GameTexturePortion terrain_jungle
+{
+	hTex terrain
+	rSrc 0 288 128 416
+	offset 0 0
+}
+ 
+GameTexturePortion terrain_mountain
+{
+	hTex terrain
+	rSrc 384 310 512 512
+	offset 0 74
+}
+ 

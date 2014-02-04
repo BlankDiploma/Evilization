@@ -1,0 +1,279 @@
+UIBoxDef DetailedCityView
+{
+	fWidthPct 1.0
+	fHeightPct 1.0
+
+	eaChildren Production
+	{
+		Anchor Top Left
+	}
+	eaChildren CityTitle
+	{
+		Anchor Top
+	}
+	eaChildren Workers
+	{
+		Anchor Top Right
+	}
+	eaChildren ExitButton
+	{
+		Anchor Bottom Right
+	}
+	eaChildren LaborLayout
+}
+
+UILayoutDef LaborLayout
+{
+	listFunc <& return City_GetOnscreenTilesWithLabor(City_GetSelected()) &>
+	pointFunc <& return Gameplay_TilePtToScreen(Labor_GetLoc(Layout_GetVarAsLaborSlot())) &>
+	fWidthPct 1.0
+	fHeightPct 1.0
+	eLayoutType LUA
+	eType Layout
+	eaChildren LaborButton_World
+	{
+		Y -48
+		X 32
+		Anchor Top left
+	}
+}
+
+UIButtonDef LaborButton_World
+{
+	Width 64
+	Height 64
+	eType Button
+	eaLayers TexturePortion
+	{
+		hPortion labor_empty
+	}
+	eaLayers TexturePortion
+	{
+		hPortion labor_empty_marker
+	}
+	eaLayers TexturePortion
+	{
+		textureFunc <& return Labor_GetIcon(Layout_GetVarAsLaborSlot()) &>
+	}
+	eaChildren LaborButtonText
+	{
+		Y 68
+		Anchor Bottom
+	}
+	clickFunc <& Labor_Toggle(Layout_GetVarAsLaborSlot()) &>
+}
+
+UITextDef LaborButtonText
+{
+	Width 64
+	Height 16
+	eType Text
+	hFont courier_new
+	textcolor 255 255 255
+	textFunc <& return Labor_FormatString(Layout_GetVarAsLaborSlot()) &>
+	textflags CENTERX DROPSHADOW
+}
+
+UIButtonDef ExitButton
+{
+	Width 64
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	clickFunc <& Gameplay_ShowUI() &>
+	
+	textFlags CenterX CenterY
+	text "Exit"
+	hFont courier_new
+	textcolor 255 0 0
+}
+
+
+UIBoxDef Production
+{
+	Width 256
+	fHeightPct 1.0
+	eaChildren ProdList
+	{
+		Anchor Top Left
+	}
+	eaChildren CurrentProject
+	{
+		Anchor Bottom Left
+	}
+}
+
+UIBoxDef ProdList
+{
+	Width 256
+	fHeightPct 0.8
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+}
+UIBoxDef CurrentProject
+{
+	Width 356
+	fHeightPct 0.2
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+	eaChildren ProdLaborLayout
+	{
+		Anchor Top Right
+		X -2
+		Y 2
+	}
+}
+UILayoutDef ProdLaborLayout
+{
+	Width 64
+	Height 128
+	listFunc <& return City_GetLaborSlots(City_GetSelected()) &>
+	eLayoutType Grid
+	eType Layout
+	eaChildren LaborButton_Production
+	{
+		Anchor Top left
+	}
+}
+
+UIButtonDef LaborButton_Production
+{
+	Width 64
+	Height 64
+	eType Button
+	eaLayers TexturePortion
+	{
+		hPortion labor_empty
+	}
+	eaLayers TexturePortion
+	{
+		textureFunc <& return Labor_GetIcon(Layout_GetVarAsLaborSlot()) &>
+	}
+	clickFunc <& Labor_Toggle(Layout_GetVarAsLaborSlot()) &>
+}
+
+UITextDef CityTitle
+{
+	Width 512
+	Height 64
+	eType Text
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+	
+	textFlags CenterX CenterY
+	textFunc <& return City_FormatString(City_GetSelected(), "{name}") &>
+	hFont courier_new
+	textcolor 0 255 0
+	
+	eaChildren CityNetProd
+	{
+		Anchor Bottom
+		Y 32
+	}
+}
+UITextDef CityNetProd
+{
+	Width 256
+	Height 32
+	eType Text
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+
+	textFlags CenterX CenterY
+	textFunc <& return City_FormatString(City_GetSelected(), "|cffffff{grossmaterials}|aicon_production||ccccc00{netgold}|aicon_gold||cff0000{netresearch}|aicon_research|") &>
+	hFont courier_new
+	textcolor 0 255 0
+}
+
+UIBoxDef Workers
+{
+	Width 256
+	fHeightPct 0.75
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+	eaChildren Materials
+	{
+		Anchor Top
+	}
+}
+UIBoxDef Materials
+{
+	Width 256
+	Height 80
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 8
+	}
+	eaChildren MaterialsLabel
+	{
+		Anchor Top
+		Y 10
+	}
+	eaChildren MaterialsBar
+	{
+		Anchor Top
+		Y 28
+	}
+	eaChildren MaterialsText
+	{
+		Anchor Bottom
+	}
+
+}
+UITextDef MaterialsLabel
+{
+	Width 240
+	Height 10
+	eType Text
+	textFlags CenterX CenterY
+	hFont courier_new
+	textcolor 42 240 123
+	text "Raw Materials:"
+}
+UIBoxDef MaterialsBar
+{
+	Width 240
+	Height 20
+	eaLayers Bar
+	{
+		hTex interfacenines
+		ninepatchIdx 6	
+		fullbarIdx 5
+		barPctFunc <& return City_GetMaterialStoragePct(City_GetSelected()) &>
+	}
+}
+
+UITextDef MaterialsText
+{
+	Width 240
+	Height 32
+	eType Text
+	textFlags CenterX CenterY
+	hFont courier_new
+	textcolor 255 255 255
+	textFunc <& return City_FormatString(City_GetSelected(), "{materials}/{materialsmax} ({materialsperturn}/turn|x)") &>
+}
+

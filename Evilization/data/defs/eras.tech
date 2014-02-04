@@ -1,0 +1,17 @@
+techEraDef Ancient
+{
+	displayName "Antiquity"
+	index 0
+}
+
+techEraDef Fantasy
+{
+	displayName "High Fantasy"
+	index 1
+}
+
+techEraDef inquisition
+{
+	displayName "The Inquisition"
+	index 2
+}

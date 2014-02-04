@@ -1,0 +1,21 @@
+hexBuildingDef house
+{
+	cost 0
+	eType City
+	displayName "Shitty City"
+	eaSlotDefList
+	{
+		laborName "Builder"
+		eType construction
+		production 5
+	}
+	eaSlotDefList
+	{
+		laborName "Builder"
+		eType construction
+		production 5
+	}
+	maxHealth 100
+	visRadius 2
+	hTex house
+}
