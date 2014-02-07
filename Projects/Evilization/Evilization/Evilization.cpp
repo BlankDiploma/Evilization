@@ -977,7 +977,7 @@ void SetNewConstructionProject(lua_State *L, CHexCity* pCity, cityProject* pProj
 		}break;
 	default:
 		{
-			if (!GetAsyncKeyState(VK_SHIFT))
+			if (!(GetAsyncKeyState(VK_SHIFT) & (1 << 31)))
 				pCity->ClearProductionQueue();
 			pCity->AddQueuedProject(pProject->eType, pProject->pDef, pProject->loc);
 		}

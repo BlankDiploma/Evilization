@@ -739,6 +739,7 @@ void CHexMap::PlacePlayerStart( CHexPlayer* pPlayer )
 		if ((pTile->pDef->eFlags & kTileFlag_Walkable))
 		{
 			CreateUnit(GET_DEF_FROM_STRING(hexUnitDef, L"stickfigure"), pPlayer, adjPt);
+			break;
 		}
 	}
 }

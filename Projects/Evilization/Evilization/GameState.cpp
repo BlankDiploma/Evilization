@@ -165,7 +165,7 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 					return;
 				}
 
-				if (!GetAsyncKeyState(VK_SHIFT))
+				if (!(GetAsyncKeyState(VK_SHIFT) & (1 << 31)))
 				{
 					curSelCity->ClearProductionQueue();
 					MouseHandlerPopState();
