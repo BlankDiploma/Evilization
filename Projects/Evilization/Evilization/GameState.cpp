@@ -372,10 +372,10 @@ void CGameState::RenderMainMenu()
 
 	OffsetRect(&button, 0, -20);
 	g_Renderer.AddSolidColorToRenderList(&button, 0xff333333);
-	g_Renderer.AddStringToRenderList(pFont, _T("New game"),(button.right+button.left)/2, (button.bottom+button.top)/2 - 6, 0xffff0000, true, false, false);
+	g_Renderer.AddStringToRenderList(pFont, _T("New game"),(button.right+button.left)/2.0f, (button.bottom+button.top)/2.0f - 6, 0xffff0000, true, false, false);
 	OffsetRect(&button, 0, 40);
 	g_Renderer.AddSolidColorToRenderList(&button, 0xff333333);
-	g_Renderer.AddStringToRenderList(pFont, _T("Exit"), (button.right+button.left)/2, (button.bottom+button.top)/2 - 6, 0xffff0000, true, false, false);
+	g_Renderer.AddStringToRenderList(pFont, _T("Exit"), (button.right+button.left)/2.0f, (button.bottom+button.top)/2.0f - 6, 0xffff0000, true, false, false);
 }
 
 void CGameState::SwitchToState(GameState newState)
@@ -396,13 +396,13 @@ void CGameState::SwitchToState(GameState newState)
 
 void CGameState::CenterView(POINT pt)
 {
-	fpMapOffset.x = (pt.x*HEX_SIZE - mapViewport.right/2);
-	fpMapOffset.y = (pt.y*HEX_SIZE*3/4 - mapViewport.bottom/2);
+	fpMapOffset.x = (pt.x*HEX_SIZE - mapViewport.right/2.0f);
+	fpMapOffset.y = (pt.y*HEX_SIZE*0.75f - mapViewport.bottom/2.0f);
 }
 
 POINT CGameState::GetViewCenter()
 {
-	POINT pt = {(fpMapOffset.x + mapViewport.right/2)/HEX_SIZE, (fpMapOffset.y + mapViewport.bottom/2)/(HEX_SIZE*3/4)};
+	POINT pt = {(LONG)(fpMapOffset.x + mapViewport.right/2)/HEX_SIZE, (LONG)(fpMapOffset.y + mapViewport.bottom/2)/(HEX_SIZE*3/4)};
 	return pt;
 }
 
@@ -458,8 +458,8 @@ POINT CGameState::PixelToTilePt(int x, int y)
 {
 	POINT box;
 	bool bNegative = x+fpMapOffset.x < 0;
-	box.y = (y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
-	box.x = (x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0);
+	box.y = (LONG)(y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
+	box.x = (LONG)((x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0));
 	y = (int)(y+fpMapOffset.y) % (HEX_SIZE*3/4 + 1);
 	x = ((int)(x+fpMapOffset.x - ((box.y % 2) ? HEX_SIZE/2 : 0)) % HEX_SIZE);
 	if (bNegative)
@@ -739,7 +739,7 @@ bool CHexPlayer::StartResearch( LPCTSTR name )
 	{
 		if (!CanResearchTech(pDef))
 			return false;
-		techProgressHash[wcsdup(name)] = 0;
+		techProgressHash[_wcsdup(name)] = 0;
 	}
 	pCurResearch = pDef;
 	return true;
@@ -753,7 +753,7 @@ bool CHexPlayer::StartResearch( techTreeNodeDef* pDef )
 	{
 		if (!CanResearchTech(pDef))
 			return false;
-		techProgressHash[wcsdup(pDef->name)] = 0;
+		techProgressHash[_wcsdup(pDef->name)] = 0;
 	}
 	pCurResearch = pDef;
 	return true;

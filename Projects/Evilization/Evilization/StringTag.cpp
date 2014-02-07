@@ -5,7 +5,7 @@
 
 bool commonTagCallback(TCHAR* tag, TCHAR* pOut, StringTagContext* pContext)
 {
-	if (wcsicmp(tag, _T("\n")) == 0)
+	if (_wcsicmp(tag, _T("\n")) == 0)
 	{
 		wsprintf(pOut, L"\n");
 		return true;
@@ -13,7 +13,7 @@ bool commonTagCallback(TCHAR* tag, TCHAR* pOut, StringTagContext* pContext)
 	return false;
 }
 
-void formatStringTags(const char* fmt, TCHAR* pOut, stringTagCallback pCallback, StringTagContext* pContext)
+void formatStringTags(const char* fmt, TCHAR* pOut, int outLen, stringTagCallback pCallback, StringTagContext* pContext)
 {
 	static TCHAR widebuf[256];
 	int numTagsFound = 0;
@@ -31,7 +31,7 @@ void formatStringTags(const char* fmt, TCHAR* pOut, stringTagCallback pCallback,
 		}
 		pContext->bracketChar = *tagStart;
 		numTagsFound++;
-		wcsncat(pOut, iter, tagStart-iter);
+		wcsncat_s(pOut, outLen, iter, tagStart-iter);
 
 		TCHAR* tagEnd = wcschr(tagStart, '}');
 		if (!tagEnd)
@@ -42,17 +42,17 @@ void formatStringTags(const char* fmt, TCHAR* pOut, stringTagCallback pCallback,
 		*tagEnd = '\0';
 		if (!commonTagCallback(tagStart+1, buf, pContext) && pCallback)
 			pCallback(tagStart+1, buf, pContext);
-		wcscat(pOut, buf);
+		wcscat_s(pOut, outLen, buf);
 		*tagEnd = temp;
 		iter = tagEnd+1;
 	}
 
 	if (numTagsFound)
 	{
-		wcscat(pOut, iter);
+		wcscat_s(pOut, outLen, iter);
 	}
 	else
 	{
-		wcscpy(pOut, widebuf);
+		wcscpy_s(pOut, outLen, widebuf);
 	}
 }

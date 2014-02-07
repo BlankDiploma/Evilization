@@ -14,4 +14,4 @@ struct StringTagContext
 
 typedef void (*stringTagCallback)(const TCHAR* tag, TCHAR* pOut, StringTagContext* pSubject);
 
-void formatStringTags(const char* fmt, TCHAR* pOut, stringTagCallback pCallback, StringTagContext* pContext);
+void formatStringTags(const char* fmt, TCHAR* pOut, int outLen, stringTagCallback pCallback, StringTagContext* pContext);

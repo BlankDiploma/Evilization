@@ -438,6 +438,8 @@ public:
 	{
 		if (id >= 0 && id < iNumPlayers)
 			return &pPlayers[id];
+
+		return NULL;
 	}
 };
 

@@ -388,7 +388,7 @@ bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntr
 	char* tok;
 	char* pchNextTok;
 	
-	if (stricmp(line, "const TCHAR* name;") == 0)
+	if (_stricmp(line, "const TCHAR* name;") == 0)
 	{
 		pEntry->eType = kStruct_String;
 		pEntry->eFlags = kStructFlag_AutoSelfName;

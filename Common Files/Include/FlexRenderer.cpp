@@ -544,10 +544,10 @@ void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT*
 void FlexRenderer::AddSpriteToRenderList(GameTexturePortion* pPortion, POINT dst, DWORD color, float fZoom)
 {
 	GameTexture* pSrcTex = pPortion->hTex.pTex;
-	RECT rDst = {dst.x - pPortion->offset->x * fZoom,
-	dst.y - pPortion->offset->y * fZoom,
-	dst.x + ((pPortion->rSrc->right-pPortion->rSrc->left) - pPortion->offset->x) * fZoom,
-	dst.y + ((pPortion->rSrc->bottom-pPortion->rSrc->top) - pPortion->offset->y) * fZoom};
+	RECT rDst = {(LONG)(dst.x - pPortion->offset->x * fZoom),
+		(LONG)(dst.y - pPortion->offset->y * fZoom),
+		(LONG)(dst.x + ((pPortion->rSrc->right-pPortion->rSrc->left) - pPortion->offset->x) * fZoom),
+		(LONG)(dst.y + ((pPortion->rSrc->bottom-pPortion->rSrc->top) - pPortion->offset->y) * fZoom)};
 	AddSpriteToRenderList(pSrcTex, &rDst, pPortion->rSrc, color);
 }
 

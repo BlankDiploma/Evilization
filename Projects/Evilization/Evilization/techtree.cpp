@@ -19,21 +19,21 @@ __forceinline bool NodeStartsNewEra(techTreeNodeDef* pNode)
 
 #define GRID_HEIGHT 9
 
-float GetBestYCoordForTech(techTreeNodeDef* pNode, techTreeNodeDef* ppGrids[128][GRID_HEIGHT], int x)
+int GetBestYCoordForTech(techTreeNodeDef* pNode, techTreeNodeDef* ppGrids[128][GRID_HEIGHT], int x)
 {
 	int min = 99999;
-	float best = 0;
+	int best = 0;
 	//try placing right next to a parent
 	for (int i = 0; i < GRID_HEIGHT; i++)
 	{
 		if (ppGrids[x][i])
 			continue;
-		float distSqr = 0;
+		int distSqr = 0;
 		bool bDisqualified = true;
 		for (int j = 0; j < eaSize(&pNode->eaRequiredNames); j++)
 		{
 			techTreeNodeDef* pReq = GET_DEF_FROM_STRING(techTreeNodeDef, pNode->eaRequiredNames[j]);
-			float dist = abs(pReq->layoutPt.y - i) + abs(pReq->layoutPt.x - x);
+			int dist = abs(pReq->layoutPt.y - i) + abs(pReq->layoutPt.x - x);
 			distSqr += dist*dist;
 			if (!ppGrids[x-1][i] || ppGrids[x-1][i] == pReq)
 				bDisqualified = false;
@@ -50,7 +50,7 @@ float GetBestYCoordForTech(techTreeNodeDef* pNode, techTreeNodeDef* ppGrids[128]
 	return best;
 }
 
-float GetMinXCoordForTech(techTreeNodeDef* pNode)
+int GetMinXCoordForTech(techTreeNodeDef* pNode)
 {
 	int minX = 0;
 	//try placing right next to a parent
@@ -110,8 +110,7 @@ void AssignGridPositions(techTreeDef* pTree)
 	//here we have one bucket per era, with nodes that only require prev-era techs (or no techs) at the front of each bucket.
 	for (int i = 0; i < numEras; i++)
 	{
-		POINT pt;
-		float fCurGridY = (i == 0) ? (-GRID_HEIGHT/fNumStartingTechs)/2 : 0.0;
+		float fCurGridY = (i == 0) ? (-GRID_HEIGHT/fNumStartingTechs)/2 : 0.0f;
 		techEraDef* pDef = GET_REF(techEraDef, peaEraBuckets[i][0]->hEraDef);
 		int iMaxEraX = 0;
 		techTreeNodeDef*** peaNodes = &(peaEraBuckets[i]);
@@ -128,10 +127,10 @@ void AssignGridPositions(techTreeDef* pTree)
 			if (i == 0)
 				fCurGridY += GRID_HEIGHT/fNumStartingTechs;
 			else
-				fCurGridY = GetBestYCoordForTech((*peaNodes)[iNode], pGrids, iCurGridX);
+				fCurGridY = (float)GetBestYCoordForTech((*peaNodes)[iNode], pGrids, iCurGridX);
 			pGrids[iCurGridX][(int)fCurGridY] = (*peaNodes)[iNode];
 			(*peaNodes)[iNode]->layoutPt.x = iCurGridX;
-			(*peaNodes)[iNode]->layoutPt.y = fCurGridY;
+			(*peaNodes)[iNode]->layoutPt.y = (int)fCurGridY;
 			(*peaNodes)[iNode]->cost = (iCurGridX + 1) * 40 + i*40;
 			eaPush(&pTree->eaNodes, (*peaNodes)[iNode]);
 			eaRemove(peaNodes, iNode);
@@ -147,11 +146,11 @@ void AssignGridPositions(techTreeDef* pTree)
 				//place everything that can go in this column
 				if (NodeReadyForPlacement((*peaNodes)[iNode]))
 				{
-					iCurGridX = GetMinXCoordForTech((*peaNodes)[iNode]);
-					fCurGridY = GetBestYCoordForTech((*peaNodes)[iNode], pGrids, iCurGridX);
+					iCurGridX = (int)GetMinXCoordForTech((*peaNodes)[iNode]);
+					fCurGridY = (float)GetBestYCoordForTech((*peaNodes)[iNode], pGrids, iCurGridX);
 
 					(*peaNodes)[iNode]->layoutPt.x = iCurGridX;
-					(*peaNodes)[iNode]->layoutPt.y = fCurGridY;
+					(*peaNodes)[iNode]->layoutPt.y = (int)fCurGridY;
 					(*peaNodes)[iNode]->cost = (iCurGridX + 1) * 40 + i*40;
 					pGrids[iCurGridX][(int)fCurGridY] = (*peaNodes)[iNode];
 

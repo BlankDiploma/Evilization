@@ -343,7 +343,7 @@ void UIInstance::Render()
 			}
 			else
 				y = screenRect.top + ((stateFlags & UISTATE_LBUTTONDOWN) ? 1 : 0);
-			g_Renderer.AddStringToRenderList(pTextDef->hFont.pTex, pchText, x, y, pTextDef->textcolor, pTextDef->textFlags & kUITextFlag_CenterX, false, pTextDef->textFlags & kUITextFlag_DropShadow); 
+			g_Renderer.AddStringToRenderList(pTextDef->hFont.pTex, pchText, (float)x, (float)y, pTextDef->textcolor, !!(pTextDef->textFlags & kUITextFlag_CenterX), false, !!(pTextDef->textFlags & kUITextFlag_DropShadow)); 
 
 			if (bOwned)
 				free((TCHAR*)pchText);

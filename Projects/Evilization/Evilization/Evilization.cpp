@@ -555,9 +555,9 @@ const TCHAR* FormatUnitString(lua_State *L, CHexUnit* pUnit, const char* fmt)
 	context.pUnit = pUnit;
 
 	if (context.pUnit)
-		formatStringTags(fmt, buf, formatUnitTag, &context);
+		formatStringTags(fmt, buf, 256, formatUnitTag, &context);
 	
-	return wcsdup(buf);
+	return _wcsdup(buf);
 }
 
 const TCHAR* FormatCityString(lua_State *L, CHexCity* pCity, const char* fmt)
@@ -567,9 +567,9 @@ const TCHAR* FormatCityString(lua_State *L, CHexCity* pCity, const char* fmt)
 	StringTagContext context;
 	context.pCity = pCity;
 	if (context.pCity)
-		formatStringTags(fmt, buf, formatCityTag, &context);
+		formatStringTags(fmt, buf, 256, formatCityTag, &context);
 	
-	return wcsdup(buf);
+	return _wcsdup(buf);
 }
 
 void ShowDetailedCityView(lua_State *L, CHexCity* pCity)
@@ -664,6 +664,7 @@ float GetMaterialStoragePct(lua_State *L, CHexCity* pCity)
 	{
 		return pCity->GetMaterialsPct();
 	}
+	return 0.0f;
 }
 
 luabind::object GetOnscreenTilesWithLabor(lua_State *L, CHexCity* pCity)
@@ -701,6 +702,7 @@ GameTexturePortion* GetLaborIcon(lua_State *L, laborSlot* pSlot)
 			}break;
 		}
 	}
+	return NULL;
 }
 
 POINT GetLaborLoc(lua_State *L, laborSlot* pSlot)
@@ -720,7 +722,7 @@ const TCHAR* FormatLaborString(lua_State *L, laborSlot* pSlot)
 			iter += wsprintf(iter, _T("|ccccc00%i|aicon_gold|"), pSlot->pDef->gold);
 		if (pSlot->pDef->research > 0)
 			iter += wsprintf(iter, _T("|cff0000%i|aicon_research|"), pSlot->pDef->research);
-		return wcsdup(buf);
+		return _wcsdup(buf);
 	}
 	else
 		return NULL;
@@ -757,14 +759,14 @@ int g_TechTreeScrollOffset = 0;
 
 POINT GetTechTreeNodePos(lua_State *L, techTreeNodeDef* pDef)
 {
-	POINT pt = {g_pCurContext->pUI->GetWidth() * pDef->layoutPt.x + g_TechTreeScrollOffset, g_pCurContext->pUI->GetHeight() * (pDef->layoutPt.y + 0.5)};
+	POINT pt = {(LONG)(g_pCurContext->pUI->GetWidth() * pDef->layoutPt.x + g_TechTreeScrollOffset), (LONG)(g_pCurContext->pUI->GetHeight() * (pDef->layoutPt.y + 0.5))};
 
 	return pt;
 }
 
 const TCHAR* GetTechTreeNodeName(lua_State *L, techTreeNodeDef* pDef)
 {
-	return pDef ? wcsdup(pDef->name) : NULL;
+	return pDef ? _wcsdup(pDef->name) : NULL;
 }
 
 
@@ -782,8 +784,8 @@ void RenderTechNodeLines(lua_State *L, techTreeNodeDef* pDef)
 	for (int i = 0; i < eaSize(&pDef->eaRequiredNames); i++)
 	{
 		techTreeNodeDef* pReqDef = GET_DEF_FROM_STRING(techTreeNodeDef, pDef->eaRequiredNames[i]);
-		POINT reqAnchor = {pScrRect->right - (pDef->layoutPt.x-pReqDef->layoutPt.x)*RECT_WIDTH(pScrRect->) - 56,
-							pScrRect->bottom - (((float)pDef->layoutPt.y-pReqDef->layoutPt.y) + 0.5)*RECT_HEIGHT(pScrRect->)};
+		POINT reqAnchor = {(LONG)(pScrRect->right - (pDef->layoutPt.x-pReqDef->layoutPt.x)*RECT_WIDTH(pScrRect->) - 56),
+							(LONG)(pScrRect->bottom - (((float)pDef->layoutPt.y-pReqDef->layoutPt.y) + 0.5)*RECT_HEIGHT(pScrRect->))};
 		linebox.right = pScrRect->left;
 		linebox.left  = reqAnchor.x;
 		if (pReqDef->layoutPt.y == pDef->layoutPt.y)
@@ -936,7 +938,7 @@ GameTexturePortion* GetNotificationIcon(lua_State *L, playerNotification* pNote)
 
 const TCHAR* GetNotificationText(lua_State *L, playerNotification* pNote)
 {
-	return pNote ? wcsdup(pNote->pchText) : NULL;
+	return pNote ? _wcsdup(pNote->pchText) : NULL;
 }
 
 float GetCurTechProgress(lua_State *L)
@@ -950,9 +952,9 @@ const TCHAR* GetCurTechName(lua_State *L)
 	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 	techTreeNodeDef* pNode = pPlayer->GetCurrentTech();
 	if (pNode)
-		return wcsdup(pNode->name);
+		return _wcsdup(pNode->name);
 	else
-		return wcsdup(_T("NO RESEARCH"));
+		return _wcsdup(_T("NO RESEARCH"));
 }
 
 luabind::object GetAvailableConstructionProjects(lua_State *L, CHexCity* pCity)
@@ -1016,7 +1018,7 @@ const TCHAR* GetProjectText(lua_State *L, CHexCity* pCity, cityProject* pProject
 					wsprintf(buf, L"%s - |cff0000----|cffffff turns", pDef->displayName);
 				else
 					wsprintf(buf, L"%s - %d turns", pDef->displayName, (int)ceilf((pDef->cost-pProject->progress)/estimatedProduction));
-				return wcsdup(buf);
+				return _wcsdup(buf);
 			}break;
 		case kProject_Unit:
 			{
@@ -1026,7 +1028,7 @@ const TCHAR* GetProjectText(lua_State *L, CHexCity* pCity, cityProject* pProject
 					wsprintf(buf, L"%s - |cff0000----|cffffff turns", pDef->displayName);
 				else
 					wsprintf(buf, L"%s - %d turns", pDef->displayName, (int)ceilf((pDef->cost-pProject->progress)/estimatedProduction));
-				return wcsdup(buf);
+				return _wcsdup(buf);
 			}break;
 		}
 	}

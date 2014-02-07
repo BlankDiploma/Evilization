@@ -94,7 +94,7 @@ struct multiVal
 		{
 			if (myType = MULTIVAL_STRING)
 			{
-				ptr = wcsdup((TCHAR*)pSrc->ptr);
+				ptr = _wcsdup((TCHAR*)pSrc->ptr);
 			}
 			else
 				assert(1);//copying unknown type
@@ -153,7 +153,7 @@ struct multiVal
 	{
 		if (string[0] == '\"')
 		{
-			TCHAR* newStr = wcsdup(string+1);
+			TCHAR* newStr = _wcsdup(string+1);
 			newStr[wcslen(newStr)-1] = '\0';
 			myType = MULTIVAL_STRING;;
 			ptr = newStr;

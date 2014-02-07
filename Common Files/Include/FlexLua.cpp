@@ -53,7 +53,8 @@ luabind::object FlexLua_ExecuteScript(LuaScript* pScript, LuaContext* pContext)
 		std::string str = luabind::object_cast<std::string>(error_msg);
 		assert(0);
 	}
-
+	luabind::object ret;
+	return ret;
 }
 
 const TCHAR* FlexLua_ExecuteScript_StringReturn(LuaScript* pScript, LuaContext* pContext)
@@ -69,7 +70,7 @@ const TCHAR* FlexLua_ExecuteScript_StringReturn(LuaScript* pScript, LuaContext* 
 		std::string str = luabind::object_cast<std::string>(error_msg);
 		assert(0);
 	}
-
+	return NULL;
 }
 
 lua_Number FlexLua_ExecuteScript_DoubleReturn(LuaScript* pScript, LuaContext* pContext)
@@ -85,6 +86,7 @@ lua_Number FlexLua_ExecuteScript_DoubleReturn(LuaScript* pScript, LuaContext* pC
 		std::string str = luabind::object_cast<std::string>(error_msg);
 		assert(0);
 	}
+	return 0;
 }
 
 void FlexLua_ExecuteScript_NoReturn(LuaScript* pScript, LuaContext* pContext)
@@ -115,6 +117,8 @@ POINT FlexLua_ExecuteScript_PointReturn(LuaScript* pScript, LuaContext* pContext
 		std::string str = luabind::object_cast<std::string>(error_msg);
 		assert(0);
 	}
+	POINT pt = {0,0};
+	return pt;
 }
 
 luabind::object FlexLua_ExecuteScript_TableReturn(LuaScript* pScript, luabind::object*** peaReturnObjects, LuaContext* pContext)

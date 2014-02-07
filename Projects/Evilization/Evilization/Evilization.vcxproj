@@ -68,6 +68,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib luad.lib luabindd_noRTTI.lib %(AdditionalOptions)</AdditionalOptions>
@@ -98,6 +99,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib lua.lib luabind.lib %(AdditionalOptions)</AdditionalOptions>
