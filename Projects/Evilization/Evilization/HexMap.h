@@ -10,6 +10,8 @@
 
 #pragma once
 
+#define FOG_OF_WAR 1
+
 extern MTRand randomFloats;
 
 struct queuedAction;
@@ -22,7 +24,7 @@ struct hexTileDef;
 
 AUTO_ENUM(HexDirection) {kDir_W = 0, kDir_NW,
 					kDir_NE,  kDir_E,
-					kDir_SE, kDir_SW, k_ThisIsSoFuckingStupid = INT_MAX};
+					kDir_SE, kDir_SW};
 
 #define kUnitType_Melee 1
 #define kUnitType_Ranged 2
@@ -33,12 +35,20 @@ AUTO_ENUM(HexDirection) {kDir_W = 0, kDir_NW,
 
 typedef void (*findTileFunc)(hexTile*, void* pData, void*** peaOut);
 
+AUTO_ENUM(hexTileFlags) 
+{
+	kTileFlag_Walkable = 1,
+	kTileFlag_Water = 2,
+	kTileFlag_DeepWater = 4,
+	kTileFlag_Mountain = 8
+};
+
 PARSE_STRUCT(hexTileDef)
 {
 	int iMaxPillageTurns;
 	const TCHAR* name;
 	const TCHAR* displayName;
-	bool bWalkable;
+	FLAGS hexTileFlags eFlags;
 	int iMoveCost;
 	COLOR_ARGB color;
 	laborSlotDef* slotDef;
@@ -96,7 +106,7 @@ public:
 	{
 		return h;
 	}
-	void Render(RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
+	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
 	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
 	void Generate(int w, int h, int seed);
@@ -118,7 +128,10 @@ public:
 	int HexPathfindTile(CHexUnit* pUnit, POINT a, POINT b, HEXPATH** pPathOut);
 	void GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset, void*** peaListOut, findTileFunc pFunc, void* pData);
 	HEXPATH* pCachedPath;
-
+	CHexBuilding* CreateBuilding(hexBuildingDef* pDef, CHexPlayer* pOwner, POINT loc);
+	CHexUnit* CreateUnit(hexUnitDef* pDef, CHexPlayer* pOwner, POINT loc);
+	void RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset);
+	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
 private:
 
 	POINT screenOffset;

@@ -189,14 +189,47 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 				{
 					//first line of an object - parse name and structparams
 					
+					const char* pchStructParam = strtok_s(NULL, " 	", &pchNextToken);
+
 					if (!sObjStack.empty())
 					{
-						sParseTableStack.push((ParseTable*)pEntry->pSubTable);
+						//We are dealing with a substruct
+						TCHAR polynameBuf[512];
+						const TCHAR* (*polynames)[] = NULL;
+						swprintf_s(polynameBuf, L"%S", pchStructParam);
+						//Determine polytype of substruct if necessary.
+						hashIterParseName = htNameToParseTableHash.find(polynameBuf);
+						if (hashIterParseName != htNameToParseTableHash.end())
+						{
+							ParseTable* pTable = hashIterParseName->second;
+							//we have a parsetable name, check if it's a valid polytype of our base
+							hashIterPolyName = htNameToPolyTableHash.find(polynameBuf);
+							if(hashIterPolyName != htNameToPolyTableHash.end())
+							{
+								polynames = hashIterPolyName->second;
+							}
+							const TCHAR** pchPolyName = (*polynames);
+							while((*pchPolyName))
+							{
+								hashIterParseName = htNameToParseTableHash.find((TCHAR*)*pchPolyName);
+								if (hashIterParseName != htNameToParseTableHash.end() &&
+									hashIterParseName->second == pEntry->pSubTable)
+								{
+									//This is a valid polytype.
+									sParseTableStack.push(pTable);
+									pchStructParam = strtok_s(NULL, " 	", &pchNextToken);
+									break;
+								}
+								
+								pchPolyName++;
+							}
+						}
+						else
+							sParseTableStack.push((ParseTable*)pEntry->pSubTable);
 						pCurTable = sParseTableStack.top();
 					}
 
 					iCurObjSize = ObjectSizeInBytes(pCurTable);
-					const char* pchStructParam = strtok_s(NULL, " 	", &pchNextToken);
 					int iNextInlineParam = 0;
 					void* pObj = operator new (iCurObjSize);
 					memset(pObj, 0, iCurObjSize);

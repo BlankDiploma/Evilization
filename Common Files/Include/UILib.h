@@ -40,6 +40,13 @@ PARSE_STRUCT(UIChildDef)
 	FLAGS UIAnchorFlags anchor;
 };
 
+PARSE_STRUCT(UIInlineChildDef)
+{
+	int x;
+	int y;
+	FLAGS UIAnchorFlags anchor;
+	UIBoxDef* def;
+};
 
 PARSE_STRUCT(UIBoxDef)
 {
@@ -51,6 +58,7 @@ PARSE_STRUCT(UIBoxDef)
 //	int flags;
 	UITextureLayer** eaLayers;
 	UIChildDef** eaChildren;
+	UIInlineChildDef** eaInlineChildren;
 	UIBoxType eType;
 	LuaScript dragFunc;
 };
@@ -60,6 +68,7 @@ PARSE_STRUCT(UILayoutDef) : public UIBoxDef
 	LuaScript pointFunc;
 	LuaScript listFunc;
 	UILayoutType eLayoutType;
+	bool bInvertGridYGrowth;
 };
 
 AUTO_ENUM(UITextFlags) {kUITextFlag_CenterX = 1, kUITextFlag_CenterY = 2, kUITextFlag_Wrap = 4, kUITextFlag_DropShadow = 8};
@@ -111,6 +120,7 @@ public:
 	void InitFromDef(UIBoxDef* def, int w, int h);
 	void AnchorToRect(int x, int y, RECT* pRect, int anchor);
 	void InitFromDef(UIInstance* pParent, UIChildDef* def, int w, int h);
+	void InitFromInlineChildDef(UIInstance* pParent, UIInlineChildDef* def, int w, int h);
 	void MoveTo(POINT pt);
 	void MoveTo(int x, int y);
 	void Offset(int x, int y);

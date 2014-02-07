@@ -160,3 +160,9 @@ $RECYCLE.BIN/
 Evilization/Debug/Evilization.exe
 Projects/StructParse/Debug/StructParse.exe
 Projects/Evilization/Debug/Evilization.exe
+Projects/Evilization/Evilization/Autogen/AutoEnums.cpp
+Projects/Evilization/Evilization/Autogen/AutoEnums.h
+Projects/Evilization/Evilization/Autogen/ParseTableDict.cpp
+Projects/Evilization/Evilization/Autogen/UILib_h_ast.cpp
+Projects/Evilization/Evilization/Autogen/UILib_h_ast.h
+Projects/Evilization/Evilization/Autogen/HexFeatures_h_ast.cpp

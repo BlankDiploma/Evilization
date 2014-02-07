@@ -16,6 +16,14 @@ AUTO_ENUM(buildingType)
 	kBuilding_Improvement
 };
 
+AUTO_ENUM(buildingFlags) 
+{
+	kBuildingFlag_NoEnemyMovement = 1, 
+	kBuildingFlag_NoAllyMovement = 2, 
+	kBuildingFlag_BuildOnOcean = 4, 
+	kBuildingFlag_BuildOnLand = 8, 
+	kBuildingFlag_BuildOnMountain = 16, 
+};
 
 struct HEXPATH
 {
@@ -98,8 +106,10 @@ PARSE_STRUCT(hexBuildingDef)
 	int visRadius;
 	const TCHAR* name;
 	const TCHAR* displayName;
+	FLAGS buildingFlags eFlags;
 	
 	DEF_REF(GameTexturePortion) hTex;
+	//RequiredResource
 };
 
 struct HEXPATH;
@@ -242,8 +252,7 @@ public:
 		ownerID = -1;
 		eaLaborSlots = NULL;
 	}
-	CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner);
-	CHexBuilding(hexBuildingDef* def);
+	CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner, bool bTakeOwnership = true);
 	void SetOwnerID(int ID)
 	{
 		ownerID = ID;
@@ -277,7 +286,8 @@ struct cityProject
 {
 	projectType eType;
 	void* pDef;
-	int progress;
+	float progress;
+	POINT loc;
 };
 
 class CHexCity : public CHexBuilding
@@ -287,20 +297,12 @@ private:
 	int materials;
 	int materialsmax;
 	laborSlot** eaPopulationUsage;
-	cityProject curProject;
+	cityProject** eaProjectQueue;
 	TCHAR* name;
+	cityProject** eaAvailableProjects;
 public:
-	CHexCity()
-	{
-		pop = 1;
-		eaPopulationUsage = NULL;
-		curProject.eType = kProject_None;
-		curProject.progress = 0;
-		curProject.pDef = NULL;
-		materials = 0;
-		materialsmax = 50;
-		name = _T("");
-	}
+	int GetNetProductionForProjects();
+	CHexCity();
 	CHexCity(hexBuildingDef* def, CHexPlayer* pOwner);
 	int CountAvailableLabor();
 	bool SetNextAvailableLabor(laborSlot* pSlot);
@@ -308,123 +310,23 @@ public:
 	bool StartLaborInSlot(CHexBuilding* pBuilding, int idx);
 	bool StopLaborInSlot(laborSlot* pSlot);
 	bool AdjustPop(int delta);
-	bool SwitchProject(projectType eType, void* pDef);
+	bool AddQueuedProject( projectType eType, void* pDef, POINT loc );
+	bool ClearProductionQueue();
+	cityProject** GetProductionQueue();
+	cityProject* GetCurrentProject();
 	void StartTurn(CHexPlayer* pOwner);
 	bool AdvanceProject( cityProject* curProject, int prod );
-	laborSlot** GetLaborList()
-	{
-		return eaLaborSlots;
-	}
-	int GetNetMaterials()
-	{
-		int mat = 0;
-		for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
-		{
-			if (eaPopulationUsage[i]->pLaborOwner == this)
-			{
-				switch (eaPopulationUsage[i]->pDef->eType)
-				{
-				case kLabor_Harvest:
-					{
-						mat += eaPopulationUsage[i]->pDef->production;
-					}break;
-				case kLabor_Construction:
-					{
-						mat -= eaPopulationUsage[i]->pDef->production;
-					}break;
-				}
-			}
-		}
-		return mat;
-	}
-	int GetGrossMaterials()
-	{
-		int mat = 0;
-		for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
-		{
-			if (eaPopulationUsage[i]->pLaborOwner == this)
-			{
-				switch (eaPopulationUsage[i]->pDef->eType)
-				{
-				case kLabor_Harvest:
-					{
-						mat += eaPopulationUsage[i]->pDef->production;
-					}break;
-				}
-			}
-		}
-		return mat;
-	}
-	int GetNetGold()
-	{
-		int gold = 0;
-		for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
-		{
-			if (eaPopulationUsage[i]->pLaborOwner == this)
-			{
-				switch (eaPopulationUsage[i]->pDef->eType)
-				{
-				case kLabor_Harvest:
-					{
-						gold += eaPopulationUsage[i]->pDef->gold;
-					}break;
-				}
-			}
-		}
-		return gold;
-	}
-	int GetNetResearch()
-	{
-		int res = 0;
-		for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
-		{
-			if (eaPopulationUsage[i]->pLaborOwner == this)
-			{
-				switch (eaPopulationUsage[i]->pDef->eType)
-				{
-				case kLabor_Harvest:
-					{
-						res += eaPopulationUsage[i]->pDef->research;
-					}break;
-				}
-			}
-		}
-		return res;
-	}
-	buildingType GetMyType()
-	{
-		return kBuilding_City;
-	}
-	LPCTSTR GetName()
-	{
-		return name;
-	}
-	float GetMaterialsPct()
-	{
-		return ((float)materials)/materialsmax;
-	}
-	void GetStatByName(const TCHAR* pName, multiVal* pOut)
-	{
-		if (_wcsicmp(pName, _T("name")) == 0)
-			pOut->SetUnownedString(GetName());
-		else if (_wcsicmp(pName, _T("materials")) == 0)
-			pOut->SetInt(materials);
-		else if (_wcsicmp(pName, _T("materialsmax")) == 0)
-			pOut->SetInt(materialsmax);
-		else if (_wcsicmp(pName, _T("grossmaterials")) == 0)
-			pOut->SetInt(GetGrossMaterials());
-		else if (_wcsicmp(pName, _T("netgold")) == 0)
-			pOut->SetInt(GetNetGold());
-		else if (_wcsicmp(pName, _T("netresearch")) == 0)
-			pOut->SetInt(GetNetResearch());
-		else if (_wcsicmp(pName, _T("materialsperturn")) == 0)
-		{
-			TCHAR buf[32];
-			int net = GetNetMaterials();
-			wsprintf(buf, _T("|c%s%i"), net > 0 ? _T("00ff00+") : _T("ff0000"), net);
-			pOut->SetString(buf);
-		}
-	}
+	laborSlot** GetLaborList();
+	int GetNetMaterials();
+	int GetGrossMaterials();
+	int GetNetGold();
+	int GetNetResearch();
+	buildingType GetMyType();
+	LPCTSTR GetName();
+	float GetMaterialsPct();
+	void GetStatByName(const TCHAR* pName, multiVal* pOut);
+	void RefreshAvailableProjectList();
+	void GetAvailableProjectList(projectType eType, cityProject*** peaProjectsOut);
 	bool StartLaborOnTile(hexTile* pTile);
 };
 

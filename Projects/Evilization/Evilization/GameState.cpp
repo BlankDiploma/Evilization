@@ -6,7 +6,6 @@
 #include "texturelibrary.h"
 int g_HexSize;
 
-#define FOG_OF_WAR 1
 
 CGameState::CGameState()
 {
@@ -18,6 +17,7 @@ CGameState::CGameState()
 	pCurrentMap = NULL;
 	eCurState = kGameState_Invalid;
 	g_HexSize = DEFAULT_HEX_SIZE;
+	eaMouseStates = NULL;
 }
 
 void CGameState::Initialize(int screenW, int screenH)
@@ -88,8 +88,135 @@ void CGameState::IssueOrder(unitOrderType eType, HEXPATH* pPath)
 		curSelUnit->OverwriteQueuedOrders(eType, pPath);
 }
 
+void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
+{
+	switch (msg)
+	{
+	case WM_LBUTTONUP:
+		{
+			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+		}break;
+	case WM_RBUTTONUP:
+		{
+		}break;
+	case WM_MOUSEWHEEL:
+		{
+			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+			AdjustMapZoom(rot);
+		}break;
+	}
+}
+
+void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
+{
+	switch (msg)
+	{
+	case WM_LBUTTONUP:
+		{
+			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+		}break;
+	case WM_RBUTTONUP:
+		{
+			HEXPATH* pPath = NULL;
+			pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
+			if (pPath)
+				IssueOrder(kOrder_Move, pPath);
+		}break;
+	case WM_MOUSEWHEEL:
+		{
+			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+			AdjustMapZoom(rot);
+		}break;
+	}
+}
+
+void CGameState::DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
+{
+	switch (msg)
+	{
+	case WM_LBUTTONUP:
+		{
+		}break;
+	case WM_RBUTTONUP:
+		{
+			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
+			curSelCity->StartLaborOnTile(pTile);
+		}break;
+	case WM_MOUSEWHEEL:
+		{
+			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+			AdjustMapZoom(rot);
+		}break;
+	}
+}
+
+void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
+{
+	switch (msg)
+	{
+	case WM_LBUTTONUP:
+		{
+			cityProject* pProj = (cityProject*)pHandlerParam;
+			if (pProj)
+			{
+				if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(pt.x, pt.y)))
+				{
+					MouseHandlerPopState();
+					return;
+				}
+
+				if (!GetAsyncKeyState(VK_SHIFT))
+				{
+					curSelCity->ClearProductionQueue();
+					MouseHandlerPopState();
+				}
+				curSelCity->AddQueuedProject(pProj->eType,pProj->pDef, PixelToTilePt(pt.x, pt.y));
+			}
+		}break;
+	case WM_RBUTTONUP:
+		{
+				MouseHandlerPopState();
+		}break;
+	case WM_MOUSEWHEEL:
+		{
+			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+			AdjustMapZoom(rot);
+		}break;
+	}
+}
+
+void CGameState::DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
+{
+}
+
 void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 {
+	MouseHandlerState* pCurHandler = eaMouseStates[eaSize(&eaMouseStates)-1];
+	switch(pCurHandler->eMouseHandler)
+	{
+	case kGameplayMouse_Default:
+		{
+			DoGameplayMouseInput_Default(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
+		}break;
+	case kGameplayMouse_UnitSelected:
+		{
+			DoGameplayMouseInput_UnitSelected(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
+		}break;
+	case kGameplayMouse_CityView:
+		{
+			DoGameplayMouseInput_CityView(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
+		}break;
+	case kGameplayMouse_PlaceBuilding:
+		{
+			DoGameplayMouseInput_PlaceBuilding(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
+		}break;
+	case kGameplayMouse_SelectAbilityTarget:
+		{
+			DoGameplayMouseInput_SelectAbilityTarget(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
+		}break;
+	}
+	//old handler
+	/*
 	switch (msg)
 	{
 	case WM_LBUTTONUP:
@@ -119,7 +246,7 @@ void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPA
 			AdjustMapZoom(rot);
 		}break;
 		//uncomment to make l/r buttons place units/buildings
-		/*
+		
 	case WM_LBUTTONUP:
 		{
 			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
@@ -130,10 +257,55 @@ void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPA
 			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
 			pTile->pBuilding = new hexBuilding;
 		}break;
-		*/
+		
 	}
+*/
 }
 
+void CGameState::MouseHandlerAdditionalRendering()
+{
+	MouseHandlerState* pCurHandler = eaMouseStates[eaSize(&eaMouseStates)-1];
+	switch(pCurHandler->eMouseHandler)
+	{
+	case kGameplayMouse_Default:
+		{
+		}break;
+	case kGameplayMouse_UnitSelected:
+		{
+			hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
+			if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
+				pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pTopOrder->pPath, 0x55);
+
+			HEXPATH* pPath = NULL;
+			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
+			{
+				int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
+				if (iPathLength > 0)
+				{
+					pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pPath, 0xff);
+				}
+			}
+		}break;
+	case kGameplayMouse_CityView:
+		{
+		}break;
+	case kGameplayMouse_PlaceBuilding:
+		{
+			cityProject* pProj = (cityProject*)pCurHandler->pMouseHandlerParam;
+			hexBuildingDef* pDef = (hexBuildingDef*)pProj->pDef;
+			DWORD color = 0xaaffffff;
+			
+			if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y)))
+			{
+				color = 0xaaff0000;
+			}
+			pCurrentMap->RenderBuildingOnTile(pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y), color, fpMapOffset);
+		}break;
+	case kGameplayMouse_SelectAbilityTarget:
+		{
+		}break;
+	}
+}
 
 void CGameState::Render()
 {
@@ -145,27 +317,12 @@ void CGameState::Render()
 		}break;
 	case kGameState_Gameplay:
 		{
-			pCurrentMap->Render(&mapViewport, fpMapOffset, FOG_OF_WAR ? pPlayers[iCurPlayer].GetVisibility() : NULL);
-			//uncomment for path demo
-
-			if (curSelUnit)
-			{
-				hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
-				if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
-					pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pTopOrder->pPath, 0x55);
-
-				HEXPATH* pPath = NULL;
-				if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
-				{
-					int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
-					if (iPathLength > 0)
-					{
-						pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pPath, 0xff);
-					}
-				}
-			}
+			pCurrentMap->Render(&mapViewport, fpMapOffset, &pPlayers[iCurPlayer]);
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
+			{
+				MouseHandlerAdditionalRendering();
 				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
+			}
 
 			UI.Render();
 		}break;
@@ -231,6 +388,7 @@ void CGameState::SwitchToState(GameState newState)
 	case kGameState_Gameplay:
 		{
 			assert(pCurrentMap);//must have a map to transition to gameplay state
+			eaPush(&eaMouseStates, new MouseHandlerState);
 		}break;
 	}
 	eCurState = newState;
@@ -276,9 +434,11 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 		}break;
 	case kGameState_Gameplay:
 		{
+			bool bPrevAutoCancel = eaMouseStates[eaSize(&eaMouseStates)-1]->bPopOnUIClick;
 			if (UI.MouseInput(pt, msg))
 			{
-				//nothin'
+				if (bPrevAutoCancel && eaMouseStates[eaSize(&eaMouseStates)-1]->bPopOnUIClick)
+					MouseHandlerPopState();
 			}
 			else if (PtInRect(&mapViewport, pt))
 			{
@@ -423,7 +583,7 @@ void CGameState::SelectNextUnit( CHexPlayer* pPlayer )
 	{
 		if (!pPlayer->eaUnits[i]->GetTopQueuedOrder())
 		{
-			curSelUnit = pPlayer->eaUnits[i];
+			SelectUnit(pPlayer->eaUnits[i]);
 			CenterView(pPlayer->eaUnits[i]->GetLoc());
 			break;
 		}
@@ -456,7 +616,7 @@ CHexUnit* CGameState::GetSelectedUnit()
 void CGameState::SelectCity(CHexCity* pCity)
 {
 	 curSelCity = pCity;
-	 curSelUnit = NULL;
+	 MouseHandlerPushState(kGameplayMouse_CityView, NULL);
 }
 
 CHexCity* CGameState::GetSelectedCity()
@@ -470,21 +630,19 @@ void CGameState::ShowDetailedCityView( CHexCity* pCity )
 	CenterView(pCity->GetLoc());
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("DetailedCityView"));
-	curSelUnit = NULL;
 }
 
 void CGameState::ShowGameplayUI()
 {
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("gameplay"));
-	curSelCity = NULL;
 }
 
 void CGameState::ShowTechTreeUI()
 {
+	g_GameState.MouseHandlerPushState(kGameplayMouse_Disable, NULL);
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("TechTree"));
-	curSelCity = NULL;
 }
 
 void CGameState::AdjustMapZoom( int rot )
@@ -553,6 +711,10 @@ int CHexPlayer::AddResearch( int res )
 		if (pIter->second + res >= pCurResearch->cost)
 		{
 			//research complete
+			for(int i = 0; i < eaSize(&pCurResearch->eaGrants); i++)
+			{
+				buildPermissions[pCurResearch->eaGrants[i]] = 1;
+			}
 			int overflow = (pIter->second + res) - pCurResearch->cost;
 			pIter->second = -1;
 			pCurResearch = NULL;
@@ -612,3 +774,5 @@ techTreeNodeDef* CHexPlayer::GetCurrentTech()
 {
 	return pCurResearch;
 }
+
+CGameState g_GameState;

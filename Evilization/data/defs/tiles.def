@@ -2,7 +2,7 @@ hexTileDef grass
 {
 	hTex terrain_grass
 	displayName "Grasslands"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 1
 	color 87 236 65
 	iMaxPillageTurns 5
@@ -20,7 +20,7 @@ hexTileDef plains
 {
 	hTex terrain_badlands
 	displayName "Badlands"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 1
 	color 232 225 161
 	iMaxPillageTurns 5
@@ -37,7 +37,7 @@ hexTileDef forest
 {
 	hTex terrain_forest
 	displayName "Forest"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 2
 	color 42 126 44
 	iMaxPillageTurns 5
@@ -54,7 +54,7 @@ hexTileDef jungle
 {
 	hTex terrain_jungle
 	displayName "Jungle"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 2
 	color 83 91 41
 	iMaxPillageTurns 5
@@ -71,7 +71,7 @@ hexTileDef Taiga
 {
 	hTex terrain_taiga
 	displayName "Taiga"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 2
 	color 8 175 57
 	iMaxPillageTurns 5
@@ -88,7 +88,7 @@ hexTileDef Desert
 {
 	hTex terrain_desert
 	displayName "Desert"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 1
 	color 210 216 14
 	iMaxPillageTurns 5
@@ -105,7 +105,7 @@ hexTileDef Swamp
 {
 	hTex terrain_swamp
 	displayName "Swamp"
-	bWalkable 1
+	eFlags Walkable
 	iMoveCost 2
 	color 82 37 75
 	iMaxPillageTurns 5
@@ -123,10 +123,10 @@ hexTileDef Tundra
 {
 	hTex terrain_tundra
 	displayName "Tundra"
-	bWalkable 1
 	iMoveCost 1
 	color 186 242 241
 	iMaxPillageTurns 5
+	eFlags Walkable
 	slotDef
 	{
 		laborname "Stripmine"
@@ -142,6 +142,7 @@ hexTileDef shallows
 	iMoveCost 1
 	color 0 87 148
 	iMaxPillageTurns 5
+	eFlags Water
 	slotDef
 	{
 		laborname "Overfish"
@@ -159,6 +160,7 @@ hexTileDef Ocean
 	iMoveCost 1
 	color 0 26 148
 	iMaxPillageTurns 5
+	eFlags Water DeepWater
 	slotDef
 	{
 		laborname "Pollute"
@@ -176,6 +178,7 @@ hexTileDef Mountain
 	iMoveCost 3
 	color 56 56 56
 	iMaxPillageTurns 5
+	eFlags Mountain
 	slotDef
 	{
 		laborname "Stripmine"

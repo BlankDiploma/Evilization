@@ -36,8 +36,8 @@ GameTexturePortion terrain_shallow
 GameTexturePortion labor_dig
 {
 	hTex interface
-	rSrc 64 160 128 224
-	offset 0 0
+	rSrc 72 160 120 228
+	offset -8 0
 }
  
 GameTexturePortion labor_empty_marker
@@ -164,5 +164,26 @@ GameTexturePortion terrain_mountain
 	hTex terrain
 	rSrc 384 310 512 512
 	offset 0 74
+}
+ 
+GameTexturePortion walls 
+{
+	hTex interface
+	rSrc 127 180 185 246
+	offset -32 -24
+}
+ 
+GameTexturePortion slave_quarters
+{
+	hTex interface
+	rSrc 123 115 217 175
+	offset -32 -24
+}
+ 
+GameTexturePortion barbarian
+{
+	hTex interface
+	rSrc 190 175 220 247
+	offset -50 -20
 }
  

@@ -8,3 +8,14 @@ hexUnitDef stickfigure
 	displayName "Stick Figure"
 	hTex stickfigure
 }
+
+hexUnitDef barbarian
+{
+	movement 3
+	maxHealth 10
+	cost 50
+	meleeStr 3
+	visRadius 2
+	displayName "Barbarian"
+	hTex barbarian
+}

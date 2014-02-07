@@ -3,7 +3,7 @@ UIBoxDef DetailedCityView
 	fWidthPct 1.0
 	fHeightPct 1.0
 
-	eaChildren Production
+	eaChildren CityProductionPane
 	{
 		Anchor Top Left
 	}
@@ -87,7 +87,7 @@ UIButtonDef ExitButton
 		mouseoverIdx 1
 		pressedIdx 2
 	}
-	clickFunc <& Gameplay_ShowUI() &>
+	clickFunc <& Gameplay_ShowUI() Gameplay_PopMouseHandler() &>
 	
 	textFlags CenterX CenterY
 	text "Exit"
@@ -96,21 +96,7 @@ UIButtonDef ExitButton
 }
 
 
-UIBoxDef Production
-{
-	Width 256
-	fHeightPct 1.0
-	eaChildren ProdList
-	{
-		Anchor Top Left
-	}
-	eaChildren CurrentProject
-	{
-		Anchor Bottom Left
-	}
-}
-
-UIBoxDef ProdList
+UIBoxDef CityProductionPane
 {
 	Width 256
 	fHeightPct 0.8
@@ -119,7 +105,43 @@ UIBoxDef ProdList
 		hTex interfacenines
 		ninepatchIdx 8
 	}
+	eaInlineChildren
+	{
+		Anchor Top Left
+		def UILayoutDef
+		{
+			fWidthPct 0.9
+			fHeightPct 0.9
+			listFunc <& return City_GetAvailableProjects(City_GetSelected()) &>
+			eLayoutType Grid
+			eType Layout
+			eaChildren AvailableProjectButton
+			{
+				Anchor Top left
+				X 8
+			}
+		}
+	}
+	eaChildren CurrentProject
+	{
+		Anchor Bottom Left
+		Y 216
+	}
 }
+
+UIButtonDef AvailableProjectButton
+{
+	Width 128
+	Height 32
+	eType Button
+	clickFunc <& City_SetNewProject(City_GetSelected(), Layout_GetVarAsCityProject()) &>
+	
+	textFlags CenterY
+	textFunc <& return City_GetProjectText(City_GetSelected(), Layout_GetVarAsCityProject()) &>
+	hFont courier_new
+	textcolor 255 255 255
+}
+
 UIBoxDef CurrentProject
 {
 	Width 356
@@ -135,7 +157,69 @@ UIBoxDef CurrentProject
 		X -2
 		Y 2
 	}
+	eaInlineChildren
+	{
+		Anchor Top Left
+		X -20
+		Y -20
+		def UIBoxDef
+		{
+			Width 64
+			Height 64
+			eaLayers TexturePortion
+			{
+				textureFunc <& return CityProject_GetIcon(City_GetCurrentProject(City_GetSelected())) &>
+			}
+		}
+	}
+	eaInlineChildren
+	{
+		Anchor Top Left
+		X 70
+		Y 24
+		def UITextDef
+		{
+			Width 128
+			Height 24
+			eType Text
+			textFlags CenterY
+			textFunc <& return City_GetProjectText(City_GetSelected(), City_GetCurrentProject(City_GetSelected())) &>
+			hFont courier_new
+			textcolor 255 255 255
+		}
+	}
+	eaInlineChildren
+	{
+		Anchor Top Left
+		X 96
+		Y 64
+		def UILayoutDef
+		{
+			Width 48
+			Height 64
+			eType Layout
+			listFunc <& return City_GetProductionQueue(City_GetSelected()) &>
+			eLayoutType Grid
+			eType Layout
+			eaChildren QueuedProject
+			{
+				Anchor Top left
+			}
+		}
+	}
 }
+
+UITextDef QueuedProject
+{
+	Width 100
+	Height 14
+	eType Text
+	
+	textFunc <& return City_GetProjectText(City_GetSelected(), Layout_GetVarAsCityProject()) &>
+	hFont courier_small
+	textcolor 255 255 255
+}
+
 UILayoutDef ProdLaborLayout
 {
 	Width 64
