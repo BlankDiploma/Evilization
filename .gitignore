@@ -52,6 +52,7 @@ Autogen/
 *.manifest
 *.idb
 *.dep
+*.unsuccessfulbuild
 
 # Visual C++ cache files
 ipch/
