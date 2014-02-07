@@ -18,4 +18,25 @@ hexBuildingDef house
 	maxHealth 100
 	visRadius 2
 	hTex house
+	eFlags BuildOnLand
+}
+
+hexBuildingDef slave_quarters
+{
+	cost 50
+	eType Improvement
+	displayName "Slave Quarters"
+	maxHealth 25
+	hTex slave_quarters
+	eFlags BuildOnLand
+}
+
+hexBuildingDef walls
+{
+	cost 50
+	eType Improvement
+	displayName "Wall"
+	maxHealth 100
+	hTex walls
+	eFlags BuildOnLand NoEnemyMovement
 }

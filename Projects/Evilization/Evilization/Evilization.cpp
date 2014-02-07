@@ -35,7 +35,6 @@ int mouseX;
 int mouseY;
 int numUpdatesInLastSecond = 0;
 
-CGameState mainGameState;
 
 MTRand randomFloats(GetTickCount());
 
@@ -203,13 +202,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			int keyCode = wParam;
 			//KRIS: handle keyCode here
-			mainGameState.KeyInput(keyCode, true);
+			g_GameState.KeyInput(keyCode, true);
 		}break;
 	case WM_KEYUP:
 		{
 			int keyCode = wParam;
 			//KRIS: handle keyCode here
-			mainGameState.KeyInput(keyCode, false);
+			g_GameState.KeyInput(keyCode, false);
 		}break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
@@ -225,7 +224,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSEWHEEL:
 		{
 			POINT pt = {LOWORD(lParam), HIWORD(lParam)};
-			mainGameState.MouseInput(message, pt, wParam, lParam);
+			g_GameState.MouseInput(message, pt, wParam, lParam);
 		}
 		break;
 	case WM_ACTIVATEAPP:
@@ -385,7 +384,7 @@ void LoadGameData()
 
 	InitializeBiomeMap(_T("biomes.bmp"));
 //	StoreGameExprFuncs();
-	mainGameState.Initialize(g_screenWidth, g_screenHeight);
+	g_GameState.Initialize(g_screenWidth, g_screenHeight);
 //	hexmap.Generate(128, 128, GetTickCount());
 
 }
@@ -466,14 +465,15 @@ void GameLoop()
 		{
 			g_LastTick = currentTick;
 
-			mainGameState.Update(elapsed);
+			g_GameState.Update(elapsed);
+
+			g_Renderer.StartNewRenderList();
+			
+			g_GameState.Render();
+
+			g_Renderer.CommitRenderList();
 		}
 		
-		g_Renderer.StartNewRenderList();
-			
-		mainGameState.Render();
-
-		g_Renderer.CommitRenderList();
 }
 
 /**
@@ -512,17 +512,17 @@ void Gameplay_GetPlayerEquipmentList_RawArray(lua_State *L)
 */
 void EndTurnButton(lua_State *L)
 {
-	mainGameState.EndCurrentTurn();
+	g_GameState.EndCurrentTurn();
 }
 
 CHexUnit* GetSelectedUnit(lua_State *L)
 {
-	return mainGameState.GetSelectedUnit();
+	return g_GameState.GetSelectedUnit();
 }
 
 void RenderMinimap(lua_State *L)
 {
-	mainGameState.RenderMinimap(g_pCurContext->pUI->GetScreenRect());
+	g_GameState.RenderMinimap(g_pCurContext->pUI->GetScreenRect());
 }
 
 void MinimapClick(lua_State *L)
@@ -532,19 +532,19 @@ void MinimapClick(lua_State *L)
 	pt.y -= ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->top;
 	pt.x /= 2;
 	pt.y /= 2;
-	mainGameState.CenterView(pt);
+	g_GameState.CenterView(pt);
 }
 
 void SelectedUnitIssueOrder(lua_State *L, int orderType)
 {
-	mainGameState.IssueOrder((unitOrderType)orderType, NULL);
+	g_GameState.IssueOrder((unitOrderType)orderType, NULL);
 }
 
 void RenderSelectedUnit(lua_State *L)
 {
 	POINT pt = {g_pCurContext->pUI->GetScreenRect()->left, g_pCurContext->pUI->GetScreenRect()->top};
 	float scale = (g_pCurContext->pUI->GetScreenRect()->right - g_pCurContext->pUI->GetScreenRect()->left)/((float)DEFAULT_HEX_SIZE);
-	mainGameState.RenderSelectedUnit(pt, scale);
+	g_GameState.RenderSelectedUnit(pt, scale);
 }
 
 const TCHAR* FormatUnitString(lua_State *L, CHexUnit* pUnit, const char* fmt)
@@ -576,18 +576,19 @@ void ShowDetailedCityView(lua_State *L, CHexCity* pCity)
 {
 	if (pCity)
 	{
-		mainGameState.ShowDetailedCityView(pCity);
+		g_GameState.ShowDetailedCityView(pCity);
 	}
 }
 
 void ShowGameplayUI(lua_State *L)
 {
-	mainGameState.ShowGameplayUI();
+	//called when exiting
+	g_GameState.ShowGameplayUI();
 }
 
 void ShowTechTreeUI(lua_State *L)
 {
-	mainGameState.ShowTechTreeUI();
+	g_GameState.ShowTechTreeUI();
 }
 
 hexTile* GetLayoutVarAsTile(lua_State *L)
@@ -615,9 +616,14 @@ techTreeNodeDef* GetLayoutVarAsTechNodeDef(lua_State *L)
 	return (techTreeNodeDef*)g_pCurContext->pUI->GetLayoutVar();
 }
 
+cityProject* GetLayoutVarAsCityProject(lua_State *L)
+{
+	return (cityProject*)g_pCurContext->pUI->GetLayoutVar();
+}
+
 CHexCity* GetSelectedCity(lua_State *L)
 {
-	return mainGameState.GetSelectedCity();
+	return g_GameState.GetSelectedCity();
 }
 
 POINT GetTileLoc(lua_State *L, hexTile* pTile)
@@ -639,13 +645,13 @@ CHexCity* GetCityFromTile(lua_State *L, hexTile* pTile)
 
 POINT TileCoordToScreen(lua_State *L, POINT pt)
 {
-	return mainGameState.TilePtToScreenPt(pt.x, pt.y);
+	return g_GameState.TilePtToScreenPt(pt.x, pt.y);
 }
 
 luabind::object GetOnscreenTilesWithCities(lua_State *L)
 {
 	hexTile** eaTiles = NULL;
-	mainGameState.GetOnscreenCityList(&eaTiles, true);
+	g_GameState.GetOnscreenCityList(&eaTiles, true);
 	lua_pushlightuserdata(L, eaTiles);
 	luabind::object ret(luabind::from_stack(L, -1));
 	lua_pop(L, 1);
@@ -663,7 +669,7 @@ float GetMaterialStoragePct(lua_State *L, CHexCity* pCity)
 luabind::object GetOnscreenTilesWithLabor(lua_State *L, CHexCity* pCity)
 {
 	laborSlot** eaLabor = NULL;
-	mainGameState.GetOnscreenLaborList(&eaLabor, pCity);
+	g_GameState.GetOnscreenLaborList(&eaLabor, pCity);
 	lua_pushlightuserdata(L, eaLabor);
 	luabind::object ret(luabind::from_stack(L, -1));
 	lua_pop(L, 1);
@@ -672,7 +678,7 @@ luabind::object GetOnscreenTilesWithLabor(lua_State *L, CHexCity* pCity)
 
 void LaborToggle(lua_State *L, laborSlot* pSlot)
 {
-	mainGameState.GetSelectedCity()->ToggleLaborInSlot(pSlot);
+	g_GameState.GetSelectedCity()->ToggleLaborInSlot(pSlot);
 }
 
 GameTexturePortion* GetLaborIcon(lua_State *L, laborSlot* pSlot)
@@ -828,7 +834,7 @@ void RenderTechButton(lua_State *L)
 {
 	UIInstance* pUI = g_pCurContext->pUI;
 	techTreeNodeDef* pNode =  (techTreeNodeDef*)pUI->GetLayoutVar();
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 
 	if (!pNode)
 		return;
@@ -863,7 +869,7 @@ void TechNodeButtonClick(lua_State *L)
 {
 	UIInstance* pUI = g_pCurContext->pUI;
 	techTreeNodeDef* pNode =  (techTreeNodeDef*)pUI->GetLayoutVar();
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 
 	pPlayer->StartResearch(pNode);
 
@@ -878,12 +884,12 @@ void TechTreeScrollDisplay(lua_State *L, POINT pt)
 
 POINT GetThisFrameMouseDeltas(lua_State *L)
 {
-	return mainGameState.GetMouseDeltas();
+	return g_GameState.GetMouseDeltas();
 }
 
 luabind::object GetNotifications(lua_State *L)
 {
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 	playerNotification** eaNotes = NULL;
 	playerNotification** eaPlayerNotes = pPlayer->GetNotifications();
 	eaCopy(&eaNotes, &eaPlayerNotes);
@@ -899,26 +905,26 @@ void NotificationFocus(lua_State *L, playerNotification* pNote)
 	{
 	case kNotify_Production:
 		{
-			mainGameState.ShowDetailedCityView((CHexCity*)(pNote->pFocusThing));
+			g_GameState.ShowDetailedCityView((CHexCity*)(pNote->pFocusThing));
 		}break;
 	case kNotify_Orders:
 		{
-			mainGameState.SelectUnit((CHexUnit*)(pNote->pFocusThing));
+			g_GameState.SelectUnit((CHexUnit*)(pNote->pFocusThing));
 		}break;
 	case kNotify_Combat:
 		{
-			mainGameState.CenterView(pNote->focusLoc);
+			g_GameState.CenterView(pNote->focusLoc);
 		}break;
 	case kNotify_Tech:
 		{
-			mainGameState.ShowTechTreeUI();
+			g_GameState.ShowTechTreeUI();
 		}break;
 	}
 }
 
 void NotificationKill(lua_State *L, playerNotification* pNote)
 {
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 	pPlayer->RemoveNotification(pNote);
 }
 
@@ -935,18 +941,120 @@ const TCHAR* GetNotificationText(lua_State *L, playerNotification* pNote)
 
 float GetCurTechProgress(lua_State *L)
 {
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 	return pPlayer->GetTechPct();
 }
 
 const TCHAR* GetCurTechName(lua_State *L)
 {
-	CHexPlayer* pPlayer = mainGameState.GetCurrentPlayer();
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
 	techTreeNodeDef* pNode = pPlayer->GetCurrentTech();
 	if (pNode)
 		return wcsdup(pNode->name);
 	else
 		return wcsdup(_T("NO RESEARCH"));
+}
+
+luabind::object GetAvailableConstructionProjects(lua_State *L, CHexCity* pCity)
+{
+	cityProject** eaProjects = NULL;
+	pCity->GetAvailableProjectList(kProject_None, &eaProjects);
+	lua_pushlightuserdata(L, eaProjects);
+	luabind::object ret(luabind::from_stack(L, -1));
+	lua_pop(L, 1);
+	return ret;
+}
+
+void SetNewConstructionProject(lua_State *L, CHexCity* pCity, cityProject* pProject)
+{
+	switch (pProject->eType)
+	{
+	case kProject_Building:
+		{
+			g_GameState.MouseHandlerPushState(kGameplayMouse_PlaceBuilding, pProject, true);
+		}break;
+	default:
+		{
+			if (!GetAsyncKeyState(VK_SHIFT))
+				pCity->ClearProductionQueue();
+			pCity->AddQueuedProject(pProject->eType, pProject->pDef, pProject->loc);
+		}
+	}
+}
+
+luabind::object GetProductionQueue(lua_State *L, CHexCity* pCity)
+{
+	cityProject** eaQueue = NULL;
+	cityProject** eaCityQueue = pCity->GetProductionQueue();
+	for (int i = 1; i < eaSize(&eaCityQueue); i++)
+	{
+		eaPush(&eaQueue, eaCityQueue[i]);
+	}
+	lua_pushlightuserdata(L, eaQueue);
+	luabind::object ret(luabind::from_stack(L, -1));
+	lua_pop(L, 1);
+	return ret;
+}
+
+cityProject* GetCurrentProject(lua_State *L, CHexCity* pCity)
+{
+	return pCity->GetCurrentProject();
+}
+
+const TCHAR* GetProjectText(lua_State *L, CHexCity* pCity, cityProject* pProject)
+{
+	TCHAR buf[64] = {0};
+	if (pProject)
+	{
+		switch(pProject->eType)
+		{
+		case kProject_Building:
+			{
+				hexBuildingDef* pDef = (hexBuildingDef*)pProject->pDef;
+				int estimatedProduction = pCity->GetNetProductionForProjects();
+				if (estimatedProduction == 0)
+					wsprintf(buf, L"%s - |cff0000----|cffffff turns", pDef->displayName);
+				else
+					wsprintf(buf, L"%s - %d turns", pDef->displayName, (int)ceilf((pDef->cost-pProject->progress)/estimatedProduction));
+				return wcsdup(buf);
+			}break;
+		case kProject_Unit:
+			{
+				hexUnitDef* pDef = (hexUnitDef*)pProject->pDef;
+				int estimatedProduction = pCity->GetNetProductionForProjects();
+				if (estimatedProduction == 0)
+					wsprintf(buf, L"%s - |cff0000----|cffffff turns", pDef->displayName);
+				else
+					wsprintf(buf, L"%s - %d turns", pDef->displayName, (int)ceilf((pDef->cost-pProject->progress)/estimatedProduction));
+				return wcsdup(buf);
+			}break;
+		}
+	}
+	return NULL;
+}
+
+GameTexturePortion* GetProjectIcon(lua_State *L, cityProject* pProject)
+{
+	if (pProject)
+	{
+		switch(pProject->eType)
+		{
+		case kProject_Building:
+			{
+				return GET_REF(GameTexturePortion, ((hexBuildingDef*)pProject->pDef)->hTex);
+			}break;
+		case kProject_Unit:
+			{
+				return GET_REF(GameTexturePortion, ((hexUnitDef*)pProject->pDef)->hTex);
+			}break;
+		}
+	}
+	return NULL;
+}
+
+void PopMouseHandler(lua_State *L)
+{
+	g_GameState.MouseHandlerPopState();
 }
 	
 void DoAllLuaBinds()
@@ -961,6 +1069,7 @@ void DoAllLuaBinds()
 		luabind::def("SelectedUnit_Render", &RenderSelectedUnit),
 		luabind::def("City_DetailedView", &ShowDetailedCityView),
 		luabind::def("Gameplay_ShowUI", &ShowGameplayUI),
+		luabind::def("Gameplay_PopMouseHandler", &PopMouseHandler),
 		luabind::def("Unit_FormatString", &FormatUnitString),
 		luabind::def("City_FormatString", &FormatCityString),
 		luabind::def("Labor_FormatString", &FormatLaborString),
@@ -969,6 +1078,7 @@ void DoAllLuaBinds()
 		luabind::def("Layout_GetVarAsLaborSlot", &GetLayoutVarAsLaborSlot),
 		luabind::def("Layout_GetVarAsNotification", &GetLayoutVarAsNotification),
 		luabind::def("Layout_GetVarAsTechNodeDef", &GetLayoutVarAsTechNodeDef),
+		luabind::def("Layout_GetVarAsCityProject", &GetLayoutVarAsCityProject),
 		luabind::def("Tile_GetLoc", &GetTileLoc),
 		luabind::def("Tile_GetCity", &GetCityFromTile),
 		luabind::def("Gameplay_TilePtToScreen", &TileCoordToScreen),
@@ -997,6 +1107,12 @@ void DoAllLuaBinds()
 		luabind::def("Player_GetCurrentTechName", &GetCurTechName),
 		luabind::def("Tech_ScrollDisplay", &TechTreeScrollDisplay),
 		luabind::def("Gameplay_GetThisFrameMouseDeltas", &GetThisFrameMouseDeltas),
+		luabind::def("City_GetAvailableProjects", &GetAvailableConstructionProjects),
+		luabind::def("City_SetNewProject", &SetNewConstructionProject),
+		luabind::def("City_GetProjectText", &GetProjectText),
+		luabind::def("CityProject_GetIcon", &GetProjectIcon),
+		luabind::def("City_GetProductionQueue", &GetProductionQueue),
+		luabind::def("City_GetCurrentProject", &GetCurrentProject),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")
@@ -1014,6 +1130,8 @@ void DoAllLuaBinds()
 		class_<TCHAR>("TCHAR")
 		.def(constructor<>()),
 		class_<CHexUnit>("CHexUnit")
+		.def(constructor<>()),
+		class_<cityProject>("cityProject")
 		.def(constructor<>())
 	];
 }

@@ -5,8 +5,11 @@
 #include "techtree.h"
 #include "strhashmap.h"
 
+#pragma once
+
 enum TileVisType {kVis_Shroud = 0, kVis_Fog, kVis_Clear};
 enum playerControlType {kPlayerControl_AI_Local = 0, kPlayerControl_AI_Network, kPlayerControl_Human_Local, kPlayerControl_Human_Network};
+enum mouseHandlerType {kGameplayMouse_Default, kGameplayMouse_UnitSelected, kGameplayMouse_CityView, kGameplayMouse_PlaceBuilding, kGameplayMouse_SelectAbilityTarget, kGameplayMouse_Disable};
 
 struct playerVisibility
 {
@@ -155,6 +158,10 @@ public:
 			}
 		}
 	}
+	const StringIntHash* GetBuildPermissions()
+	{
+		return &buildPermissions;
+	}
 	playerNotification** GetNotifications()
 	{
 		return eaNotifications;
@@ -279,6 +286,19 @@ enum GameState {kGameState_Invalid = 0, kGameState_MainMenu, kGameState_Gameplay
 
 extern HWND hWndMain;
 
+struct MouseHandlerState
+{
+	mouseHandlerType eMouseHandler;
+	void* pMouseHandlerParam;
+	bool bPopOnUIClick;
+	MouseHandlerState()
+	{
+		eMouseHandler = kGameplayMouse_Default;
+		pMouseHandlerParam = NULL;
+		bPopOnUIClick = false;
+	}
+};
+
 class CGameState
 {
 private:
@@ -302,8 +322,18 @@ private:
 	GameState eCurState;
 	CHexUnit* curSelUnit;
 	CHexCity* curSelCity;
+
 	int iCurPlayer;
 	int iNumPlayers;
+
+	MouseHandlerState** eaMouseStates;
+	void CGameState::MouseHandlerAdditionalRendering();
+	void DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
+	void DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
+	void DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
+	void DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
+	void DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
+	
 public:
 	CGameState();
 	void Update(DWORD tick);
@@ -321,15 +351,45 @@ public:
 	void CenterView(POINT pt);
 	POINT PixelToTilePt(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
+	
+	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
+	{
+			//Don't allow pushing a duplicate state. Instead just overwrite the param.
+		if (eaMouseStates[eaSize(&eaMouseStates)-1]->eMouseHandler == eType)
+		{
+			eaMouseStates[eaSize(&eaMouseStates)-1]->pMouseHandlerParam = pParam;
+			return;
+		}
+		MouseHandlerState* pState = new MouseHandlerState;
+		pState->eMouseHandler = eType;
+		pState->pMouseHandlerParam = pParam;
+		pState->bPopOnUIClick = bPopOnUIClick;
+		eaPush(&eaMouseStates, pState);
+	}
+	void MouseHandlerPopState()
+	{
+		delete eaMouseStates[eaSize(&eaMouseStates)-1];
+		eaPop(&eaMouseStates);
+		assert(eaSize(&eaMouseStates) > 0);
+		//can't pop the last mouse handler
+	}
 	void SelectUnitOnTile(POINT pt)
 	{
 		CHexUnit* pUnit = pCurrentMap->GetTile(pt)->pUnit;
 		if (pUnit && pUnit->GetOwnerID() == iCurPlayer)
 		{
+			if (!curSelUnit)
+			{		
+				MouseHandlerPushState(kGameplayMouse_UnitSelected, NULL);
+			}
 			curSelUnit = pCurrentMap->GetTile(pt)->pUnit;
 		}
 		else
 		{
+			if (curSelUnit)
+			{		
+				MouseHandlerPopState();
+			}
 			curSelUnit = NULL;
 		}
 	}
@@ -337,6 +397,10 @@ public:
 	{
 		if (pUnit && pUnit->GetOwnerID() == iCurPlayer)
 		{
+			if (!curSelUnit)
+			{		
+				MouseHandlerPushState(kGameplayMouse_UnitSelected, NULL);
+			}
 			curSelUnit = pUnit;
 		}
 	}
@@ -366,8 +430,19 @@ public:
 	POINT GetViewCenter();
 	void ShowTechTreeUI();
 	CHexPlayer* GetCurrentPlayer();
+	CHexMap* GetCurrentMap()
+	{
+		return pCurrentMap;
+	}
+	CHexPlayer* GetPlayerByID(int id)
+	{
+		if (id >= 0 && id < iNumPlayers)
+			return &pPlayers[id];
+	}
 };
 
 #define DEFAULT_HEX_SIZE 128
 
 extern int g_HexSize;
+
+extern CGameState g_GameState;

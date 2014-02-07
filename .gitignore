@@ -14,7 +14,6 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
-Autogen/
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
 !packages/*/build/
@@ -159,6 +158,7 @@ $RECYCLE.BIN/
 .DS_Store
 
 autogen.timestamp
+Autogen/
 Evilization/Debug/Evilization.exe
 Projects/StructParse/Debug/StructParse.exe
 Projects/Evilization/Debug/Evilization.exe

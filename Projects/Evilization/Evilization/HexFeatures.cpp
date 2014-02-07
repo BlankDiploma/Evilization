@@ -106,7 +106,7 @@ void CHexBuilding::StartTurn(CHexPlayer* pOwner)
 
 void CHexCity::StartTurn(CHexPlayer* pOwner)
 {
-	int matSum = 0, goldSum = 0, resSum = 0, prodSum = 0;
+	int matSum = 0, goldSum = 0, resSum = 0;
 	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
 	{
 		if (eaPopulationUsage[i]->pLaborOwner == this)
@@ -118,36 +118,77 @@ void CHexCity::StartTurn(CHexPlayer* pOwner)
 				goldSum += pDef->gold;
 				resSum += pDef->research;
 			}
-			else if (pDef->eType == kLabor_Construction)
-			{
-				prodSum += pDef->production;
-			}
 		}
 	}
 
 	pOwner->AddGold(goldSum);
 	pOwner->AddResearch(resSum);
 	materials += matSum;
-	if (curProject.eType > kProject_None)
+	if (eaSize(&eaProjectQueue) > 0)
 	{
-		if (AdvanceProject(&curProject, prodSum))
+		if (AdvanceProject(eaProjectQueue[0], GetNetProductionForProjects()))
 		{
 			//finished building
+			POINT pt = {-1,-1};
+			pOwner->AddNotification(kNotify_Production, NULL, this, NULL, L"Production Complete");
+			eaRemove(&eaProjectQueue, 0);
 		}
 	}
 	materials = min(materials, materialsmax);
 }
 
-bool CHexCity::SwitchProject( projectType eType, void* pDef )
+bool CHexCity::AddQueuedProject( projectType eType, void* pDef, POINT loc )
 {
-	if (curProject.pDef)
-	{
-		curProject.progress = 0;
-	}
-	curProject.eType = eType;
-	curProject.pDef = pDef;
+	cityProject* pProj = new cityProject;
+	pProj->eType = eType;
+	pProj->pDef = pDef;
+	pProj->loc = loc;
+	pProj->progress = 0;
+	eaPush(&eaProjectQueue, pProj);
 
 	return true;
+}
+
+bool CHexCity::ClearProductionQueue()
+{
+	for (int i = 0; i < eaSize(&eaProjectQueue); i++)
+	{
+		delete eaProjectQueue[i];
+	}
+	eaClear(&eaProjectQueue);
+
+	return true;
+}
+
+cityProject** CHexCity::GetProductionQueue()
+{
+	return eaProjectQueue;
+}
+
+cityProject* CHexCity::GetCurrentProject()
+{
+	return eaSize(&eaProjectQueue) > 0 ? eaProjectQueue[0] : NULL;
+}
+
+int CHexCity::GetNetProductionForProjects()
+{
+	int matSum = 0, prodSum = 0;
+	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
+	{
+		if (eaPopulationUsage[i]->pLaborOwner == this)
+		{
+			const laborSlotDef* pDef = eaPopulationUsage[i]->pDef;
+			if (pDef->eType == kLabor_Harvest)
+			{
+				matSum += pDef->production;
+			}
+			else if (pDef->eType == kLabor_Construction)
+			{
+				prodSum += pDef->production;
+			}
+		}
+	}
+	return min(prodSum, materials+matSum);
 }
 
 bool CHexCity::AdvanceProject( cityProject* curProject, int prod)
@@ -172,17 +213,15 @@ bool CHexCity::AdvanceProject( cityProject* curProject, int prod)
 	}
 	if (curProject->progress >= cost)
 	{
-		curProject->progress -= cost;
-		curProject->eType = kProject_None;
-		curProject->pDef = NULL;
 		switch (curProject->eType)
 		{
 		case kProject_Unit:
 			{
-				//			pMap->CreateUnit((hexUnitDef*)curProject->pDef, loc);
+				g_GameState.GetCurrentMap()->CreateUnit((hexUnitDef*)curProject->pDef, g_GameState.GetPlayerByID(ownerID), GetLoc());
 			}break;
 		case kProject_Building:
 			{
+				g_GameState.GetCurrentMap()->CreateBuilding((hexBuildingDef*)curProject->pDef, g_GameState.GetPlayerByID(ownerID), curProject->loc);
 				//			pMap->CreateBuilding((hexBuildingDef*)curProject->pDef, curProject->loc);
 			}break;
 		case kProject_Upgrade:
@@ -190,6 +229,10 @@ bool CHexCity::AdvanceProject( cityProject* curProject, int prod)
 				//			BuildUpgrade((hexBuildingDef*)curProject->pDef);
 			}break;
 		}
+		curProject->progress -= cost;
+		curProject->eType = kProject_None;
+		curProject->pDef = NULL;
+		curProject->loc.x = curProject->loc.y = -1;
 		return true;
 	}
 	return false;
@@ -221,12 +264,7 @@ void CHexUnit::PopQueuedOrder()
 	}
 }
 
-CHexBuilding::CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner)
-{
-	CHexBuilding::CHexBuilding(def);
-	pOwner->TakeOwnership(this);
-}
-CHexBuilding::CHexBuilding(hexBuildingDef* def)
+CHexBuilding::CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner, bool bTakeOwnership)
 {
 	pDef = def;
 	health = def->maxHealth;
@@ -242,20 +280,197 @@ CHexBuilding::CHexBuilding(hexBuildingDef* def)
 		pNewSlot->loc = this->GetLoc();
 		eaPush(&eaLaborSlots, pNewSlot);
 	}
+	if (bTakeOwnership)
+		pOwner->TakeOwnership(this);
 }
 
-CHexCity::CHexCity(hexBuildingDef* def, CHexPlayer* pOwner) : CHexBuilding(def)
+CHexCity::CHexCity(hexBuildingDef* def, CHexPlayer* pOwner) : CHexBuilding(def, pOwner, false)
 {
 	pop = 1;
 	eaPopulationUsage = NULL;
-	curProject.eType = kProject_None;
-	curProject.progress = 0;
-	curProject.pDef = NULL;
+	eaAvailableProjects = NULL;
+	eaProjectQueue = NULL;
 	materials = 0;
 	materialsmax = 50;
-	ownerID = -1;
 	name = _T("dongopolis");
 	pOwner->TakeOwnership(this);
+}
+
+CHexCity::CHexCity()
+{
+	pop = 1;
+	eaPopulationUsage = NULL;
+	eaProjectQueue = NULL;
+	materials = 0;
+	materialsmax = 50;
+	eaAvailableProjects = NULL;
+	name = _T("");
+}
+laborSlot** CHexCity::GetLaborList()
+{
+	return eaLaborSlots;
+}
+int CHexCity::GetNetMaterials()
+{
+	int mat = 0;
+	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
+	{
+		if (eaPopulationUsage[i]->pLaborOwner == this)
+		{
+			switch (eaPopulationUsage[i]->pDef->eType)
+			{
+			case kLabor_Harvest:
+				{
+					mat += eaPopulationUsage[i]->pDef->production;
+				}break;
+			case kLabor_Construction:
+				{
+					mat -= eaPopulationUsage[i]->pDef->production;
+				}break;
+			}
+		}
+	}
+	return mat;
+}
+int CHexCity::GetGrossMaterials()
+{
+	int mat = 0;
+	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
+	{
+		if (eaPopulationUsage[i]->pLaborOwner == this)
+		{
+			switch (eaPopulationUsage[i]->pDef->eType)
+			{
+			case kLabor_Harvest:
+				{
+					mat += eaPopulationUsage[i]->pDef->production;
+				}break;
+			}
+		}
+	}
+	return mat;
+}
+int CHexCity::GetNetGold()
+{
+	int gold = 0;
+	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
+	{
+		if (eaPopulationUsage[i]->pLaborOwner == this)
+		{
+			switch (eaPopulationUsage[i]->pDef->eType)
+			{
+			case kLabor_Harvest:
+				{
+					gold += eaPopulationUsage[i]->pDef->gold;
+				}break;
+			}
+		}
+	}
+	return gold;
+}
+int CHexCity::GetNetResearch()
+{
+	int res = 0;
+	for (int i = 0; i < eaSize(&eaPopulationUsage); i++)
+	{
+		if (eaPopulationUsage[i]->pLaborOwner == this)
+		{
+			switch (eaPopulationUsage[i]->pDef->eType)
+			{
+			case kLabor_Harvest:
+				{
+					res += eaPopulationUsage[i]->pDef->research;
+				}break;
+			}
+		}
+	}
+	return res;
+}
+buildingType CHexCity::GetMyType()
+{
+	return kBuilding_City;
+}
+LPCTSTR CHexCity::GetName()
+{
+	return name;
+}
+float CHexCity::GetMaterialsPct()
+{
+	return ((float)materials)/materialsmax;
+}
+void CHexCity::GetStatByName(const TCHAR* pName, multiVal* pOut)
+{
+	if (_wcsicmp(pName, _T("name")) == 0)
+		pOut->SetUnownedString(GetName());
+	else if (_wcsicmp(pName, _T("materials")) == 0)
+		pOut->SetInt(materials);
+	else if (_wcsicmp(pName, _T("materialsmax")) == 0)
+		pOut->SetInt(materialsmax);
+	else if (_wcsicmp(pName, _T("grossmaterials")) == 0)
+		pOut->SetInt(GetGrossMaterials());
+	else if (_wcsicmp(pName, _T("netgold")) == 0)
+		pOut->SetInt(GetNetGold());
+	else if (_wcsicmp(pName, _T("netresearch")) == 0)
+		pOut->SetInt(GetNetResearch());
+	else if (_wcsicmp(pName, _T("materialsperturn")) == 0)
+	{
+		TCHAR buf[32];
+		int net = GetNetMaterials();
+		wsprintf(buf, _T("|c%s%i"), net > 0 ? _T("00ff00+") : _T("ff0000"), net);
+		pOut->SetString(buf);
+	}
+}
+void CHexCity::RefreshAvailableProjectList()
+{
+	int i = 0;
+	CHexPlayer* pOwner = g_GameState.GetPlayerByID(ownerID);
+	const StringIntHash* pPermissions = pOwner->GetBuildPermissions();
+	StringIntHash::const_iterator iter = pPermissions->begin();
+	while (iter != pPermissions->end())
+	{
+		hexBuildingDef* pBuilding = GET_DEF_FROM_STRING(hexBuildingDef, iter->first);
+		hexUnitDef* pUnit = pBuilding ? NULL : GET_DEF_FROM_STRING(hexUnitDef, iter->first);
+		if (pBuilding)
+		{
+			cityProject* pProj = NULL;
+			if (i == eaSize(&eaAvailableProjects))
+				eaPush(&eaAvailableProjects, new cityProject);
+			pProj = eaAvailableProjects[i];
+			pProj->eType = kProject_Building;
+			pProj->pDef = pBuilding;
+			pProj->loc.x = pProj->loc.y = -1;
+			pProj->progress = 0;
+			i++;
+		}
+		else if (pUnit)
+		{
+			cityProject* pProj = NULL;
+			if (i == eaSize(&eaAvailableProjects))
+				eaPush(&eaAvailableProjects, new cityProject);
+			pProj = eaAvailableProjects[i];
+			pProj->eType = kProject_Unit;
+			pProj->pDef = pUnit;
+			pProj->loc.x = pProj->loc.y = -1;
+			pProj->progress = 0;
+			i++;
+		}
+
+		iter++;
+	}
+	while (i < eaSize(&eaAvailableProjects))
+	{
+		delete eaAvailableProjects[eaSize(&eaAvailableProjects)-1];
+		eaPop(&eaAvailableProjects)
+	}
+}
+void CHexCity::GetAvailableProjectList(projectType eType, cityProject*** peaProjectsOut)
+{
+	RefreshAvailableProjectList();
+	for (int i = 0; i < eaSize(&eaAvailableProjects); i++)
+	{
+		if (eType == kProject_None || eaAvailableProjects[i]->eType == eType)
+			eaPush(peaProjectsOut, eaAvailableProjects[i]);
+	}
 }
 
 void formatUnitTag(const TCHAR* tag, TCHAR* pOut, StringTagContext* pContext)

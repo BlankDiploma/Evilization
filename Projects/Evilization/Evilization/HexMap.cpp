@@ -139,6 +139,11 @@ void CHexMap::Generate(int w, int h, int seed)
 	pFont = GET_TEXTURE(_T("courier_new"));
 }
 
+void CHexMap::RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset)
+{
+	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pDef->hTex), TileToScreen(pt.x, pt.y, fpMapOffset), color, ZOOM_PERCENT);
+}
+
 // Verteces are in this order:
 //		     2
 //		  1     3
@@ -192,9 +197,9 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 	if (pTile->pDef->hTex.pObj)
 		g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
 	if (pTile->pBuilding)
-		g_Renderer.AddSpriteToRenderList(pHouse, tilePt, color, scale);
+		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
 	if (pTile->pUnit)
-		g_Renderer.AddSpriteToRenderList(pStickFigure, tilePt, color, scale);
+		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
 	//tempDevice->SetTransform(D3DTS_TEXTURE0, NULL );
 }
 void CHexMap::RenderFog(POINT tilePt)
@@ -324,9 +329,10 @@ inline POINT TileToScreen(int x, int y, FLOATPOINT fpOffset)
 	return pt;
 }
 
-void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis)
+void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 {
 	RECT tilesToRender;
+	playerVisibility* pVis = FOG_OF_WAR ? pPlayer->GetVisibility() : NULL;
 	CopyRect(&tilesToRender, view);
 	OffsetRect(&tilesToRender, (int)fpMapOffset.x, (int)fpMapOffset.y);
 	tilesToRender.left /= HEX_SIZE;
@@ -338,13 +344,14 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis)
 		for (int i = tilesToRender.left; i < tilesToRender.right; i++)
 		{
 			POINT validPt = {i, j};
+			POINT screenPt = TileToScreen(i, j, fpMapOffset);
 			MakeLocValid(&validPt);
 			if (!pVis || pVis->GetTileVis(validPt.x, validPt.y) != kVis_Shroud)
 			{
 				if (pVis && pVis->GetTileVis(validPt.x, validPt.y) == kVis_Fog)
-					RenderTile(TileToScreen(i, j, fpMapOffset), GetTile(i, j), 0xff333333, ZOOM_PERCENT);
+					RenderTile(screenPt, GetTile(i, j), 0xff333333, ZOOM_PERCENT);
 				else
-					RenderTile(TileToScreen(i, j, fpMapOffset), GetTile(i, j), 0xFFFFFFFF, ZOOM_PERCENT);
+					RenderTile(screenPt, GetTile(i, j), 0xFFFFFFFF, ZOOM_PERCENT);
 			}
 /*
 			POINT sanitizedPt = {i,j};
@@ -358,6 +365,19 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis)
 			}
 			*/
 		}
+	for (int iCity = 0; iCity < eaSize(&pPlayer->eaCities); iCity++)
+	{
+		cityProject** eaProjects = pPlayer->eaCities[iCity]->GetProductionQueue();
+		for (int iProj = 0; iProj < eaSize(&eaProjects); iProj++)
+		{
+			if (eaProjects[iProj]->eType == kProject_Building)
+			{
+				POINT screenPt = TileToScreen(eaProjects[iProj]->loc.x, eaProjects[iProj]->loc.y, fpMapOffset);
+				hexBuildingDef* pDef = (hexBuildingDef*)eaProjects[iProj]->pDef;
+				g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pDef->hTex), screenPt, 0xaaFFFFFF, ZOOM_PERCENT);
+			}
+		}
+	}
 }
 
 void CHexMap::RenderPath( RECT* view, FLOATPOINT fpMapOffset, CHexUnit* pUnit, HEXPATH* pPath, int alpha )
@@ -471,7 +491,7 @@ bool CHexMap::PointIsValidStartPos(POINT pt)
 {
 	//needs to be empty dry land
 	hexTile* pTile = GetTile(pt);
-	if (!pTile->pDef->bWalkable ||
+	if (!(pTile->pDef->eFlags & kTileFlag_Walkable) ||
 		pTile->pUnit || pTile->pBuilding)
 		return false;
 
@@ -481,7 +501,7 @@ bool CHexMap::PointIsValidStartPos(POINT pt)
 	{
 		POINT adjPt = GetTileInDirection(pt, i);
 		pTile = GetTile(adjPt);
-		if (pTile->pDef->bWalkable)
+		if ((pTile->pDef->eFlags & kTileFlag_Walkable))
 			return true;
 	}
 	return false;
@@ -524,7 +544,7 @@ inline bool findTile(POINT pt, void* pData)
 
 inline bool TileIsReachable(hexTile* pTile)
 {
-	return (pTile->pDef->bWalkable) && !pTile->pUnit;
+	return ((pTile->pDef->eFlags & kTileFlag_Walkable)) && !pTile->pUnit;
 }
 
 //pathfinds to the nearest tile that would reveal shrouded tiles
@@ -687,24 +707,38 @@ int CHexMap::HexPathfindShroud(CHexUnit* pUnit, playerVisibility* pVis, POINT a,
 	return 0;
 }
 
+CHexBuilding* CHexMap::CreateBuilding(hexBuildingDef* pDef, CHexPlayer* pOwner, POINT loc)
+{
+	hexTile* pTile = GetTile(loc);
+	if (pDef->eType == kBuilding_City)
+		pTile->pBuilding = new CHexCity(pDef, pOwner);
+	else
+		pTile->pBuilding = new CHexBuilding(pDef, pOwner);
+	pTile->pBuilding->SetLoc(loc);
+	return pTile->pBuilding;
+}
+
+CHexUnit* CHexMap::CreateUnit(hexUnitDef* pDef, CHexPlayer* pOwner, POINT loc)
+{
+	hexTile* pTile = GetTile(loc);
+	pTile->pUnit = new CHexUnit(pDef, pOwner);
+	pTile->pUnit->SetLoc(loc);
+	return pTile->pUnit;
+}
+
 void CHexMap::PlacePlayerStart( CHexPlayer* pPlayer )
 {
 	POINT pt = GetRandomStartingPos();
-	hexTile* pTile = GetTile(pt);
-	pTile->pBuilding = new CHexCity(GET_DEF_FROM_STRING(hexBuildingDef, L"house"), pPlayer);
-	((CHexCity*)pTile->pBuilding)->AdjustPop(2);
-	pTile->pBuilding->SetLoc(pt);
-	pTile = NULL;
+	CHexBuilding* pBuilding = CreateBuilding(GET_DEF_FROM_STRING(hexBuildingDef, L"house"), pPlayer, pt);
+	((CHexCity*)pBuilding)->AdjustPop(2);
 
 	for (int i = 0; i < 6; i++)
 	{
 		POINT adjPt = GetTileInDirection(pt, (int)i);
-		pTile = GetTile(adjPt);
-		if (pTile->pDef->bWalkable)
+		hexTile* pTile = GetTile(adjPt);
+		if ((pTile->pDef->eFlags & kTileFlag_Walkable))
 		{
-			pTile->pUnit = new CHexUnit(GET_DEF_FROM_STRING(hexUnitDef, L"stickfigure"), pPlayer);
-			pTile->pUnit->SetLoc(adjPt);
-			break;
+			CreateUnit(GET_DEF_FROM_STRING(hexUnitDef, L"stickfigure"), pPlayer, adjPt);
 		}
 	}
 }
@@ -772,7 +806,7 @@ bool CHexMap::MoveUnit( CHexUnit* pUnit, POINT pt )
 	{
 		hexTile* a = GetTile(pUnit->GetLoc());
 		hexTile* b = GetTile(pt);
-		if (b->pDef->bWalkable && !b->pUnit)
+		if ((b->pDef->eFlags & kTileFlag_Walkable) && !b->pUnit)
 		{
 			pUnit->SpendMov(b->pDef->iMoveCost);
 			a->pUnit = NULL;
@@ -831,6 +865,23 @@ int CHexMap::GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut )
 		right += 0.5;
 	}
 	return num;
+}
+
+bool CHexMap::BuildingCanBeBuiltOnTile(hexBuildingDef* pBuildingDef, POINT tilePt)
+{
+	hexTile* pTile = GetTile(tilePt);
+	if (pTile->pBuilding)
+		return false;
+
+	//tile types
+	if ((pTile->pDef->eFlags & kTileFlag_Water) && (pBuildingDef->eFlags & kBuildingFlag_BuildOnOcean))
+		return true;
+	if ((pTile->pDef->eFlags & kTileFlag_Mountain) && (pBuildingDef->eFlags & kBuildingFlag_BuildOnMountain))
+		return true;
+	if ((pTile->pDef->eFlags & kTileFlag_Walkable) && (pBuildingDef->eFlags & kBuildingFlag_BuildOnLand))
+		return true;
+
+	return false;
 }
 
 #include "Autogen\HexMap_h_ast.cpp"

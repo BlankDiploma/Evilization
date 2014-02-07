@@ -102,6 +102,8 @@ void UIInstance::UpdateLayout()
 				else
 					pt.y = idy * pChildDef->height;
 
+				if (pLayoutDef->bInvertGridYGrowth)
+					pt.y = -pt.y;
 				idx++;
 				if (idx >= numperrow)
 				{
@@ -124,6 +126,12 @@ void UIInstance::InitChildren(int w, int h)
 	{
 		UIInstance* pChild = new UIInstance;
 		pChild->InitFromDef(this, pDef->eaChildren[i], w, h);
+		eaPush(&eaChildren, pChild);
+	}
+	for (int i = 0; i < eaSize(&pDef->eaInlineChildren); i++)
+	{
+		UIInstance* pChild = new UIInstance;
+		pChild->InitFromInlineChildDef(this, pDef->eaInlineChildren[i], w, h);
 		eaPush(&eaChildren, pChild);
 	}
 }
@@ -173,6 +181,25 @@ void UIInstance::AnchorToRect(int x, int y, RECT* pRect, int anchor)
 		Offset(0, pRect->top + (pRect->bottom-pRect->top)/2 - (screenRect.bottom-screenRect.top)/2);
 	}
 	Offset(x, y);
+}
+
+void UIInstance::InitFromInlineChildDef(UIInstance* pParent, UIInlineChildDef* pInlineDef, int w, int h)
+{
+	pDef = pInlineDef->def;
+	SetRect(&screenRect, 0, 0, 0, 0);
+
+	if (pDef->fWidthPct > 0)
+		screenRect.right = (LONG)(pParent->screenRect.right * pDef->fWidthPct);
+	else
+		screenRect.right = pDef->width;
+	if (pDef->fHeightPct > 0)
+		screenRect.bottom = (LONG)(pParent->screenRect.bottom * pDef->fHeightPct);
+	else
+		screenRect.bottom = pDef->height;
+
+	AnchorToRect(pInlineDef->x, pInlineDef->y, &pParent->screenRect, pInlineDef->anchor);
+
+	InitChildren(w, h);
 }
 
 void UIInstance::InitFromDef(UIInstance* pParent, UIChildDef* def, int w, int h)

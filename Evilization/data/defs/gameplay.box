@@ -247,6 +247,7 @@ UILayoutDef NotificationLayout
 	listFunc <& return Gameplay_GetNotificationList() &>
 	eType Layout
 	eLayoutType Grid
+	bInvertGridYGrowth 1
 	
 	Width 256
 	Height 512
