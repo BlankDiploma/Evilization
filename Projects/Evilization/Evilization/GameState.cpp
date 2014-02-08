@@ -67,6 +67,11 @@ void CGameState::Update(DWORD tick)
 			ScreenToClient(hWndMain, &ptMouse);
 			ptMousePosLastFrame = ptMousePos;
 			ptMousePos = ptMouse;
+			if (uiDragStart > 0 && (GetTickCount() - uiDragStart > DRAG_THRESHOLD_MS))
+			{
+				fpMapOffset.x += (ptMousePosLastFrame.x - ptMousePos.x);
+				fpMapOffset.y += (ptMousePosLastFrame.y - ptMousePos.y);
+			}
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;
@@ -92,9 +97,15 @@ void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam,
 {
 	switch (msg)
 	{
+	case WM_LBUTTONDOWN:
+		{
+			uiDragStart = GetTickCount();
+		}break;
 	case WM_LBUTTONUP:
 		{
-			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+			if (GetTickCount() - uiDragStart < DRAG_THRESHOLD_MS)
+				SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+			uiDragStart = 0;
 		}break;
 	case WM_RBUTTONUP:
 		{
@@ -111,9 +122,15 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 {
 	switch (msg)
 	{
+	case WM_LBUTTONDOWN:
+		{
+			uiDragStart = GetTickCount();
+		}break;
 	case WM_LBUTTONUP:
 		{
-			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+			if (GetTickCount() - uiDragStart < DRAG_THRESHOLD_MS)
+				SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
+			uiDragStart = 0;
 		}break;
 	case WM_RBUTTONUP:
 		{

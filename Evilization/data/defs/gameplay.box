@@ -212,6 +212,7 @@ UIButtonDef MinimapTex
 		renderFunc <& Minimap_Render() &>
 	}
 	clickFunc <& Minimap_Click() &>
+	dragFunc <& Minimap_Click() &>
 }
 
 UIButtonDef EndTurnButton

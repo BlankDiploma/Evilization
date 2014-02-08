@@ -11,6 +11,8 @@ enum TileVisType {kVis_Shroud = 0, kVis_Fog, kVis_Clear};
 enum playerControlType {kPlayerControl_AI_Local = 0, kPlayerControl_AI_Network, kPlayerControl_Human_Local, kPlayerControl_Human_Network};
 enum mouseHandlerType {kGameplayMouse_Default, kGameplayMouse_UnitSelected, kGameplayMouse_CityView, kGameplayMouse_PlaceBuilding, kGameplayMouse_SelectAbilityTarget, kGameplayMouse_Disable};
 
+#define DRAG_THRESHOLD_MS 100
+
 struct playerVisibility
 {
 	int* fogMask;
@@ -337,6 +339,7 @@ private:
 	int screenW;
 	int screenH;
 	bool bMouseOverGameplay;
+	DWORD uiDragStart;
 
 	//mutable
 	GameTexture minimapTexture;

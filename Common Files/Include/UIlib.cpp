@@ -420,6 +420,7 @@ bool UIInstance::Update(POINT ptMouse, bool bSetMouseover)
 	}
 	
 	context.pUI = this;
+	context.mousePt = ptMouse;
 
 	if (pDef->eType == kBox_Layout)
 		UpdateLayout();
