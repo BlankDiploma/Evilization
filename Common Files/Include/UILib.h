@@ -80,6 +80,7 @@ PARSE_STRUCT(UITextDef) : public UIBoxDef
 	LuaScript textFunc;
 	TEXTURE_REF hFont;
 	FLAGS UITextFlags textFlags;
+	float fIconScale;
 };
 
 

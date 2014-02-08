@@ -804,7 +804,7 @@ void FlexRenderer::QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVert
 	eaPush(&eaVertsToDestroy, pVerts);
 }
 
-void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow)
+void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale)
 {
 	if (!pFontTex || pFontTex->eType != kTextureType_Font)
 		return;
@@ -962,10 +962,10 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 			int wrappedY = (int)y + numNewlines*pFontTex->letterHeight;
 			if (pTex)
 			{
-				int w = RECT_WIDTH(pTex->rSrc->);
-				int h = RECT_HEIGHT(pTex->rSrc->);
+				int w = (int)(RECT_WIDTH(pTex->rSrc->)*fIconScale);
+				int h = (int)(RECT_HEIGHT(pTex->rSrc->)*fIconScale);
 				POINT pt = {wrappedX - pTex->offset->x, wrappedY - (h-pFontTex->letterHeight + 1)/2 - pTex->offset->y};
-				AddSpriteToRenderList(pTex, pt);
+				AddSpriteToRenderList(pTex, pt, 0xffffffff, fIconScale);
 				bonusW += w;
 			}
 			else

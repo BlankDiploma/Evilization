@@ -108,15 +108,39 @@ class CHexPlayer
 	playerVisibility vis;
 	playerControlType eType;
 	int gold;
+	int iCachedGoldIncome;
+	int iCachedScienceIncome;
+	bool bIncomeDirty;
 	techTreeNodeDef* pCurResearch;
 	StringIntHash techProgressHash;
 	StringIntHash buildPermissions;
 	playerNotification** eaNotifications;
+	void UpdateCachedIncomeValues();
 
 public:
 	CHexUnit** eaUnits;
 	CHexBuilding** eaBuildings;
 	CHexCity** eaCities;
+	int GetGoldPerTurn()
+	{
+		if (bIncomeDirty)
+			UpdateCachedIncomeValues();
+		return iCachedGoldIncome;
+	}
+	int GetBankedGold()
+	{
+		return gold;
+	}
+	void DirtyCachedIncomeValues()
+	{
+		bIncomeDirty = true;
+	}
+	int GetSciencePerTurn()
+	{
+		if (bIncomeDirty)
+			UpdateCachedIncomeValues();
+		return iCachedScienceIncome;
+	}
 	CHexPlayer()
 	{
 		name = _T("Player");
@@ -130,6 +154,9 @@ public:
 		eType = kPlayerControl_AI_Local;
 		eaNotifications = NULL;
 		gold = 0;
+		iCachedGoldIncome = 0;
+		iCachedScienceIncome = 0;
+		bIncomeDirty = true;
 	}
 	void AddNotification(notifyType eType, POINT* focusLoc, void* focusObj, GameTexturePortion* pTex, LPCTSTR text)
 	{

@@ -24,6 +24,27 @@ UIBoxDef Gameplay
 		Anchor Bottom Right
 		Y -292
 	}
+	eaChildren TopInfoBar
+	{
+		Anchor Top Right
+	}
+}
+
+UITextDef TopInfoBar
+{
+	fWidthPct 0.9
+	Height 18
+	eType Text
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 10
+	}
+	textFlags CenterY
+	textFunc <& return Player_FormatTopInfoBar() &>
+	hFont courier_new
+	textcolor 255 255 255
+	fIconScale 0.5
 }
 
 UILayoutDef CityLabelLayout
@@ -216,8 +237,8 @@ UIButtonDef EndTurnButton
 
 UIButtonDef TechInfo
 {
-	Width 256
-	Height 128
+	fWidthPct 0.1f
+	Height 96
 	eType Button
 	
 	eaLayers Ninepatch

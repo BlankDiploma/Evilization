@@ -728,6 +728,24 @@ const TCHAR* FormatLaborString(lua_State *L, laborSlot* pSlot)
 		return NULL;
 }
 
+const TCHAR* FormatTopInfoBarString(lua_State *L)
+{
+	CHexPlayer* pPlayer = g_GameState.GetCurrentPlayer();
+	TCHAR buf[128];
+	TCHAR* iter = buf;
+	if (pPlayer)
+	{
+		iter += wsprintf(iter, _T(" |cff0000|aicon_research|+%d"), pPlayer->GetSciencePerTurn());
+		if (pPlayer->GetGoldPerTurn() >= 0)
+			iter += wsprintf(iter, _T("  |ccccc00|aicon_gold|%d(+%d)"), pPlayer->GetBankedGold(), pPlayer->GetGoldPerTurn());
+		else
+			iter += wsprintf(iter, _T("  |ccccc00|aicon_gold|%d|cff0000(-%d)"), pPlayer->GetBankedGold(), pPlayer->GetGoldPerTurn());
+		return _wcsdup(buf);
+	}
+	else
+		return NULL;
+}
+
 
 luabind::object GetCityLabor(lua_State *L, CHexCity* pCity)
 {
@@ -1115,6 +1133,7 @@ void DoAllLuaBinds()
 		luabind::def("CityProject_GetIcon", &GetProjectIcon),
 		luabind::def("City_GetProductionQueue", &GetProductionQueue),
 		luabind::def("City_GetCurrentProject", &GetCurrentProject),
+		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

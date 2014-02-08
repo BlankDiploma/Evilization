@@ -15,6 +15,7 @@ bool CHexCity::SetNextAvailableLabor(laborSlot* pSlot)
 	{
 		eaPush(&eaPopulationUsage, pSlot);
 		pSlot->pLaborOwner = this;
+		g_GameState.GetPlayerByID(ownerID)->DirtyCachedIncomeValues();
 		return true;
 	}
 	return false;
@@ -59,6 +60,7 @@ bool CHexCity::StopLaborInSlot(laborSlot* pSlot)
 			{
 				eaPopulationUsage[i]->pLaborOwner = NULL;
 				eaRemove(&eaPopulationUsage, i);
+				g_GameState.GetPlayerByID(ownerID)->DirtyCachedIncomeValues();
 				return true;
 			}
 		}
@@ -96,6 +98,7 @@ bool CHexCity::AdjustPop(int delta)
 		eaRemove(&eaPopulationUsage, iNumLabors-1);
 		iNumLabors--;
 	}
+	g_GameState.GetPlayerByID(ownerID)->DirtyCachedIncomeValues();
 	return true;
 }
 
@@ -128,6 +131,7 @@ void CHexCity::StartTurn(CHexPlayer* pOwner)
 	{
 		if (AdvanceProject(eaProjectQueue[0], GetNetProductionForProjects()))
 		{
+			g_GameState.GetPlayerByID(ownerID)->DirtyCachedIncomeValues();
 			//finished building
 			POINT pt = {-1,-1};
 			pOwner->AddNotification(kNotify_Production, NULL, this, NULL, L"Production Complete");

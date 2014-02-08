@@ -220,7 +220,7 @@ public:
 	void AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexturePortion* pTex, POINT topleft, DWORD color = 0xffffffff, float fZoom = 1.0f);
 	void AddNinepatchToRenderList(GameTexture* pSet, int iIndex, RECT* pDst, float fBarPct);
-	void AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow);
+	void AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale = 1.0f);
 	void AddSolidColorToRenderList(RECT* dst, DWORD color);
 	void AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB);
 	void ProcessRenderLists();

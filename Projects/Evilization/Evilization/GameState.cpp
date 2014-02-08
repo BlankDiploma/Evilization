@@ -770,6 +770,19 @@ bool CHexPlayer::CanResearchTech( techTreeNodeDef* pNode )
 	return true;
 }
 
+void CHexPlayer::UpdateCachedIncomeValues()
+{
+	int iGoldIncome = 0, iScienceIncome = 0;
+	for (int i = 0; i < eaSize(&eaCities); i++)
+	{
+		iGoldIncome += eaCities[i]->GetNetGold();
+		iScienceIncome += eaCities[i]->GetNetResearch();
+	}
+	iCachedGoldIncome = iGoldIncome;
+	iCachedScienceIncome = iScienceIncome;
+	bIncomeDirty = false;
+}
+
 techTreeNodeDef* CHexPlayer::GetCurrentTech()
 {
 	return pCurResearch;
