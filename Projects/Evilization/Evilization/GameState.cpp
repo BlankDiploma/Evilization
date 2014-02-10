@@ -337,8 +337,8 @@ void CGameState::Render()
 			pCurrentMap->Render(&mapViewport, fpMapOffset, &pPlayers[iCurPlayer]);
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 			{
-				MouseHandlerAdditionalRendering();
-				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
+				//MouseHandlerAdditionalRendering();
+				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
 			}
 
 			UI.Render();

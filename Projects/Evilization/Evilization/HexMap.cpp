@@ -144,7 +144,7 @@ void CHexMap::RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, 
 	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pDef->hTex), TileToScreen(pt.x, pt.y, fpMapOffset), color, ZOOM_PERCENT);
 }
 
-// Verteces are in this order:
+// Vertices are in this order:
 //		     2
 //		  1     3
 //		
@@ -154,6 +154,8 @@ void CHexMap::RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, 
 RECT selectedTile = {0,0,64,64};
 RECT unit = {64,0,128,64};
 RECT building = {128,0,192,64};
+
+int gNumHexTris = 4;
 void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 {
 	/*
@@ -194,13 +196,32 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 	g_pMainDevice->DrawPrimitiveUP ( D3DPT_TRIANGLEFAN , 4 , &vert , sizeof ( GfxSheetVertex ) );
 
 */
+	//if (pTile->pDef->hTex.pObj)
+	//	g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
+	//if (pTile->pBuilding)
+	//	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
+	//if (pTile->pUnit)
+	//	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
+
+	FlexVertex data[] = 
+	{
+		{0.0f,HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{0.0f,HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+	};
+
+	IDirect3DVertexBuffer9* pVB;
+
+
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
+
+	float pos[3] = {0.0f, 0.0f, 0.0f};
+	float scl[3] = {1.0f, 1.0f, 1.0f};
+	float rot[3] = {0.0f, 0.0f, 0.0f};
+
 	if (pTile->pDef->hTex.pObj)
-		g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
-	if (pTile->pBuilding)
-		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
-	if (pTile->pUnit)
-		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
-	//tempDevice->SetTransform(D3DTS_TEXTURE0, NULL );
+		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
 }
 void CHexMap::RenderFog(POINT tilePt)
 {

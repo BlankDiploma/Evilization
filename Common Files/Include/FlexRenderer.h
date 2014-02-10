@@ -224,6 +224,7 @@ public:
 	void AddSolidColorToRenderList(RECT* dst, DWORD color);
 	void AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB);
 	void ProcessRenderLists();
+	HRESULT CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle);
 
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 

@@ -208,6 +208,7 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
 	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
 	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
+//	pD3DDevice->SetRenderState ( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 //	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
 	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
 
@@ -237,6 +238,7 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Wireframe3D] );
 
 	stateBlocks[kRendererMode_Default3D]->Apply();
+	//stateBlocks[kRendererMode_Wireframe3D]->Apply();
 
 	pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &g_pCubeVertex, NULL);
 
@@ -782,6 +784,7 @@ void FlexRenderer::End2D()
 	assert(bActive2D);
 	bActive2D = false;
 	stateBlocks[kRendererMode_Default3D]->Apply();
+	//stateBlocks[kRendererMode_Wireframe3D]->Apply();
 }
 
 void FlexRenderer::GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2])
@@ -979,6 +982,11 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 			pTex = NULL;
 		}
 	}
+}
+
+HRESULT FlexRenderer::CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle)
+{
+	return pD3DDevice->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pHandle);
 }
 
 

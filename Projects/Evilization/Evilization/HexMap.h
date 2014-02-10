@@ -10,7 +10,7 @@
 
 #pragma once
 
-#define FOG_OF_WAR 1
+#define FOG_OF_WAR 0
 
 extern MTRand randomFloats;
 
