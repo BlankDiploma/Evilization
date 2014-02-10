@@ -155,7 +155,7 @@ RECT selectedTile = {0,0,64,64};
 RECT unit = {64,0,128,64};
 RECT building = {128,0,192,64};
 
-int gNumHexTris = 4;
+static int gNumHexTris = 4;
 void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 {
 	/*
@@ -211,10 +211,14 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 		{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f}
 	};
 
-	IDirect3DVertexBuffer9* pVB;
+	static IDirect3DVertexBuffer9* pVB = NULL;
 
+	if(!pVB)
+	{
 
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
+	}
+
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
 
 	float pos[3] = {0.0f, 0.0f, 0.0f};
 	float scl[3] = {1.0f, 1.0f, 1.0f};
