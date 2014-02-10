@@ -702,7 +702,7 @@ void FlexRenderer::ProcessRenderLists()
 	}
 #endif
 
-	UpdateCamera();
+	//UpdateCamera();
 
 	BeginFrame();
 

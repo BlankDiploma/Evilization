@@ -155,7 +155,7 @@ RECT selectedTile = {0,0,64,64};
 RECT unit = {64,0,128,64};
 RECT building = {128,0,192,64};
 
-static int gNumHexTris = 12;
+static int gNumHexTris = 4;
 void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 {
 	/*
@@ -209,26 +209,32 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 	if(!pVB)
 	{
 		FlexVertex data[]={
-		//Cube vertices
-					//Front face
-					{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
-					{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
-					//Back face
-					{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
-					{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
-					//Top face
-					{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
-					{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
-					//Bottom face
-					{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-					{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-					//Left face
-					{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
-					{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-					//Right face
-					{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
-					{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-				};
+		////Cube vertices
+		//			//Front face
+		//			{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
+		//			{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
+		//			//Back face
+		//			{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
+		//			{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
+		//			//Top face
+		//			{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
+		//			{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
+		//			//Bottom face
+		//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
+		//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
+		//			//Left face
+		//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
+		//			{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
+		//			//Right face
+		//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
+		//			{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
+			{0.0f,HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+
+		};
+
 
 		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
 
@@ -243,7 +249,7 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 	}
 
 	float pos[3] = {0.0f, 0.0f, 0.0f};
-	float scl[3] = {1.0f, 1.0f, 1.0f};
+	float scl[3] = {0.1f, 0.1f, 0.1f};
 	float rot[3] = {0.0f, 0.0f, 0.0f};
 
 	if (pTile->pDef->hTex.pObj)
