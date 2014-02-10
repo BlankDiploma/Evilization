@@ -111,7 +111,7 @@ void CHexMap::Generate(int w, int h, int seed)
  	CPerlinMap temp;
 	CPerlinMap rain;
 	elev.GenerateMutlipleLevels(max(w,h), 4, 16, NULL);
-	temp.GenerateMutlipleLevels(max(w,h), 4, 16, NULL);
+	temp.GenerateMutlipleLevels(max(w,h), 4, 8, NULL);
 	rain.GenerateMutlipleLevels(max(w,h), 2, 8, NULL);
 	pTiles = new hexTile[w*h];
 	this->w = w;

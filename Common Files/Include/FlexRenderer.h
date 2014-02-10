@@ -211,6 +211,14 @@ public:
 	{
 		return &camera;
 	}
+	int GetScreenWidth()
+	{
+		return iScreenW;
+	}
+	int GetScreenHeight()
+	{
+		return iScreenH;
+	}
 
 	void StartNewRenderList();
 	void CommitRenderList();

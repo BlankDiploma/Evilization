@@ -40,3 +40,65 @@ hexBuildingDef walls
 	hTex walls
 	eFlags BuildOnLand NoEnemyMovement
 }
+
+hexBuildingDef torture_chamber_1
+{
+	cost 50
+	eType Improvement
+	displayName "Primitive Torture Chamber"
+	eaSlotDefList
+	{
+		laborName "Torturee"
+		eType harvest
+		research 3
+	}
+	maxHealth 25
+	hTex torture_chamber_1
+	eFlags BuildOnLand
+}
+
+hexBuildingDef mineshaft_1
+{
+	cost 50
+	eType Improvement
+	displayName "Mineshaft"
+	eaSlotDefList
+	{
+		laborName "Miner"
+		eType harvest
+		production 5
+	}
+	maxHealth 25
+	hTex mine_1
+	eFlags BuildOnLand
+}
+
+hexBuildingDef vault
+{
+	cost 50
+	eType Improvement
+	displayName "Vault"
+	maxHealth 25
+	hTex vault
+	eFlags BuildOnLand
+}
+
+hexBuildingDef watchtower
+{
+	cost 50
+	eType Improvement
+	displayName "Watchtower"
+	maxHealth 25
+	hTex watchtower
+	eFlags BuildOnLand
+}
+
+hexBuildingDef Workshop
+{
+	cost 50
+	eType Upgrade
+	displayName "Workshop"
+	maxHealth 25
+	hTex workshop
+	eFlags BuildOnLand
+}

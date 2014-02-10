@@ -438,6 +438,7 @@ void FlexRenderer::CommitRenderList()
 		pFutureRenderList = pTemp;
 	}
 }
+
 void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);

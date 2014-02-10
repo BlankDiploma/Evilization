@@ -17,6 +17,7 @@
 #include "texturelibrary.h"
 #include "flexlua.h"
 #include "HexFeatures.h"
+#include "FlexDebugConsole.h"
 
 using namespace luabind;
 
@@ -201,7 +202,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN:
 		{
 			int keyCode = wParam;
-			//KRIS: handle keyCode here
+			if (keyCode == VK_OEM_3)
+			{
+				g_Console.Toggle();
+			}
+			else if (g_Console.IsEnabled())
+			{
+				BYTE keyboardState[256];
+				TCHAR buffer[2];
+				GetKeyboardState(keyboardState);
+				if (ToUnicode(keyCode, MapVirtualKey(keyCode, MAPVK_VK_TO_VSC), keyboardState, buffer, 2, 0))
+				{
+					g_Console.KeyInput(keyCode, buffer[0]);
+				}
+				else
+					g_Console.KeyInput(keyCode, 0);
+			}
 			g_GameState.KeyInput(keyCode, true);
 		}break;
 	case WM_KEYUP:

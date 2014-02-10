@@ -13,7 +13,8 @@ AUTO_ENUM(buildingType)
 {
 	kBuilding_None = 0, 
 	kBuilding_City,
-	kBuilding_Improvement
+	kBuilding_Improvement,
+	kBuilding_Upgrade
 };
 
 AUTO_ENUM(buildingFlags) 

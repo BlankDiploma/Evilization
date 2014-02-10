@@ -1,12 +1,13 @@
 techTreeDef Evil
 {
-	eaNames Authority, Violence, Fear, Exploitation, Manacles, Greed, Monsters, Torture, Anatomy, Seafaring, Hypnotism, Bloodsport, Mining, Husbandry, Colossi, Humanoids, Mana_Crystals, Scrying, Piracy, Reanimation, Soul_Vessel, Artificing, Incubation, Spellweaving, Curses, Abominations, Afterlife, Demonology, Plague, Cults
+	eaNames Authority, Violence, Fear, Exploitation, Mercenaries, Manacles, Greed, Monsters, Torture, Anatomy, Seafaring, Hypnotism, Bloodsport, Mining, Husbandry, Colossi, Humanoids, Mana_Crystals, Scrying, Piracy, Reanimation, Soul_Vessel, Artificing, Incubation, Spellweaving, Curses, Abominations, Afterlife, Demonology, Plague, Cults
+	eaDefaultGrants Barbarian, Skulker
 }
 
 techTreeNodeDef Authority
 {
 	hEraDef ancient
-	eaGrants slave_quarters
+	eaGrants 
 }
 
 techTreeNodeDef Violence
@@ -18,7 +19,7 @@ techTreeNodeDef Violence
 techTreeNodeDef Fear
 {
 	hEraDef ancient
-	eaGrants walls
+	eaGrants watchtower
 }
 
 techTreeNodeDef Exploitation
@@ -32,14 +33,21 @@ techTreeNodeDef Manacles
 {
 	eaRequiredNames Authority
 	hEraDef ancient
-	eaGrants chain_gang 
+	eaGrants slave_quarters chain_gang 
 }
 
 techTreeNodeDef Greed
 {
 	eaRequiredNames Exploitation
 	hEraDef ancient
-	eaGrants bribery, thief, vault
+	eaGrants thief, vault
+}
+
+techTreeNodeDef Mercenaries
+{
+	eaRequiredNames Greed
+	hEraDef ancient
+	eaGrants Mercenaries
 }
 
 techTreeNodeDef Monsters

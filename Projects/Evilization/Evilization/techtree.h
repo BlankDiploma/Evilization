@@ -38,6 +38,7 @@ PARSE_STRUCT(techTreeDef)
 {
 	const TCHAR** eaNames;
 	techTreeNodeDef** eaNodes;
+	const TCHAR** eaDefaultGrants;
 };
 
 void AssignGridPositions(techTreeDef* pTree);
