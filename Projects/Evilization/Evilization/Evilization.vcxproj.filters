@@ -66,6 +66,9 @@
     <ClCompile Include="..\..\..\Common Files\Include\StructParseEnum.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Common Files\Include\FlexDebugConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Evilization.h">
@@ -129,6 +132,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Common Files\Include\StructParseEnum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Common Files\Include\FlexDebugConsole.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

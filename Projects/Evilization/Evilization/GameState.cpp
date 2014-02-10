@@ -4,6 +4,7 @@
 #include "assert.h"
 #include "techtree.h"
 #include "texturelibrary.h"
+#include "flexDebugConsole.h"
 int g_HexSize;
 
 
@@ -81,6 +82,10 @@ void CGameState::Update(DWORD tick)
 				bMouseOverGameplay = false;
 			}
 		}break;
+	}
+	if (g_Console.IsEnabled())
+	{
+		g_Console.Update(tick/1000.0f);
 	}
 }
 
@@ -343,6 +348,10 @@ void CGameState::Render()
 
 			UI.Render();
 		}break;
+	}
+	if (g_Console.IsEnabled())
+	{
+		g_Console.Render();
 	}
 }
 
