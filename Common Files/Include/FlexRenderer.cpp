@@ -133,7 +133,7 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	fAspect = (float) iScreenW / (float) iScreenH;
 
-	SetCameraEye(0,0,-8);
+	SetCameraEye(0,0,-2);
 	SetCameraAt(0,0,1);
 	SetCameraRight(1,0,0);
 	SetCameraUp(0,1,0);
@@ -711,8 +711,7 @@ void FlexRenderer::ProcessRenderLists()
 		ModelCall* pCall = &pCurRenderList->models[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		if (pCall->pTex)
-			pD3DDevice->SetTexture ( 0 , pCall->pTex );
+		pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
 		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
 	}
@@ -724,8 +723,7 @@ void FlexRenderer::ProcessRenderLists()
 		ModelCall* pCall = &pCurRenderList->translucentModels[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		if (pCall->pTex)
-			pD3DDevice->SetTexture ( 0 , pCall->pTex );
+		pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
 		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
 	}

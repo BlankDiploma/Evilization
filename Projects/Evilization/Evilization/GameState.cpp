@@ -73,6 +73,8 @@ void CGameState::Update(DWORD tick)
 				fpMapOffset.x += (ptMousePosLastFrame.x - ptMousePos.x);
 				fpMapOffset.y += (ptMousePosLastFrame.y - ptMousePos.y);
 			}
+			POINT mouseDeltas = {ptMouse.x - ptMousePosLastFrame.x, ptMouse.y - ptMousePosLastFrame.y};
+			g_Renderer.DoMouselook(mouseDeltas);
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;
