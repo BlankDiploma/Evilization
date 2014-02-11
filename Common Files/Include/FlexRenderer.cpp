@@ -79,12 +79,12 @@ void FlexRenderer::DoMouselook(POINT delta)
 void FlexRenderer::UpdateCamera()
 {
 	EnterCriticalSection(&_csCamera);
-    D3DXVECTOR3 vLookAt = camera.vEye + camera.vAt;
-     
+    D3DXVECTOR3 vLookAt = camera.vEye - camera.vAt;
     // Calculate the new view matrix
 	D3DXVECTOR3 up = D3DXVECTOR3( 0.0f, 1.0f, 0.0f );
 
     D3DXMatrixLookAtLH( &matView, &camera.vEye, &vLookAt, &up );
+	//D3DXMatrixLookAtLH( &matView, &camera.vEye, &camera.vAt, &up );
  
     // Set the camera axes from the view matrix
 	camera.vRight.x = matView._11; 
@@ -133,8 +133,8 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	fAspect = (float) iScreenW / (float) iScreenH;
 
-	SetCameraEye(0,0,-2);
-	SetCameraAt(0,0,1);
+	SetCameraEye(0,-2,-3);
+	SetCameraAt(0,1,0);
 	SetCameraRight(1,0,0);
 	SetCameraUp(0,1,0);
 

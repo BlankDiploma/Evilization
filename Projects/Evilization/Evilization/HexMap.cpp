@@ -208,31 +208,11 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 
 	if(!pVB)
 	{
-		FlexVertex data[]={
-		////Cube vertices
-		//			//Front face
-		//			{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
-		//			{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
-		//			//Back face
-		//			{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
-		//			{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
-		//			//Top face
-		//			{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
-		//			{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
-		//			//Bottom face
-		//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-		//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-		//			//Left face
-		//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
-		//			{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-		//			//Right face
-		//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
-		//			{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
+			FlexVertex data[]={
 			{0.0f,HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
 			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
 			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
 			{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f}
-
 		};
 
 
