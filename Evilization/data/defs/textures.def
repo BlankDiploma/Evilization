@@ -187,3 +187,11 @@ GameTexturePortion barbarian
 	offset -50 -20
 }
  
+GameTexturePortion skulker
+{
+	hTex interface
+	rSrc 226 110 280 172
+	offset -44 -24
+}
+ 
+ 

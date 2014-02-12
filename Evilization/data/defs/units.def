@@ -12,10 +12,21 @@ hexUnitDef stickfigure
 hexUnitDef barbarian
 {
 	movement 3
-	maxHealth 10
+	maxHealth 20
 	cost 50
-	meleeStr 3
+	meleeStr 4
 	visRadius 2
 	displayName "Barbarian"
 	hTex barbarian
+}
+
+hexUnitDef skulker
+{
+	movement 4
+	maxHealth 10
+	cost 30
+	meleeStr 2
+	visRadius 3
+	displayName "Skulker"
+	hTex skulker
 }

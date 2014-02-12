@@ -159,6 +159,11 @@ public:
 		iCachedGoldIncome = 0;
 		iCachedScienceIncome = 0;
 		bIncomeDirty = true;
+		
+		for(int i = 0; i < eaSize(&g_pEvilTechTree->eaDefaultGrants); i++)
+		{
+			buildPermissions[g_pEvilTechTree->eaDefaultGrants[i]] = 1;
+		}
 	}
 	void AddNotification(notifyType eType, POINT* focusLoc, void* focusObj, GameTexturePortion* pTex, LPCTSTR text)
 	{
