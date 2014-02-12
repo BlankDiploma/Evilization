@@ -13,6 +13,8 @@
 //Renderer should support a table of IDirect3DStateBlock9 objects keyed by the XRendererMode enum.
 //See http://msdn.microsoft.com/en-us/library/windows/desktop/bb206121(v=vs.85).aspx for info
 #define MOUSELOOK_SENSITIVITY 0.001f
+#define MOUSEDRAG_SENSITIVITY 0.01f
+#define MOUSEZOOM_SENSITIVITY 0.25f
 #define MAX_CAM_VELOCITY 1.0f
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
@@ -113,11 +115,29 @@ enum FlexRendererMode
 };
 
 //struct representing the camera
-struct FlexCamera
+class FlexCamera
 {
-	D3DXVECTOR3 vEye, vAt, vUp, vRight;
-	D3DXVECTOR3 vVelocity;
-	float fPitch, fYaw, fRoll;
+	D3DXVECTOR3 vEye, vAt, vUp;
+	//D3DXVECTOR3 vVelocity;
+	//float fPitch, fYaw, fRoll;
+	CRITICAL_SECTION _csCamera;
+
+public:
+	FlexCamera();
+	~FlexCamera();
+	void SetCameraEye(float x, float y, float z);
+	void SetCameraAt(float x, float y, float z);
+	void SetCameraUp(float x, float y, float z);
+	void SetCameraEye(D3DXVECTOR3 newEye);
+	void SetCameraAt(D3DXVECTOR3 newAt);
+	void SetCameraUp(D3DXVECTOR3 newUp);
+	void GetCameraAt(D3DXVECTOR3* pOut);
+	void GetCameraEye(D3DXVECTOR3* pOut);
+	void GetCameraUp(D3DXVECTOR3* pOut);
+	//void DoMouselook(POINT delta);
+	void MoveCamera(float fHoriz, float fVert, int iZoom);
+	void ZoomCamera(int iDelta);
+	void SetCameraPosition(D3DXVECTOR3* pvPos);
 };
 
 struct ModelCall
@@ -165,7 +185,7 @@ class FlexRenderer
 	IDirect3DStateBlock9* stateBlocks[kRendererMode_Count];
 	D3DVIEWPORT9 mainView;
 	D3DXMATRIX matView, matProj;
-	FlexCamera camera;
+	FlexCamera* pCamera;
 	int iScreenW;
 	int iScreenH;
 	float fAspect;
@@ -177,16 +197,12 @@ class FlexRenderer
 	RenderList* pFutureRenderList;//Render list that may be overwritten entirely before it ever gets to display.
 
 	CRITICAL_SECTION _csNextRenderList;
-	CRITICAL_SECTION _csCamera;
 
 	D3DXMATRIX MakeProjectionMatrix(const float near_plane, 
                  const float far_plane,  
                  const float fov_horiz, 
                  const float fov_vert);
-	void SetCameraEye(float x, float y, float z);
-	void SetCameraAt(float x, float y, float z);
-	void SetCameraRight(float x, float y, float z);
-	void SetCameraUp(float x, float y, float z);
+	void UpdateCamera();
 	void BeginFrame();
 	void EndFrame();
 	void Begin2D();
@@ -203,13 +219,9 @@ public:
 	void SetRenderMode(FlexRendererMode eMode);
 	void GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2]);
 
-	void DoMouselook(POINT delta);
-	void UpdateCamera();
-	void MoveCamera(float fForwards, float fStrafe);
-	void SetCameraPosition(D3DXVECTOR3* pvPos);
-	const FlexCamera* GetCamera()
+	FlexCamera* GetCamera()
 	{
-		return &camera;
+		return pCamera;
 	}
 	int GetScreenWidth()
 	{

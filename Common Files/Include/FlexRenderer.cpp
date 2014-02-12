@@ -7,102 +7,186 @@
 LPDIRECT3DVERTEXBUFFER9 g_pCubeVertex = NULL;
 LPDIRECT3DVERTEXBUFFER9 g_p2DVertices = NULL;
 
-void FlexRenderer::SetCameraEye(float x, float y, float z)
+FlexCamera::FlexCamera()
 {
-	camera.vEye.x = x;
-	camera.vEye.y = y;
-	camera.vEye.z = z;
+	InitializeCriticalSection(&_csCamera);
 }
 
-void FlexRenderer::SetCameraAt(float x, float y, float z)
+FlexCamera::~FlexCamera()
 {
-	camera.vAt.x = x;
-	camera.vAt.y = y;
-	camera.vAt.z = z;
+	DeleteCriticalSection(&_csCamera);
 }
 
-void FlexRenderer::SetCameraRight(float x, float y, float z)
-{
-	camera.vRight.x = x;
-	camera.vRight.y = y;
-	camera.vRight.z = z;
-}
-
-void FlexRenderer::SetCameraUp(float x, float y, float z)
-{
-	camera.vUp.x = x;
-	camera.vUp.y = y;
-	camera.vUp.z = z;
-}
- 
-void FlexRenderer::MoveCamera(float fForwards, float fStrafe)
+void FlexCamera::SetCameraEye(float x, float y, float z)
 {
 	EnterCriticalSection(&_csCamera);
-	camera.vEye += camera.vAt * fForwards;
-	camera.vEye += camera.vRight * fStrafe;
+	vEye.x = x;
+	vEye.y = y;
+	vEye.z = z;
 	LeaveCriticalSection(&_csCamera);
 }
 
-void FlexRenderer::DoMouselook(POINT delta)
+void FlexCamera::SetCameraAt(float x, float y, float z)
 {
 	EnterCriticalSection(&_csCamera);
-	float xAngle = delta.x * 1.0f * MOUSELOOK_SENSITIVITY;
-	float yAngle = delta.y * 1.0f * MOUSELOOK_SENSITIVITY;
+	vAt.x = x;
+	vAt.y = y;
+	vAt.z = z;
+	LeaveCriticalSection(&_csCamera);
+}
 
-    D3DXMATRIX rotation;
-	float fMaxPitch = D3DXToRadian( 85.0f );
+void FlexCamera::SetCameraUp(float x, float y, float z)
+{
+	EnterCriticalSection(&_csCamera);
+	vUp.x = x;
+	vUp.y = y;
+	vUp.z = z;
+	LeaveCriticalSection(&_csCamera);
+}
+ 
+void FlexCamera::SetCameraEye(D3DXVECTOR3 newEye)
+{
+	EnterCriticalSection(&_csCamera);
+	vEye = newEye;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::SetCameraAt(D3DXVECTOR3 newAt)
+{
+	EnterCriticalSection(&_csCamera);
+	vAt = newAt;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::SetCameraUp(D3DXVECTOR3 newUp)
+{
+	EnterCriticalSection(&_csCamera);
+	vUp = newUp;
+	LeaveCriticalSection(&_csCamera);
+}
 
-	D3DXMatrixRotationAxis( &rotation, &camera.vUp, xAngle );
-	D3DXVec3TransformNormal( &camera.vRight, &camera.vRight, &rotation );
-	D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+void FlexCamera::GetCameraEye(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vEye.x;
+	pOut->y= vEye.y;
+	pOut->z= vEye.z;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::GetCameraAt(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vAt.x;
+	pOut->y= vAt.y;
+	pOut->z= vAt.z;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::GetCameraUp(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vUp.x;
+	pOut->y= vUp.y;
+	pOut->z= vUp.z;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDir, vHoriz, vVert, vZoom;
+
+	D3DXVec3Normalize(&vVert, &vUp);
+	vDir = vEye - vAt;
+	D3DXVec3Normalize(&vDir, &vDir);
+	D3DXVec3Cross(&vHoriz, &vVert, &vDir);
+
+	vHoriz = D3DXVECTOR3(vHoriz.x*fHoriz*MOUSEDRAG_SENSITIVITY, 0, 0);
+	vVert = D3DXVECTOR3(0, vVert.y*fVert*MOUSEDRAG_SENSITIVITY, 0);
+	vZoom = D3DXVECTOR3(vDir.x*iZoom*MOUSEZOOM_SENSITIVITY, vDir.y*iZoom*MOUSEZOOM_SENSITIVITY,vDir.z*iZoom*MOUSEZOOM_SENSITIVITY);
+
+	vEye += vHoriz;
+	vAt += vHoriz;
+
+	vEye += vVert;
+	vAt +=  vVert;
 	
- 
- //   radians = (m_invertY) ? -radians : radians;
-    camera.fPitch -= yAngle;
-    if ( camera.fPitch > fMaxPitch )
-    {
-        yAngle += camera.fPitch - fMaxPitch;
-		camera.fPitch -= camera.fPitch - fMaxPitch;
-    }
-    else if ( camera.fPitch < -fMaxPitch )
-    {
-        yAngle += camera.fPitch + fMaxPitch;
-		camera.fPitch -= camera.fPitch + fMaxPitch;
-    }
- 
-    D3DXMatrixRotationAxis( &rotation, &camera.vRight, yAngle );
-    D3DXVec3TransformNormal( &camera.vUp, &camera.vUp, &rotation );
-    D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+	if (!(((vEye.z - vZoom.z) >= -0.788537741f) || ((vEye.z - vZoom.z) <= -4.47430992f)))
+	{
+		vEye -= vZoom;
+		vAt -= vZoom;
+	}
+
 	LeaveCriticalSection(&_csCamera);
 }
+
+void FlexCamera::ZoomCamera(int iDelta)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDir, vZoom;
+
+	vDir = vEye - vAt;
+	D3DXVec3Normalize(&vDir, &vDir);
+
+	vZoom = D3DXVECTOR3(vDir.x*iDelta*MOUSEZOOM_SENSITIVITY, vDir.y*iDelta*MOUSEZOOM_SENSITIVITY,vDir.z*iDelta*MOUSEZOOM_SENSITIVITY);
+
+	if (((vEye.z - vZoom.z) >= -0.788537741f) || ((vEye.z - vZoom.z) <= -4.47430992f))
+		return;
+
+	vEye -= vZoom;
+	vAt -= vZoom;
+
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::SetCameraPosition(D3DXVECTOR3* pvPos)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDiff = (*pvPos) - vEye;
+	vAt += vDiff;
+	vEye = (*pvPos);
+	LeaveCriticalSection(&_csCamera);
+}
+
+//void FlexCamera::DoMouselook(POINT delta)
+//{
+//	EnterCriticalSection(&_csCamera);
+//	float xAngle = delta.x * 1.0f * MOUSELOOK_SENSITIVITY;
+//	float yAngle = delta.y * 1.0f * MOUSELOOK_SENSITIVITY;
+//
+//    D3DXMATRIX rotation;
+//	float fMaxPitch = D3DXToRadian( 85.0f );
+//
+//	D3DXMatrixRotationAxis( &rotation, &vUp, xAngle );
+//	D3DXVec3TransformNormal( &vRight, &camera.vRight, &rotation );
+//	D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+//	
+// 
+// //   radians = (m_invertY) ? -radians : radians;
+//    camera.fPitch -= yAngle;
+//    if ( camera.fPitch > fMaxPitch )
+//    {
+//        yAngle += camera.fPitch - fMaxPitch;
+//		camera.fPitch -= camera.fPitch - fMaxPitch;
+//    }
+//    else if ( camera.fPitch < -fMaxPitch )
+//    {
+//        yAngle += camera.fPitch + fMaxPitch;
+//		camera.fPitch -= camera.fPitch + fMaxPitch;
+//    }
+// 
+//    D3DXMatrixRotationAxis( &rotation, &camera.vRight, yAngle );
+//    D3DXVec3TransformNormal( &camera.vUp, &camera.vUp, &rotation );
+//    D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+//	LeaveCriticalSection(&_csCamera);
+//}
 
 void FlexRenderer::UpdateCamera()
 {
-	EnterCriticalSection(&_csCamera);
-    D3DXVECTOR3 vLookAt = camera.vEye - camera.vAt;
-    // Calculate the new view matrix
-	D3DXVECTOR3 up = D3DXVECTOR3( 0.0f, 1.0f, 0.0f );
-
-    D3DXMatrixLookAtLH( &matView, &camera.vEye, &vLookAt, &up );
-	//D3DXMatrixLookAtLH( &matView, &camera.vEye, &camera.vAt, &up );
- 
-    // Set the camera axes from the view matrix
-	camera.vRight.x = matView._11; 
-    camera.vRight.y = matView._21; 
-    camera.vRight.z = matView._31; 
-    camera.vUp.x = matView._12;
-    camera.vUp.y = matView._22;
-    camera.vUp.z = matView._32;
-    camera.vAt.x = matView._13;
-    camera.vAt.y = matView._23;
-    camera.vAt.z = matView._33;
-
-    // Calculate yaw and pitch
-    float lookLengthOnXZ = sqrtf( camera.vAt.z * camera.vAt.z + camera.vAt.x * camera.vAt.x );
-	camera.fPitch = atan2f( camera.vAt.y, lookLengthOnXZ );
-    camera.fYaw   = atan2f( camera.vAt.x, camera.vAt.z );
+    D3DXMATRIX matView;
+	D3DXVECTOR3 eye,at,up;
+	pCamera->GetCameraEye(&eye);
+	pCamera->GetCameraAt(&at);
+	pCamera->GetCameraUp(&up);
+	D3DXMatrixLookAtLH(&matView, &eye, &at, &up);
 	pD3DDevice->SetTransform(D3DTS_VIEW, &matView);
-	LeaveCriticalSection(&_csCamera);
 }
 
 void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
@@ -126,17 +210,15 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	}
 	
 	InitializeCriticalSection(&_csNextRenderList);
-	InitializeCriticalSection(&_csCamera);
 
 	iScreenW = screenW;
 	iScreenH = screenH;
 
 	fAspect = (float) iScreenW / (float) iScreenH;
 
-	SetCameraEye(0,-2,-3);
-	SetCameraAt(0,1,0);
-	SetCameraRight(1,0,0);
-	SetCameraUp(0,1,0);
+	pCamera->SetCameraEye(5,-6,-3);
+	pCamera->SetCameraAt(5,-3.25,0);
+	pCamera->SetCameraUp(0,1,0);
 
 	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
 	d3dpp.Windowed = TRUE;
@@ -179,7 +261,11 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	// View matrix setup
 	ZeroMemory(&matView, sizeof(matView));
-	D3DXMatrixLookAtLH(&matView, &camera.vEye, &camera.vAt, &camera.vUp);
+	D3DXVECTOR3 eye,at,up;
+	pCamera->GetCameraEye(&eye);
+	pCamera->GetCameraAt(&at);
+	pCamera->GetCameraUp(&up);
+	D3DXMatrixLookAtLH(&matView, &eye, &at, &up);
 	pD3DDevice->SetTransform(D3DTS_VIEW, &matView); 
 
 	// Projection matrix setup
@@ -280,6 +366,7 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 FlexRenderer::FlexRenderer()
 {
+	pCamera = new FlexCamera();
 	pFutureRenderList = new RenderList;
 	pNextRenderList = new RenderList;
 	pCurRenderList = new RenderList;
@@ -311,12 +398,12 @@ FlexRenderer::~FlexRenderer()
 	if (pCurRenderList->pSpriteVerts)
 		pCurRenderList->pSpriteVerts->Release();
 	
+	delete pCamera;
 	delete pCurRenderList;
 	delete pNextRenderList;
 	delete pFutureRenderList;
 	
 	DeleteCriticalSection(&_csNextRenderList);
-	DeleteCriticalSection(&_csCamera);
 }
 
 void FlexRenderer::SetRenderMode(FlexRendererMode eMode)
@@ -702,7 +789,7 @@ void FlexRenderer::ProcessRenderLists()
 	}
 #endif
 
-	//UpdateCamera();
+	UpdateCamera();
 
 	BeginFrame();
 
@@ -791,13 +878,6 @@ void FlexRenderer::GetTextureDimensions(IDirect3DTexture9* pTex, float dimension
 	pTex->GetLevelDesc(0, &desc);
 	dimensions[0] = (float)desc.Width;
 	dimensions[1] = (float)desc.Height;
-}
-
-void FlexRenderer::SetCameraPosition(D3DXVECTOR3* pvPos)
-{
-	EnterCriticalSection(&_csCamera);
-	camera.vEye = (*pvPos);
-	LeaveCriticalSection(&_csCamera);
 }
 
 void FlexRenderer::QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts)

@@ -70,11 +70,10 @@ void CGameState::Update(DWORD tick)
 			ptMousePos = ptMouse;
 			if (uiDragStart > 0 && (GetTickCount() - uiDragStart > DRAG_THRESHOLD_MS))
 			{
-				fpMapOffset.x += (ptMousePosLastFrame.x - ptMousePos.x);
-				fpMapOffset.y += (ptMousePosLastFrame.y - ptMousePos.y);
+				g_Renderer.GetCamera()->MoveCamera((float)(ptMousePos.x - ptMousePosLastFrame.x), (float)(ptMousePos.y - ptMousePosLastFrame.y ), 0);
 			}
 			POINT mouseDeltas = {ptMouse.x - ptMousePosLastFrame.x, ptMouse.y - ptMousePosLastFrame.y};
-			g_Renderer.DoMouselook(mouseDeltas);
+//			g_Renderer.DoMouselook(mouseDeltas);
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;
@@ -121,6 +120,8 @@ void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam,
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
 			AdjustMapZoom(rot);
+			//g_Renderer.GetCamera()->ZoomCamera(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -150,6 +151,8 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
 			AdjustMapZoom(rot);
+			//g_Renderer.GetCamera()->ZoomCamera(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -170,6 +173,8 @@ void CGameState::DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
 			AdjustMapZoom(rot);
+			//g_Renderer.GetCamera()->ZoomCamera(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -205,6 +210,8 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
 			AdjustMapZoom(rot);
+			//g_Renderer.GetCamera()->ZoomCamera(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }

@@ -20,6 +20,11 @@ struct playerVisibility;
 struct laborSlotDef;
 struct hexTileDef;
 
+#define HEX_HALF_HEIGHT 2.0f
+#define HEX_HALF_WIDTH ((sqrt(3.0f)/2.0f) * HEX_HALF_HEIGHT)
+#define HEX_HEIGHT (HEX_HALF_HEIGHT*2)
+#define HEX_WIDTH (HEX_HALF_WIDTH*2)
+
 #define NUM_TILE_DEFS 12
 
 AUTO_ENUM(HexDirection) {kDir_W = 0, kDir_NW,
@@ -97,6 +102,8 @@ public:
 			delete [] pTiles;
 		if (pCachedPath)
 			delete pCachedPath;
+		if (vertBuffer)
+			vertBuffer->Release();
 	}
 	int GetWidth()
 	{
@@ -113,6 +120,8 @@ public:
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
 	void GetTileDescription( hexTile* pTile, TCHAR* pchDescOut );
 	void RenderTile(POINT tilePt, hexTile* pTile, DWORD color = 0xFFFFFFFF, float scale = 1.0);
+	void CreateTerrainVertexBuffer();
+	void RenderTerrain();
 	inline hexTile* GetTile(int x, int y);
 	inline hexTile* GetTile(POINT pt);
 	POINT GetRandomStartingPos();
@@ -133,6 +142,9 @@ public:
 	void RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset);
 	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
 private:
+
+	IDirect3DVertexBuffer9* vertBuffer;
+	int numTris;
 
 	POINT screenOffset;
 	hexTile* pTiles;

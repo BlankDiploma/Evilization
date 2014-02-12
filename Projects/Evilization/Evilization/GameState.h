@@ -474,7 +474,6 @@ public:
 };
 
 #define DEFAULT_HEX_SIZE 128
-#define HEX_RADIUS 5.0f
 
 extern int g_HexSize;
 

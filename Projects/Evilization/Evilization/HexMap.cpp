@@ -137,6 +137,7 @@ void CHexMap::Generate(int w, int h, int seed)
 	ppathblip = GET_DEF_FROM_STRING(GameTexturePortion, _T("pathblip"));
 	ppathend = GET_DEF_FROM_STRING(GameTexturePortion, _T("pathend"));
 	pFont = GET_TEXTURE(_T("courier_new"));
+	CreateTerrainVertexBuffer();
 }
 
 void CHexMap::RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset)
@@ -155,86 +156,139 @@ RECT selectedTile = {0,0,64,64};
 RECT unit = {64,0,128,64};
 RECT building = {128,0,192,64};
 
-static int gNumHexTris = 4;
+//static int gNumHexTris = 4;
 void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 {
-	/*
-	int index ;
-	GfxSheetVertex vert [ 6 ] ;
+//	/*
+//	int index ;
+//	GfxSheetVertex vert [ 6 ] ;
+//
+//	vert[0].x = tilePt.x;
+//	vert[0].y = tilePt.y + HEX_SIZE/4;
+//
+//	vert[1].x = tilePt.x + HEX_SIZE/2;
+//	vert[1].y = tilePt.y;
+//
+//	vert[2].x = tilePt.x + HEX_SIZE;
+//	vert[2].y = tilePt.y + HEX_SIZE/4;
+//
+//	vert[3].x = tilePt.x + HEX_SIZE;
+//	vert[3].y = tilePt.y + HEX_SIZE*3/4;
+//
+//	vert[4].x = tilePt.x + HEX_SIZE/2;
+//	vert[4].y = tilePt.y + HEX_SIZE;
+//
+//	vert[5].x = tilePt.x;
+//	vert[5].y = tilePt.y + HEX_SIZE*3/4;
+//
+//	for ( index = 0 ; index < 6 ; index ++ )
+//	{
+//		vert[index].u = 0.0f;
+//		vert[index].v = 0.0f;
+//		vert[index].z = 0.0f;
+//		vert[index].u1 = 0.0f;
+//		vert[index].v1 = 0.0f;
+//		vert[index].rhw = 1.0f;
+//		vert[index].diffuseColor = pTile->pDef->color;
+//	}
+//
+//	//set the texture
+//	g_pMainDevice->SetTexture ( 0 , NULL );
+//	g_pMainDevice->DrawPrimitiveUP ( D3DPT_TRIANGLEFAN , 4 , &vert , sizeof ( GfxSheetVertex ) );
+//
+//*/
+	if (pTile->pDef->hTex.pObj)
+		g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
+	if (pTile->pBuilding)
+		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
+	if (pTile->pUnit)
+		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
+//
+//
+//	static IDirect3DVertexBuffer9* pVB = NULL;
+//
+//	if(!pVB)
+//	{
+//			FlexVertex data[]={
+			//{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			//{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			//{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+			//{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+//		};
+//
+//
+//		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
+//
+//		void *vb_vertices;
+//
+//		pVB->Lock(0, 0, &vb_vertices, 0);
+//
+//		memcpy(vb_vertices, data, sizeof(FlexVertex) * gNumHexTris*3);
+//
+//		pVB->Unlock();		
+//
+//	}
+//
+//	float pos[3] = {0.0f, 0.0f, 0.0f};
+//	float scl[3] = {0.1f, 0.1f, 0.1f};
+//	float rot[3] = {0.0f, 0.0f, 0.0f};
+//
+//	if (pTile->pDef->hTex.pObj)
+//		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
+}
 
-	vert[0].x = tilePt.x;
-	vert[0].y = tilePt.y + HEX_SIZE/4;
+void CHexMap::CreateTerrainVertexBuffer()
+{
+	static FlexVertex hexVerts[] = {
+		{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+	};
 
-	vert[1].x = tilePt.x + HEX_SIZE/2;
-	vert[1].y = tilePt.y;
+	numTris = w*h*4;
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &vertBuffer, NULL);
 
-	vert[2].x = tilePt.x + HEX_SIZE;
-	vert[2].y = tilePt.y + HEX_SIZE/4;
+	void* vb_vertices;
 
-	vert[3].x = tilePt.x + HEX_SIZE;
-	vert[3].y = tilePt.y + HEX_SIZE*3/4;
+	vertBuffer->Lock(0, 0, &vb_vertices, 0);
 
-	vert[4].x = tilePt.x + HEX_SIZE/2;
-	vert[4].y = tilePt.y + HEX_SIZE;
+	FlexVertex* pIter = (FlexVertex*)vb_vertices;
 
-	vert[5].x = tilePt.x;
-	vert[5].y = tilePt.y + HEX_SIZE*3/4;
+	hexTile currTile;
 
-	for ( index = 0 ; index < 6 ; index ++ )
+	for (int i = 0; i < w; i++)
 	{
-		vert[index].u = 0.0f;
-		vert[index].v = 0.0f;
-		vert[index].z = 0.0f;
-		vert[index].u1 = 0.0f;
-		vert[index].v1 = 0.0f;
-		vert[index].rhw = 1.0f;
-		vert[index].diffuseColor = pTile->pDef->color;
+		for (int j = 0; j < h; j++)
+		{
+			currTile = pTiles[i + j*w];
+
+			for (int k = 0; k < 12; k++)
+			{
+				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
+				if (j&1)
+					pIter->x += HEX_HALF_WIDTH;
+				pIter->y = hexVerts[k].y - j*(HEX_HEIGHT * (3.0f/4.0f));
+				pIter->z = hexVerts[k].z;
+				pIter->u = hexVerts[k].u;
+				pIter->v = hexVerts[k].v;
+				pIter->diffuse = currTile.pDef->color;
+				pIter++;
+			}
+		}
 	}
 
-	//set the texture
-	g_pMainDevice->SetTexture ( 0 , NULL );
-	g_pMainDevice->DrawPrimitiveUP ( D3DPT_TRIANGLEFAN , 4 , &vert , sizeof ( GfxSheetVertex ) );
+	vertBuffer->Unlock();
+}
 
-*/
-	//if (pTile->pDef->hTex.pObj)
-	//	g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
-	//if (pTile->pBuilding)
-	//	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
-	//if (pTile->pUnit)
-	//	g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
-
-
-	static IDirect3DVertexBuffer9* pVB = NULL;
-
-	if(!pVB)
-	{
-			FlexVertex data[]={
-			{0.0f,HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			{HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_RADIUS,0.0f,0xFF603913,1.0f,1.0f},{-HEX_RADIUS*(sqrt(3.0f)/2.0f),-HEX_RADIUS/2.0f,0.0f,0xFF603913,1.0f,1.0f}
-		};
-
-
-		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
-
-		void *vb_vertices;
-
-		pVB->Lock(0, 0, &vb_vertices, 0);
-
-		memcpy(vb_vertices, data, sizeof(FlexVertex) * gNumHexTris*3);
-
-		pVB->Unlock();		
-
-	}
-
+void CHexMap::RenderTerrain()
+{
 	float pos[3] = {0.0f, 0.0f, 0.0f};
 	float scl[3] = {0.1f, 0.1f, 0.1f};
 	float rot[3] = {0.0f, 0.0f, 0.0f};
-
-	if (pTile->pDef->hTex.pObj)
-		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
+	g_Renderer.AddModelToRenderList(&vertBuffer, &numTris, NULL, pos, scl, rot, false);
 }
+
 void CHexMap::RenderFog(POINT tilePt)
 {
 	/*
@@ -381,10 +435,10 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 			MakeLocValid(&validPt);
 			if (!pVis || pVis->GetTileVis(validPt.x, validPt.y) != kVis_Shroud)
 			{
-				if (pVis && pVis->GetTileVis(validPt.x, validPt.y) == kVis_Fog)
-					RenderTile(screenPt, GetTile(i, j), 0xff333333, ZOOM_PERCENT);
-				else
-					RenderTile(screenPt, GetTile(i, j), 0xFFFFFFFF, ZOOM_PERCENT);
+				//if (pVis && pVis->GetTileVis(validPt.x, validPt.y) == kVis_Fog)
+				//	RenderTile(screenPt, GetTile(i, j), 0xff333333, ZOOM_PERCENT);
+				//else
+				//	RenderTile(screenPt, GetTile(i, j), 0xFFFFFFFF, ZOOM_PERCENT);
 			}
 /*
 			POINT sanitizedPt = {i,j};
@@ -411,6 +465,7 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 			}
 		}
 	}
+	RenderTerrain();
 }
 
 void CHexMap::RenderPath( RECT* view, FLOATPOINT fpMapOffset, CHexUnit* pUnit, HEXPATH* pPath, int alpha )
