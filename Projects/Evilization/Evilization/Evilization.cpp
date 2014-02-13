@@ -22,8 +22,8 @@
 using namespace luabind;
 
 #define MAX_LOADSTRING 100
-#define GAME_WINDOW_WIDTH 1280
-#define GAME_WINDOW_HEIGHT 1024
+#define GAME_WINDOW_WIDTH 1920
+#define GAME_WINDOW_HEIGHT 1080
 
 // Global Variables:
 HINSTANCE hInst;								// current instance

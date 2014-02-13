@@ -117,10 +117,12 @@ enum FlexRendererMode
 //struct representing the camera
 class FlexCamera
 {
+	D3DXMATRIX matView, matProj;
 	D3DXVECTOR3 vEye, vAt, vUp;
 	//D3DXVECTOR3 vVelocity;
 	//float fPitch, fYaw, fRoll;
 	CRITICAL_SECTION _csCamera;
+	D3DXPLANE plFrustum[6];
 
 public:
 	FlexCamera();
@@ -131,13 +133,37 @@ public:
 	void SetCameraEye(D3DXVECTOR3 newEye);
 	void SetCameraAt(D3DXVECTOR3 newAt);
 	void SetCameraUp(D3DXVECTOR3 newUp);
+	void SetViewMatrix(D3DXMATRIX newMatView);
+	void SetProjMatrix(D3DXMATRIX newMatProj);
+	void BuildViewMatrix();
+	void BuildProjMatrix(int screenW, int screenH);
 	void GetCameraAt(D3DXVECTOR3* pOut);
 	void GetCameraEye(D3DXVECTOR3* pOut);
 	void GetCameraUp(D3DXVECTOR3* pOut);
+	void GetViewMatrix(D3DXMATRIX* pOut);
+	void GetProjMatrix(D3DXMATRIX* pOut);
+	void BuildViewFrustum();
 	//void DoMouselook(POINT delta);
 	void MoveCamera(float fHoriz, float fVert, int iZoom);
 	void ZoomCamera(int iDelta);
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
+};
+
+class FlexFrustum
+{
+	//Near and far plane distances
+	float zn, zf;
+	//Width and height of near/far planes
+	float fHnear, fWnear, fHfar, fWfar;
+	//Eight points that define the corners of the view frustum
+	//These are the corners of the near/far planes in world space
+	D3DXVECTOR3 ntl, ntr, nbl, nbr, ftl, ftr, fbl, fbr;
+	//The camera's view ray
+	D3DXVECTOR3 camDir;
+public:
+	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
+	void FrustumMapIntersection(D3DXVECTOR3 pOut[4]);
 };
 
 struct ModelCall
@@ -184,11 +210,13 @@ class FlexRenderer
 	IDirect3DDevice9* pD3DDevice;
 	IDirect3DStateBlock9* stateBlocks[kRendererMode_Count];
 	D3DVIEWPORT9 mainView;
-	D3DXMATRIX matView, matProj;
 	FlexCamera* pCamera;
 	int iScreenW;
 	int iScreenH;
 	float fAspect;
+	
+	FlexFrustum* pFrustum;	
+
 	boolean bActiveFrame, bActive2D;
 	LPDIRECT3DVERTEXBUFFER9* eaVertsToDestroy;
 
@@ -231,6 +259,8 @@ public:
 	{
 		return iScreenH;
 	}
+
+	void IntersectRayWithMapPlane(D3DXVECTOR3* pOut, const D3DXVECTOR3* pV1, const D3DXVECTOR3* pV2);
 
 	void StartNewRenderList();
 	void CommitRenderList();
