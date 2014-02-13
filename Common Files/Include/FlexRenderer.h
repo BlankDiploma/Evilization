@@ -16,6 +16,7 @@
 #define MOUSEDRAG_SENSITIVITY 0.1f
 #define MOUSEZOOM_SENSITIVITY 2.5f
 #define MAX_CAM_VELOCITY 1.0f
+#define CAM_ANGLE 40.0f
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
 
@@ -168,6 +169,7 @@ public:
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
 	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
+	void Rotate(float rot[3]);
 };
 
 struct ModelCall

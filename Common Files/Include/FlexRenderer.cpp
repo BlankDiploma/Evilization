@@ -122,7 +122,7 @@ void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
 	D3DXVECTOR3 vDir, vHoriz, vVert, vZoom;
 
 	D3DXVec3Normalize(&vVert, &vUp);
-	vDir = vEye - vAt;
+	vDir = vAt - vEye;
 	D3DXVec3Normalize(&vDir, &vDir);
 	D3DXVec3Cross(&vHoriz, &vVert, &vDir);
 
@@ -130,16 +130,16 @@ void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
 	vVert = D3DXVECTOR3(0, vVert.y*fVert*MOUSEDRAG_SENSITIVITY, 0);
 	vZoom = D3DXVECTOR3(vDir.x*iZoom*MOUSEZOOM_SENSITIVITY, vDir.y*iZoom*MOUSEZOOM_SENSITIVITY,vDir.z*iZoom*MOUSEZOOM_SENSITIVITY);
 
-	vEye += vHoriz;
-	vAt += vHoriz;
+	vEye -= vHoriz;
+	vAt -= vHoriz;
 
 	vEye += vVert;
 	vAt +=  vVert;
 	
-	if (!(((vEye.z - vZoom.z) >= -15.0f) || ((vEye.z - vZoom.z) <= -70.0f)))
+	if (!(((vEye.z + vZoom.z) >= -15.0f) || ((vEye.z + vZoom.z) <= -70.0f)))
 	{
-		vEye -= vZoom;
-		vAt -= vZoom;
+		vEye += vZoom;
+		vAt += vZoom;
 	}
 	
 	BuildViewFrustum();
@@ -203,6 +203,26 @@ void FlexCamera::CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, flo
 	LeaveCriticalSection(&_csCamera);
 }
 
+void FlexCamera::Rotate(float rot[3])
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDirection,vRight;
+	D3DXMATRIX matRotAxis,matRotY;
+
+	D3DXVec3Normalize(&vDirection,&(vAt - vEye));
+	D3DXVec3Cross(&vRight,&vDirection,&vUp);
+	D3DXVec3Normalize(&vRight,&vRight);
+
+	D3DXMatrixRotationAxis(&matRotAxis,&vRight,D3DXToRadian(rot[1]));
+	D3DXMatrixRotationZ(&matRotY,D3DXToRadian(rot[0]));
+
+	D3DXVec3TransformCoord(&vDirection,&vDirection,&(matRotAxis * matRotY));
+	D3DXVec3TransformCoord(&vUp,&vUp,&(matRotAxis * matRotY));
+	vAt = vDirection + vEye;
+
+	LeaveCriticalSection(&_csCamera);
+}
+
 void FlexRenderer::UpdateCamera()
 {
 	D3DXMATRIX matView;
@@ -227,6 +247,8 @@ void FlexFrustum::CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVE
 	D3DXVec3Normalize(&camDir, &camDir);
 	D3DXVECTOR3 vRight;
 	D3DXVec3Cross(&vRight, &vUp, &camDir);
+	D3DXVec3Normalize(&vRight, &vRight);
+	D3DXVec3Normalize(&vUp, &vUp);
 	D3DXVECTOR3 farCenter = vEye + camDir * zf;
 	D3DXVECTOR3 nearCenter = vEye + camDir * zn;
 
@@ -239,6 +261,8 @@ void FlexFrustum::CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVE
 	ntr = nearCenter + (vUp * fHnear/2.0f) + (vRight * fWnear/2.0f);
 	nbl = nearCenter - (vUp * fHnear/2.0f) - (vRight * fWnear/2.0f);
 	nbr = nearCenter - (vUp * fHnear/2.0f) + (vRight * fWnear/2.0f);
+
+
 }
 
 int FlexFrustum::FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm)
@@ -247,6 +271,7 @@ int FlexFrustum::FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoi
 	int ret = 0;
 
 	D3DXPlaneFromPointNormal(&plMap, pPoint, pNorm);
+	D3DXPlaneNormalize(&plMap,&plMap);
 
 	if (D3DXPlaneIntersectLine(&pOut[0], &plMap, &ntl, &ftl))
 		ret++;
@@ -298,9 +323,14 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	fAspect = (float) iScreenW / (float) iScreenH;
 
-	pCamera->SetCameraEye(5,-6,-3);
-	pCamera->SetCameraAt(5,-3.25,0);
+	pCamera->SetCameraEye(0, 0,-3);
+	//pCamera->SetCameraAt(5,-3.25,0);
+	pCamera->SetCameraAt(0,0,1);
 	pCamera->SetCameraUp(0,1,0);
+
+	float rot[3] = {0, CAM_ANGLE, 0};
+
+	pCamera->Rotate(rot);
 
 	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
 	d3dpp.Windowed = TRUE;

@@ -346,24 +346,10 @@ void CHexMap::RenderTerrain()
 			chunkRect[3] = cameraCullPoints[i].y;
 	}
 
-	//chunkRect[0] = cameraCullPoints[0].x;
-	//chunkRect[1] = cameraCullPoints[2].y;
-	//chunkRect[2] = cameraCullPoints[1].x;
-	//chunkRect[3] = cameraCullPoints[0].y;
-
 	//adjust edges to account for hex staggering
 	chunkRect[0] -= HEX_HALF_WIDTH;
 	chunkRect[1] -= HEX_HEIGHT/4;
 
-	//cameraCullPoints[0].x -= HEX_HALF_WIDTH;
-	//cameraCullPoints[1].x += HEX_HALF_WIDTH;
-	//cameraCullPoints[2].x -= HEX_HALF_WIDTH;
-	//cameraCullPoints[3].x += HEX_HALF_WIDTH;
-
-	//cameraCullPoints[0].y += HEX_HEIGHT/4;
-	//cameraCullPoints[1].y += HEX_HEIGHT/4;
-	//cameraCullPoints[2].y -= HEX_HEIGHT/4;
-	//cameraCullPoints[3].y -= HEX_HEIGHT/4;
 
 	//calculate chunk coordinates
 	chunkRect[0] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
