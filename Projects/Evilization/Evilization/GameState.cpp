@@ -355,7 +355,7 @@ void CGameState::Render()
 				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
 			}
 
-			UI.Render();
+			//UI.Render();
 		}break;
 	}
 	if (g_Console.IsEnabled())

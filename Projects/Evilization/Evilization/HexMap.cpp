@@ -317,13 +317,10 @@ void CHexMap::RenderTerrain()
 
 	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
 	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);	
-
-	D3DXVECTOR3 test = D3DXVECTOR3(0,0,0);
-	g_Renderer.RenderCubeAtPoint(test);
+	g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
+	g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
+	g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
+	g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
 
 	for (int i = 0; i < 4; i++)
 	{
