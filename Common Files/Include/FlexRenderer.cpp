@@ -435,6 +435,8 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	memcpy(pVertices, data, sizeof(data));
 	g_pCubeVertex->Unlock();
 	
+	CreateCubeVertexBuffer();
+
 	//let's assume that 1,000 2d sprites is enough for now
 	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
 	
@@ -1148,6 +1150,50 @@ HRESULT FlexRenderer::CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD
 	return pD3DDevice->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pHandle);
 }
 
+void FlexRenderer::CreateCubeVertexBuffer()
+{
+	static FlexVertex data[]={
+	//Cube vertices
+		//Front face
+		{-0.5f,-0.5f,-0.5f,0x9B30FF,0,0.5},{-0.5f, 0.5f,-0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f,-0.5f,0x9B30FF,0.5,0},
+		{ 0.5f, 0.5f,-0.5f,0x9B30FF,0.5,0},{ 0.5f,-0.5f,-0.5f,0x9B30FF,0.5,0.5},{-0.5f,-0.5f,-0.5f,0x9B30FF,0,0.5},
+		//Back face
+		{ 0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{-0.5f, 0.5f, 0.5f,0x9B30FF,0,0},
+		{-0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{-0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f,-0.5f, 0.5f,0x9B30FF,0,0},
+		//Top face
+		{-0.5f, 0.5f,-0.5f,0x9B30FF,0,0},{-0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f, 0.5f,0x9B30FF,0,0},
+		{ 0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f,-0.5f,0x9B30FF,0,0},{-0.5f, 0.5f,-0.5f,0x9B30FF,0,0},
+		//Bottom face
+		{ 0.5f,-0.5f,-0.5f,0x9B30FF,0,0},{ 0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{-0.5f,-0.5f, 0.5f,0x9B30FF,0,0},
+		{-0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{-0.5f,-0.5f,-0.5f,0x9B30FF,0,0},{ 0.5f,-0.5f,-0.5f,0x9B30FF,0,0},
+		//Left face
+		{-0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{-0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{-0.5f, 0.5f,-0.5f,0x9B30FF,0,0},
+		{-0.5f, 0.5f,-0.5f,0x9B30FF,0,0},{-0.5f,-0.5f,-0.5f,0x9B30FF,0,0},{-0.5f,-0.5f, 0.5f,0x9B30FF,0,0},
+		//Right face
+		{ 0.5f,-0.5f,-0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f,-0.5f,0x9B30FF,0,0},{ 0.5f, 0.5f, 0.5f,0x9B30FF,0,0},
+		{ 0.5f, 0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f,-0.5f, 0.5f,0x9B30FF,0,0},{ 0.5f,-0.5f,-0.5f,0x9B30FF,0,0},
+	};
+
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pCubeVertBuffer, NULL);
+
+	void* vb_vertices;
+
+	pCubeVertBuffer->Lock(0, 0, &vb_vertices, 0);
+	
+	memcpy(vb_vertices, data, sizeof(FlexVertex)*12*3);
+
+	pCubeVertBuffer->Unlock();
+}
+
+void FlexRenderer::RenderCubeAtPoint(D3DXVECTOR3 vPoint)
+{
+	float pos[3] = {vPoint.x, vPoint.y, 1.0f};
+	float scale[3] = {5,5,5};
+	float rot[3] = {0,0,0};
+	int numCubeTris;
+	numCubeTris= 12;
+	AddModelToRenderList(&pCubeVertBuffer, &numCubeTris, NULL, pos, scale, rot, true);
+}
 
 FlexRenderer g_Renderer;
 

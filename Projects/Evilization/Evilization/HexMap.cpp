@@ -298,11 +298,12 @@ void CHexMap::CreateAllTerrainVertexBuffers()
 	iNumChunksHigh = (int)ceil(((float)h)/TERRAIN_CHUNK_HEIGHT);
 	ppVertBuffers = new IDirect3DVertexBuffer9*[iNumChunksWide*iNumChunksHigh];
 	for (int iChunk = 0; iChunk < iNumChunksWide; iChunk++)
+	{
 		for (int jChunk = 0; jChunk < iNumChunksHigh; jChunk++)
 		{
 			ppVertBuffers[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
 		}
-
+	}
 }
 
 void CHexMap::RenderTerrain()
@@ -313,8 +314,17 @@ void CHexMap::RenderTerrain()
 	D3DXVECTOR3 cameraCullPoints[4];
 	D3DXVECTOR3 planePoint(0,0,0);
 	D3DXVECTOR3 planeNormal(0,0,-1);
-	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//left top right bottom
-	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal);
+
+	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
+	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);	
+
+	D3DXVECTOR3 test = D3DXVECTOR3(0,0,0);
+	g_Renderer.RenderCubeAtPoint(test);
+
 	for (int i = 0; i < 4; i++)
 	{
 		if (cameraCullPoints[i].x < chunkRect[0])
@@ -328,9 +338,24 @@ void CHexMap::RenderTerrain()
 			chunkRect[3] = cameraCullPoints[i].y;
 	}
 
+	//chunkRect[0] = cameraCullPoints[0].x;
+	//chunkRect[1] = cameraCullPoints[2].y;
+	//chunkRect[2] = cameraCullPoints[1].x;
+	//chunkRect[3] = cameraCullPoints[0].y;
+
 	//adjust edges to account for hex staggering
 	chunkRect[0] -= HEX_HALF_WIDTH;
 	chunkRect[1] -= HEX_HEIGHT/4;
+
+	//cameraCullPoints[0].x -= HEX_HALF_WIDTH;
+	//cameraCullPoints[1].x += HEX_HALF_WIDTH;
+	//cameraCullPoints[2].x -= HEX_HALF_WIDTH;
+	//cameraCullPoints[3].x += HEX_HALF_WIDTH;
+
+	//cameraCullPoints[0].y += HEX_HEIGHT/4;
+	//cameraCullPoints[1].y += HEX_HEIGHT/4;
+	//cameraCullPoints[2].y -= HEX_HEIGHT/4;
+	//cameraCullPoints[3].y -= HEX_HEIGHT/4;
 
 	//calculate chunk coordinates
 	chunkRect[0] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);

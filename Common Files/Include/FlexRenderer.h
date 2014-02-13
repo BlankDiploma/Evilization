@@ -13,7 +13,7 @@
 //Renderer should support a table of IDirect3DStateBlock9 objects keyed by the XRendererMode enum.
 //See http://msdn.microsoft.com/en-us/library/windows/desktop/bb206121(v=vs.85).aspx for info
 #define MOUSELOOK_SENSITIVITY 0.001f
-#define MOUSEDRAG_SENSITIVITY 0.01f
+#define MOUSEDRAG_SENSITIVITY 0.1f
 #define MOUSEZOOM_SENSITIVITY 0.25f
 #define MAX_CAM_VELOCITY 1.0f
 
@@ -237,6 +237,9 @@ class FlexRenderer
 	void EndFrame();
 	void Begin2D();
 	void End2D();
+
+	IDirect3DVertexBuffer9* pCubeVertBuffer;
+
 public:
 	FlexRenderer();
 	~FlexRenderer();
@@ -277,6 +280,8 @@ public:
 	void AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB);
 	void ProcessRenderLists();
 	HRESULT CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle);
+	void CreateCubeVertexBuffer();
+	void RenderCubeAtPoint(D3DXVECTOR3 vPoint);
 
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 
