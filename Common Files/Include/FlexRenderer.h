@@ -114,6 +114,25 @@ enum FlexRendererMode
 	kRendererMode_Count
 };
 
+class FlexFrustum
+{
+	//Near and far plane distances
+	float zn, zf;
+	//Width and height of near/far planes
+	float fHnear, fWnear, fHfar, fWfar;
+	//Eight points that define the corners of the view frustum
+	//These are the corners of the near/far planes in world space
+	D3DXVECTOR3 ntl, ntr, nbl, nbr, ftl, ftr, fbl, fbr;
+	//The camera's view ray
+	D3DXVECTOR3 camDir;
+public:
+	//only needs to be called when matProj changes
+	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+
+	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
+	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
+};
+
 //struct representing the camera
 class FlexCamera
 {
@@ -148,25 +167,6 @@ public:
 	void MoveCamera(float fHoriz, float fVert, int iZoom);
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
-};
-
-class FlexFrustum
-{
-	//Near and far plane distances
-	float zn, zf;
-	//Width and height of near/far planes
-	float fHnear, fWnear, fHfar, fWfar;
-	//Eight points that define the corners of the view frustum
-	//These are the corners of the near/far planes in world space
-	D3DXVECTOR3 ntl, ntr, nbl, nbr, ftl, ftr, fbl, fbr;
-	//The camera's view ray
-	D3DXVECTOR3 camDir;
-public:
-	//only needs to be called when matProj changes
-	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
-
-	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
-	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
 
 struct ModelCall
