@@ -119,7 +119,6 @@ void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam,
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
 			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
@@ -150,7 +149,6 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
 			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
@@ -172,7 +170,6 @@ void CGameState::DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
 			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
@@ -209,7 +206,6 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
 			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;

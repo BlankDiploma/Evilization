@@ -14,7 +14,7 @@
 //See http://msdn.microsoft.com/en-us/library/windows/desktop/bb206121(v=vs.85).aspx for info
 #define MOUSELOOK_SENSITIVITY 0.001f
 #define MOUSEDRAG_SENSITIVITY 0.1f
-#define MOUSEZOOM_SENSITIVITY 0.25f
+#define MOUSEZOOM_SENSITIVITY 2.5f
 #define MAX_CAM_VELOCITY 1.0f
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};

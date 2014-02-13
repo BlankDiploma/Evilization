@@ -246,10 +246,21 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
 	IDirect3DVertexBuffer9* pNewBuffer;
 	static FlexVertex hexVerts[] = {
-		{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+		{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
 	};
 
 	numTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
@@ -273,10 +284,10 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 
 			for (int k = 0; k < 12; k++)
 			{
-				pIter->x = hexVerts[k].x + iActualTileX*(HEX_WIDTH);
+				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
 				if (j&1)
 					pIter->x += HEX_HALF_WIDTH;
-				pIter->y = hexVerts[k].y + iActualTileY*(HEX_HEIGHT * (3.0f/4.0f));
+				pIter->y = hexVerts[k].y + j*(HEX_HEIGHT * (3.0f/4.0f));
 				pIter->z = hexVerts[k].z;
 				pIter->u = hexVerts[k].u;
 				pIter->v = hexVerts[k].v;
@@ -360,7 +371,7 @@ void CHexMap::RenderTerrain()
 	chunkRect[1] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
 	chunkRect[3] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
 
-	static int iNumVerts = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*12;
+	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
 	for (float i = floor(chunkRect[0]); i < ceil(chunkRect[2]); i++)
 	{
 		float iNormalized = i;
@@ -372,7 +383,9 @@ void CHexMap::RenderTerrain()
 		{
 			if (j < 0 || j >= iNumChunksHigh)
 				continue;
-			g_Renderer.AddModelToRenderList(&ppVertBuffers[(int)iNormalized + (int)j * iNumChunksWide], &iNumVerts, NULL, pos, scl, rot, false);
+			pos[0] = ((int)iNormalized) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
+			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
+			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], &iNumTris, NULL, pos, scl, rot, false);
 		}
 	}
 }

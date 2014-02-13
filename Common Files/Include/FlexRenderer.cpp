@@ -136,12 +136,12 @@ void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
 	vEye += vVert;
 	vAt +=  vVert;
 	
-	if (!(((vEye.z - vZoom.z) >= -0.788537741f) || ((vEye.z - vZoom.z) <= -4.47430992f)))
+	if (!(((vEye.z - vZoom.z) >= -15.0f) || ((vEye.z - vZoom.z) <= -70.0f)))
 	{
 		vEye -= vZoom;
 		vAt -= vZoom;
 	}
-
+	
 	BuildViewFrustum();
 	LeaveCriticalSection(&_csCamera);
 }
