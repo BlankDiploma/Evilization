@@ -142,28 +142,8 @@ void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
 		vAt -= vZoom;
 	}
 
-	LeaveCriticalSection(&_csCamera);
 	BuildViewFrustum();
-}
-
-void FlexCamera::ZoomCamera(int iDelta)
-{
-	EnterCriticalSection(&_csCamera);
-	D3DXVECTOR3 vDir, vZoom;
-
-	vDir = vEye - vAt;
-	D3DXVec3Normalize(&vDir, &vDir);
-
-	vZoom = D3DXVECTOR3(vDir.x*iDelta*MOUSEZOOM_SENSITIVITY, vDir.y*iDelta*MOUSEZOOM_SENSITIVITY,vDir.z*iDelta*MOUSEZOOM_SENSITIVITY);
-
-	if (((vEye.z - vZoom.z) >= -0.788537741f) || ((vEye.z - vZoom.z) <= -4.47430992f))
-		return;
-
-	vEye -= vZoom;
-	vAt -= vZoom;
-
 	LeaveCriticalSection(&_csCamera);
-	BuildViewFrustum();
 }
 
 void FlexCamera::SetCameraPosition(D3DXVECTOR3* pvPos)
@@ -172,60 +152,13 @@ void FlexCamera::SetCameraPosition(D3DXVECTOR3* pvPos)
 	D3DXVECTOR3 vDiff = (*pvPos) - vEye;
 	vAt += vDiff;
 	vEye = (*pvPos);
-	LeaveCriticalSection(&_csCamera);
 	BuildViewFrustum();
+	LeaveCriticalSection(&_csCamera);
 }
 
 void FlexCamera::BuildViewFrustum()
 {
-	EnterCriticalSection(&_csCamera);
-
-	D3DXMATRIX viewProjection;
-    D3DXMatrixMultiply( &viewProjection, &matView, &matProj );
-
-    // Left plane
-    plFrustum[0].a = viewProjection._14 + viewProjection._11;
-    plFrustum[0].b = viewProjection._24 + viewProjection._21;
-    plFrustum[0].c = viewProjection._34 + viewProjection._31;
-    plFrustum[0].d = viewProjection._44 + viewProjection._41;
- 
-    // Right plane
-    plFrustum[1].a = viewProjection._14 - viewProjection._11;
-    plFrustum[1].b = viewProjection._24 - viewProjection._21;
-    plFrustum[1].c = viewProjection._34 - viewProjection._31;
-    plFrustum[1].d = viewProjection._44 - viewProjection._41;
- 
-    // Top plane
-    plFrustum[2].a = viewProjection._14 - viewProjection._12;
-    plFrustum[2].b = viewProjection._24 - viewProjection._22;
-    plFrustum[2].c = viewProjection._34 - viewProjection._32;
-    plFrustum[2].d = viewProjection._44 - viewProjection._42;
- 
-    // Bottom plane
-    plFrustum[3].a = viewProjection._14 + viewProjection._12;
-    plFrustum[3].b = viewProjection._24 + viewProjection._22;
-    plFrustum[3].c = viewProjection._34 + viewProjection._32;
-    plFrustum[3].d = viewProjection._44 + viewProjection._42;
- 
-    // Near plane
-    plFrustum[4].a = viewProjection._13;
-    plFrustum[4].b = viewProjection._23;
-    plFrustum[4].c = viewProjection._33;
-    plFrustum[4].d = viewProjection._43;
- 
-    // Far plane
-    plFrustum[5].a = viewProjection._14 - viewProjection._13;
-    plFrustum[5].b = viewProjection._24 - viewProjection._23;
-    plFrustum[5].c = viewProjection._34 - viewProjection._33;
-    plFrustum[5].d = viewProjection._44 - viewProjection._43;
- 
-    // Normalize planes
-    for ( int i = 0; i < 6; i++ )
-    {
-        D3DXPlaneNormalize( &plFrustum[i], &plFrustum[i] );
-    }
-
-	LeaveCriticalSection(&_csCamera);
+	cameraFrustum.CalcWorldSpacePlanes(vEye, vAt, vUp);
 }
 
 void FlexCamera::BuildViewMatrix()
@@ -248,38 +181,16 @@ void FlexCamera::BuildProjMatrix(int screenW, int screenH)
 	LeaveCriticalSection(&_csCamera);
 }
 
-//void FlexCamera::DoMouselook(POINT delta)
-//{
-//	EnterCriticalSection(&_csCamera);
-//	float xAngle = delta.x * 1.0f * MOUSELOOK_SENSITIVITY;
-//	float yAngle = delta.y * 1.0f * MOUSELOOK_SENSITIVITY;
-//
-//    D3DXMATRIX rotation;
-//	float fMaxPitch = D3DXToRadian( 85.0f );
-//
-//	D3DXMatrixRotationAxis( &rotation, &vUp, xAngle );
-//	D3DXVec3TransformNormal( &vRight, &camera.vRight, &rotation );
-//	D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
-//	
-// 
-// //   radians = (m_invertY) ? -radians : radians;
-//    camera.fPitch -= yAngle;
-//    if ( camera.fPitch > fMaxPitch )
-//    {
-//        yAngle += camera.fPitch - fMaxPitch;
-//		camera.fPitch -= camera.fPitch - fMaxPitch;
-//    }
-//    else if ( camera.fPitch < -fMaxPitch )
-//    {
-//        yAngle += camera.fPitch + fMaxPitch;
-//		camera.fPitch -= camera.fPitch + fMaxPitch;
-//    }
-// 
-//    D3DXMatrixRotationAxis( &rotation, &camera.vRight, yAngle );
-//    D3DXVec3TransformNormal( &camera.vUp, &camera.vUp, &rotation );
-//    D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
-//	LeaveCriticalSection(&_csCamera);
-//}
+int FlexCamera::CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm)
+{
+	EnterCriticalSection(&_csCamera);
+
+	int ret = cameraFrustum.FrustumPlaneIntersection(pOut, pPoint, pNorm);
+
+	LeaveCriticalSection(&_csCamera);
+
+	return ret;
+}
 
 void FlexRenderer::UpdateCamera()
 {
@@ -287,8 +198,6 @@ void FlexRenderer::UpdateCamera()
 	pCamera->BuildViewMatrix();
 	pCamera->GetViewMatrix(&matView);
 	pD3DDevice->SetTransform(D3DTS_VIEW, &matView);
-	//pCamera->BuildViewFrustum();
-	//pFrustum->CalcWorldSpacePlanes(eye, at, up);
 }
 
 void FlexFrustum::CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf)
@@ -319,19 +228,22 @@ void FlexFrustum::CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVE
 	nbr = nearCenter - (vUp * fHnear/2.0f) + (vRight * fWnear/2.0f);
 }
 
-void FlexFrustum::FrustumMapIntersection(D3DXVECTOR3 pOut[4])
+int FlexFrustum::FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm)
 {
-	D3DXVECTOR3 vP0, vPNorm;
 	D3DXPLANE plMap;
+	int ret = 0;
 
-	vP0 = D3DXVECTOR3(0,0,0); //point representing how far the map plane is from the world origin
-	vPNorm = D3DXVECTOR3(0,0,-1); //The map plane's normal
-	D3DXPlaneFromPointNormal(&plMap, &vP0, &vPNorm);
+	D3DXPlaneFromPointNormal(&plMap, pPoint, pNorm);
 
-	D3DXPlaneIntersectLine(&pOut[0], &plMap, &ntl, &ftl);
-	D3DXPlaneIntersectLine(&pOut[1], &plMap, &ntr, &ftr);
-	D3DXPlaneIntersectLine(&pOut[2], &plMap, &nbl, &fbl);
-	D3DXPlaneIntersectLine(&pOut[3], &plMap, &nbr, &fbr);
+	if (D3DXPlaneIntersectLine(&pOut[0], &plMap, &ntl, &ftl))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[1], &plMap, &ntr, &ftr))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[2], &plMap, &nbl, &fbl))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[3], &plMap, &nbr, &fbr))
+		ret++;
+	return ret;
 }
 
 void FlexRenderer::IntersectRayWithMapPlane(D3DXVECTOR3* pOut, const D3DXVECTOR3* pV1, const D3DXVECTOR3* pV2)
@@ -525,7 +437,6 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 FlexRenderer::FlexRenderer()
 {
 	pCamera = new FlexCamera();
-	pFrustum = new FlexFrustum();
 	pFutureRenderList = new RenderList;
 	pNextRenderList = new RenderList;
 	pCurRenderList = new RenderList;

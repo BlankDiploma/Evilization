@@ -122,7 +122,9 @@ class FlexCamera
 	//D3DXVECTOR3 vVelocity;
 	//float fPitch, fYaw, fRoll;
 	CRITICAL_SECTION _csCamera;
-	D3DXPLANE plFrustum[6];
+	FlexFrustum cameraFrustum;	
+	
+	void BuildViewFrustum();
 
 public:
 	FlexCamera();
@@ -142,11 +144,10 @@ public:
 	void GetCameraUp(D3DXVECTOR3* pOut);
 	void GetViewMatrix(D3DXMATRIX* pOut);
 	void GetProjMatrix(D3DXMATRIX* pOut);
-	void BuildViewFrustum();
 	//void DoMouselook(POINT delta);
 	void MoveCamera(float fHoriz, float fVert, int iZoom);
-	void ZoomCamera(int iDelta);
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
+	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
 
 class FlexFrustum
@@ -161,9 +162,11 @@ class FlexFrustum
 	//The camera's view ray
 	D3DXVECTOR3 camDir;
 public:
+	//only needs to be called when matProj changes
 	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+
 	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
-	void FrustumMapIntersection(D3DXVECTOR3 pOut[4]);
+	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
 
 struct ModelCall
@@ -214,8 +217,6 @@ class FlexRenderer
 	int iScreenW;
 	int iScreenH;
 	float fAspect;
-	
-	FlexFrustum* pFrustum;	
 
 	boolean bActiveFrame, bActive2D;
 	LPDIRECT3DVERTEXBUFFER9* eaVertsToDestroy;
