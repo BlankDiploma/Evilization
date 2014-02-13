@@ -102,8 +102,8 @@ public:
 			delete [] pTiles;
 		if (pCachedPath)
 			delete pCachedPath;
-		if (vertBuffer)
-			vertBuffer->Release();
+		for (int i = 0; i < iNumChunksWide*iNumChunksHigh; i++)
+			ppVertBuffers[i]->Release();
 	}
 	int GetWidth()
 	{
@@ -120,7 +120,6 @@ public:
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
 	void GetTileDescription( hexTile* pTile, TCHAR* pchDescOut );
 	void RenderTile(POINT tilePt, hexTile* pTile, DWORD color = 0xFFFFFFFF, float scale = 1.0);
-	void CreateTerrainVertexBuffer();
 	void RenderTerrain();
 	inline hexTile* GetTile(int x, int y);
 	inline hexTile* GetTile(POINT pt);
@@ -143,7 +142,7 @@ public:
 	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
 private:
 
-	IDirect3DVertexBuffer9* vertBuffer;
+	IDirect3DVertexBuffer9** ppVertBuffers;
 	int numTris;
 
 	POINT screenOffset;
@@ -160,6 +159,11 @@ private:
 	int* pPathMap;
 	int w;
 	int h;
+	int iNumChunksWide;
+	int iNumChunksHigh;
+
+	void CreateAllTerrainVertexBuffers();
+	IDirect3DVertexBuffer9* CreateTerrainVertexBufferChunk(int x, int y);
 	void IndexToPixel(int index);
 	void XYToIndex(int x, int y);
 	void PathBetweenTiles(int a, int b);

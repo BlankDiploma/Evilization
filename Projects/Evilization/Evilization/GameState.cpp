@@ -431,6 +431,8 @@ void CGameState::SwitchToState(GameState newState)
 
 void CGameState::CenterView(POINT pt)
 {
+	D3DXVECTOR3 pos(pt.x * HEX_WIDTH, pt.y * HEX_HEIGHT * 3.0f / 4.0f, -30);
+	g_Renderer.GetCamera()->SetCameraPosition(&pos);
 	fpMapOffset.x = (pt.x*HEX_SIZE - mapViewport.right/2.0f);
 	fpMapOffset.y = (pt.y*HEX_SIZE*0.75f - mapViewport.bottom/2.0f);
 }

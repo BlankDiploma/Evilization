@@ -166,6 +166,7 @@ public:
 	//void DoMouselook(POINT delta);
 	void MoveCamera(float fHoriz, float fVert, int iZoom);
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
+	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
 

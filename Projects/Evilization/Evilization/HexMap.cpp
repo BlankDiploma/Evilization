@@ -25,12 +25,17 @@ hexTileDef* pOcean;
 hexTileDef* pShallow;
 hexTileDef* pMountain;
 
+//map generation constants
 #define SEA_LEVEL 0.55
 
 #define MOUNTAIN_ELEV_THRESHOLD 0.875
 #define LAND_ELEV_THRESHOLD SEA_LEVEL
 #define SHALLOWS_ELEV_THRESHOLD (SEA_LEVEL-0.055)
 #define BIOME_MAP_SIZE 32
+
+//vertex buffer constants
+#define TERRAIN_CHUNK_WIDTH 16
+#define TERRAIN_CHUNK_HEIGHT 16
 
 union biomeIndex{
 	DWORD color;
@@ -137,7 +142,7 @@ void CHexMap::Generate(int w, int h, int seed)
 	ppathblip = GET_DEF_FROM_STRING(GameTexturePortion, _T("pathblip"));
 	ppathend = GET_DEF_FROM_STRING(GameTexturePortion, _T("pathend"));
 	pFont = GET_TEXTURE(_T("courier_new"));
-	CreateTerrainVertexBuffer();
+	CreateAllTerrainVertexBuffers();
 }
 
 void CHexMap::RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset)
@@ -237,8 +242,9 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 //		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
 }
 
-void CHexMap::CreateTerrainVertexBuffer()
+IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
+	IDirect3DVertexBuffer9* pNewBuffer;
 	static FlexVertex hexVerts[] = {
 		{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
 		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
@@ -246,29 +252,31 @@ void CHexMap::CreateTerrainVertexBuffer()
 		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
 	};
 
-	numTris = w*h*4;
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &vertBuffer, NULL);
+	numTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
 
 	void* vb_vertices;
 
-	vertBuffer->Lock(0, 0, &vb_vertices, 0);
+	pNewBuffer->Lock(0, 0, &vb_vertices, 0);
 
 	FlexVertex* pIter = (FlexVertex*)vb_vertices;
 
 	hexTile currTile;
 
-	for (int i = 0; i < w; i++)
+	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
 	{
-		for (int j = 0; j < h; j++)
+		for (int j = 0; j < TERRAIN_CHUNK_HEIGHT; j++)
 		{
-			currTile = pTiles[i + j*w];
+			int iActualTileX = (x*TERRAIN_CHUNK_WIDTH + i);
+			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
+			currTile = pTiles[iActualTileX + iActualTileY*w];
 
 			for (int k = 0; k < 12; k++)
 			{
-				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
+				pIter->x = hexVerts[k].x + iActualTileX*(HEX_WIDTH);
 				if (j&1)
 					pIter->x += HEX_HALF_WIDTH;
-				pIter->y = hexVerts[k].y - j*(HEX_HEIGHT * (3.0f/4.0f));
+				pIter->y = hexVerts[k].y + iActualTileY*(HEX_HEIGHT * (3.0f/4.0f));
 				pIter->z = hexVerts[k].z;
 				pIter->u = hexVerts[k].u;
 				pIter->v = hexVerts[k].v;
@@ -278,15 +286,73 @@ void CHexMap::CreateTerrainVertexBuffer()
 		}
 	}
 
-	vertBuffer->Unlock();
+	pNewBuffer->Unlock();
+
+	return pNewBuffer;
+}
+
+void CHexMap::CreateAllTerrainVertexBuffers()
+{
+	//create enough buffers of the specified size to hold the entire map
+	iNumChunksWide = (int)ceil(((float)w)/TERRAIN_CHUNK_WIDTH);
+	iNumChunksHigh = (int)ceil(((float)h)/TERRAIN_CHUNK_HEIGHT);
+	ppVertBuffers = new IDirect3DVertexBuffer9*[iNumChunksWide*iNumChunksHigh];
+	for (int iChunk = 0; iChunk < iNumChunksWide; iChunk++)
+		for (int jChunk = 0; jChunk < iNumChunksHigh; jChunk++)
+		{
+			ppVertBuffers[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
+		}
+
 }
 
 void CHexMap::RenderTerrain()
 {
 	float pos[3] = {0.0f, 0.0f, 0.0f};
-	float scl[3] = {0.1f, 0.1f, 0.1f};
+	float scl[3] = {1.0f, 1.0f, 1.0f};
 	float rot[3] = {0.0f, 0.0f, 0.0f};
-	g_Renderer.AddModelToRenderList(&vertBuffer, &numTris, NULL, pos, scl, rot, false);
+	D3DXVECTOR3 cameraCullPoints[4];
+	D3DXVECTOR3 planePoint(0,0,0);
+	D3DXVECTOR3 planeNormal(0,0,-1);
+	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//left top right bottom
+	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal);
+	for (int i = 0; i < 4; i++)
+	{
+		if (cameraCullPoints[i].x < chunkRect[0])
+			chunkRect[0] = cameraCullPoints[i].x;
+		if (cameraCullPoints[i].x > chunkRect[2])
+			chunkRect[2] = cameraCullPoints[i].x;
+
+		if (cameraCullPoints[i].y < chunkRect[1])
+			chunkRect[1] = cameraCullPoints[i].y;
+		if (cameraCullPoints[i].y > chunkRect[3])
+			chunkRect[3] = cameraCullPoints[i].y;
+	}
+
+	//adjust edges to account for hex staggering
+	chunkRect[0] -= HEX_HALF_WIDTH;
+	chunkRect[1] -= HEX_HEIGHT/4;
+
+	//calculate chunk coordinates
+	chunkRect[0] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
+	chunkRect[2] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
+	chunkRect[1] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
+	chunkRect[3] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
+
+	static int iNumVerts = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*12;
+	for (float i = floor(chunkRect[0]); i < ceil(chunkRect[2]); i++)
+	{
+		float iNormalized = i;
+		if (i < 0)
+			iNormalized += iNumChunksWide;
+		if (i >= iNumChunksWide)
+			iNormalized -= iNumChunksWide;
+		for (float j = floor(chunkRect[1]); j < ceil(chunkRect[3]); j++)
+		{
+			if (j < 0 || j >= iNumChunksHigh)
+				continue;
+			g_Renderer.AddModelToRenderList(&ppVertBuffers[(int)iNormalized + (int)j * iNumChunksWide], &iNumVerts, NULL, pos, scl, rot, false);
+		}
+	}
 }
 
 void CHexMap::RenderFog(POINT tilePt)

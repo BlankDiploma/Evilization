@@ -178,6 +178,8 @@ void FlexCamera::BuildProjMatrix(int screenW, int screenH)
 	float zf = 400.0f;
 	float fAspect = (float) screenW / (float) screenH;
 	D3DXMatrixPerspectiveFovLH(&matProj, fovy, fAspect, zn, zf);
+	//Calculate near and far planes of frustum
+	cameraFrustum.CalcNearFarPlaneDimensions(fovy, fAspect, zn, zf);
 	LeaveCriticalSection(&_csCamera);
 }
 
@@ -192,6 +194,15 @@ int FlexCamera::CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3*
 	return ret;
 }
 
+void FlexCamera::CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf)
+{
+	EnterCriticalSection(&_csCamera);
+
+	cameraFrustum.CalcNearFarPlaneDimensions(fovy, Aspect, zn, zf);
+
+	LeaveCriticalSection(&_csCamera);
+}
+
 void FlexRenderer::UpdateCamera()
 {
 	D3DXMATRIX matView;
@@ -202,6 +213,8 @@ void FlexRenderer::UpdateCamera()
 
 void FlexFrustum::CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf)
 {
+	this->zn = zn;
+	this->zf = zf;
 	fHnear = 2.0f * tan(fovy/2.0f) * zn;
 	fWnear = fHnear * Aspect;
 	fHfar = 2.0f * tan(fovy/2.0f) * zf;
@@ -341,8 +354,6 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pCamera->GetProjMatrix(&matProj);
 	pD3DDevice->SetTransform(D3DTS_PROJECTION, &matProj);
 
-	//Calculate near and far planes of frustum
-	//pFrustum->CalcNearFarPlaneDimensions(fovy, fAspect, zn, zf);
 
 	mainView.X = 0;
 	mainView.Y = 0;
