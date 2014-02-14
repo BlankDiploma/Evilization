@@ -133,6 +133,34 @@ public:
 
 	float GetNearPlaneDist();
 	float GetFarPlaneDist();
+	void GetNearTopLeft(D3DXVECTOR3* pOut)
+	{
+		pOut->x = ntl.x;
+		pOut->y = ntl.y;
+		pOut->z = ntl.z;
+	}
+	void GetFarTopLeft(D3DXVECTOR3* pOut)
+	{
+		pOut->x = ftl.x;
+		pOut->y = ftl.y;
+		pOut->z = ftl.z;
+	}
+	float GetNearPlaneWidth()
+	{
+		return fWnear;
+	}
+	float GetNearPlaneHeight()
+	{
+		return fHnear;
+	}
+	float GetFarPlaneWidth()
+	{
+		return fWfar;
+	}
+	float GetFarPlaneHeight()
+	{
+		return fHfar;
+	}
 	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
 	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
