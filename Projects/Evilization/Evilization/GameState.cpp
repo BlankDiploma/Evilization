@@ -429,8 +429,6 @@ void CGameState::CenterView(POINT pt)
 {
 	D3DXVECTOR3 pos(pt.x * HEX_WIDTH, pt.y * HEX_HEIGHT * 3.0f / 4.0f, -30);
 	g_Renderer.GetCamera()->SetCameraPosition(&pos);
-	fpMapOffset.x = (pt.x*HEX_SIZE - mapViewport.right/2.0f);
-	fpMapOffset.y = (pt.y*HEX_SIZE*0.75f - mapViewport.bottom/2.0f);
 }
 
 POINT CGameState::GetViewCenter()
@@ -489,7 +487,7 @@ POINT CGameState::TilePtToScreenPt(int x, int y)
 
 POINT CGameState::PixelToTilePt(int x, int y)
 {
-	POINT box, scaledCoords;
+	POINT box = {0,0}, scaledCoords = {0,0};
 	//bool bNegative = x+fpMapOffset.x < 0;
 	//box.y = (LONG)(y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
 	//box.x = (LONG)((x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0));
@@ -517,6 +515,7 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	//			box.x++;
 	//	}
 	//}
+	/*
 	D3DXVECTOR3 mapIntersect, mapPoint, mapNormal, rayPoint1, rayPoint2;
 	D3DXVECTOR4 temp1, temp2;
 	D3DXMATRIX matView, matViewInv;
@@ -552,7 +551,7 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	//get the hex coords that correspond to the intersection
 	box.x = (LONG) (mapIntersect.x / HEX_HEIGHT);
 	box.y = (LONG) (mapIntersect.y / HEX_WIDTH);
-
+	*/
 	return box;
 }
 
