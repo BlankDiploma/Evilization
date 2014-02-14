@@ -242,6 +242,40 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 //		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
 }
 
+IDirect3DVertexBuffer9* CHexMap::CreateSplatVertexBuffer(int x, int y)
+{
+	IDirect3DVertexBuffer9* pNewBuffer;
+	static FlexVertex hexRingVerts[] = {
+		{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{-HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+
+		{HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
+		{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},
+		{-HEX_HALF_WIDTH,-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
+	};
+
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+
+	void* vb_vertices;
+
+	pNewBuffer->Lock(0, 0, &vb_vertices, 0);
+
+	memcpy(vb_vertices, hexRingVerts, 12);
+
+	pNewBuffer->Unlock();
+
+	return pNewBuffer;
+}
+
 IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
 	IDirect3DVertexBuffer9* pNewBuffer;
@@ -328,10 +362,10 @@ void CHexMap::RenderTerrain()
 
 	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
 	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
-	g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
-	g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
-	g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
-	g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -347,8 +381,8 @@ void CHexMap::RenderTerrain()
 	}
 
 	//adjust edges to account for hex staggering
-	chunkRect[0] -= HEX_HALF_WIDTH;
-	chunkRect[1] -= HEX_HEIGHT/4;
+	chunkRect[0] -= HEX_WIDTH;
+	chunkRect[1] -= HEX_HEIGHT;
 
 
 	//calculate chunk coordinates

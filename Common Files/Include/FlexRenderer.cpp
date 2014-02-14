@@ -173,13 +173,12 @@ void FlexCamera::BuildProjMatrix(int screenW, int screenH)
 {
 	EnterCriticalSection(&_csCamera);
 	ZeroMemory(&matProj, sizeof(matProj));
-	float fovy = D3DX_PI/4.0f;
 	float zn = 0.1f;
 	float zf = 400.0f;
 	float fAspect = (float) screenW / (float) screenH;
-	D3DXMatrixPerspectiveFovLH(&matProj, fovy, fAspect, zn, zf);
+	D3DXMatrixPerspectiveFovLH(&matProj, FOVY, fAspect, zn, zf);
 	//Calculate near and far planes of frustum
-	cameraFrustum.CalcNearFarPlaneDimensions(fovy, fAspect, zn, zf);
+	cameraFrustum.CalcNearFarPlaneDimensions(FOVY, fAspect, zn, zf);
 	LeaveCriticalSection(&_csCamera);
 }
 
@@ -284,16 +283,35 @@ int FlexFrustum::FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoi
 	return ret;
 }
 
-void FlexRenderer::IntersectRayWithMapPlane(D3DXVECTOR3* pOut, const D3DXVECTOR3* pV1, const D3DXVECTOR3* pV2)
+float FlexFrustum::GetNearPlaneDist()
 {
-	D3DXVECTOR3 vP0, vPNorm;
+	return zn;
+}
+
+float FlexFrustum::GetFarPlaneDist()
+{
+	return zf;
+}
+
+void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2)
+{
+
 	D3DXPLANE plMap;
+	D3DXPlaneFromPointNormal(&plMap, pPlanePoint, pPlaneNorm);
+	D3DXPlaneIntersectLine(pOut, &plMap, pRayPoint1, pRayPoint2);
+}
 
-	vP0 = D3DXVECTOR3(0,0,0); //point representing how far the map plane is from the world origin
-	vPNorm = D3DXVECTOR3(0,0,-1); //The map plane's normal
+POINT FlexRenderer::ScaleScreenCoords(int x, int y)
+{
+	POINT scaledCoords;
+	float fAspect;
+	static float frustCenterToEdgeDistance = tanf(FOVY*0.5f);
 
-	D3DXPlaneFromPointNormal(&plMap, &vP0, &vPNorm);
-	D3DXPlaneIntersectLine(pOut, &plMap, pV1, pV2);
+	fAspect = (float) iScreenW / (float) iScreenH;
+	scaledCoords.x = (LONG) (frustCenterToEdgeDistance * (((float) x / ((float) iScreenW * 0.5f)) - 1.0f) / fAspect);
+	scaledCoords.y = (LONG) (frustCenterToEdgeDistance * (1.0f - y) / ((float) iScreenH * 0.5f));
+
+	return scaledCoords;
 }
 
 void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)

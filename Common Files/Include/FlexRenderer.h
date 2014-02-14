@@ -16,7 +16,8 @@
 #define MOUSEDRAG_SENSITIVITY 0.1f
 #define MOUSEZOOM_SENSITIVITY 2.5f
 #define MAX_CAM_VELOCITY 1.0f
-#define CAM_ANGLE 40.0f
+#define CAM_ANGLE 45.0f
+#define FOVY D3DX_PI/4.0f
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
 
@@ -130,6 +131,8 @@ public:
 	//only needs to be called when matProj changes
 	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 
+	float GetNearPlaneDist();
+	float GetFarPlaneDist();
 	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
 	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 };
@@ -170,6 +173,10 @@ public:
 	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 	void Rotate(float rot[3]);
+	FlexFrustum* GetFrustum()
+	{
+		return &cameraFrustum;
+	}
 };
 
 struct ModelCall
@@ -267,7 +274,8 @@ public:
 		return iScreenH;
 	}
 
-	void IntersectRayWithMapPlane(D3DXVECTOR3* pOut, const D3DXVECTOR3* pV1, const D3DXVECTOR3* pV2);
+	void PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2);
+	POINT ScaleScreenCoords(int x, int y);
 
 	void StartNewRenderList();
 	void CommitRenderList();

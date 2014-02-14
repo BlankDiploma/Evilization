@@ -24,6 +24,9 @@ struct hexTileDef;
 #define HEX_HALF_WIDTH ((sqrt(3.0f)/2.0f) * HEX_HALF_HEIGHT)
 #define HEX_HEIGHT (HEX_HALF_HEIGHT*2)
 #define HEX_WIDTH (HEX_HALF_WIDTH*2)
+#define HEX_RING_THICKNESS (HEX_HALF_HEIGHT * 0.2f)
+#define HEX_RING_INNER_HALF_WIDTH ((sqrt(3.0f)/2.0f) * (HEX_HALF_HEIGHT - HEX_RING_THICKNESS))
+#define HEX_RING_INNER_HALF_HEIGHT (HEX_HALF_HEIGHT - HEX_RING_THICKNESS)
 
 #define NUM_TILE_DEFS 12
 
@@ -164,6 +167,7 @@ private:
 
 	void CreateAllTerrainVertexBuffers();
 	IDirect3DVertexBuffer9* CreateTerrainVertexBufferChunk(int x, int y);
+	IDirect3DVertexBuffer9* CreateSplatVertexBuffer(int x, int y);
 	void IndexToPixel(int index);
 	void XYToIndex(int x, int y);
 	void PathBetweenTiles(int a, int b);
