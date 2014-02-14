@@ -119,7 +119,7 @@ public:
 		return h;
 	}
 	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
-	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
+	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, FLOATPOINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
 	void Generate(int w, int h, int seed);
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);

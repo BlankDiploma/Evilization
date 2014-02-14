@@ -301,15 +301,15 @@ void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlan
 	D3DXPlaneIntersectLine(pOut, &plMap, pRayPoint1, pRayPoint2);
 }
 
-POINT FlexRenderer::ScaleScreenCoords(int x, int y)
+FLOATPOINT FlexRenderer::ScaleScreenCoords(int x, int y)
 {
-	POINT scaledCoords;
+	FLOATPOINT scaledCoords;
 	float fAspect;
 	static float frustCenterToEdgeDistance = tanf(FOVY*0.5f);
 
 	fAspect = (float) iScreenW / (float) iScreenH;
-	scaledCoords.x = (LONG) (frustCenterToEdgeDistance * (((float) x / ((float) iScreenW * 0.5f)) - 1.0f) / fAspect);
-	scaledCoords.y = (LONG) (frustCenterToEdgeDistance * (1.0f - y) / ((float) iScreenH * 0.5f));
+	scaledCoords.x = (frustCenterToEdgeDistance * (((float) x / ((float) iScreenW * 0.5f)) - 1.0f) / fAspect);
+	scaledCoords.y = (frustCenterToEdgeDistance * (1.0f - y) / ((float) iScreenH * 0.5f));
 
 	return scaledCoords;
 }

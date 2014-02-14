@@ -380,6 +380,7 @@ public:
 	void SwitchToState(GameState newState);
 	void CenterView(POINT pt);
 	POINT PixelToTilePt(int x, int y);
+	FLOATPOINT PixelToMapIntersect(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
