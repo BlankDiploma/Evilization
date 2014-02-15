@@ -517,30 +517,32 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	//			box.x++;
 	//	}
 	//}
+	float tempX, tempY;
 
 	mapIntersect = PixelToMapIntersect(x, y);
 
 	bool bNegative = mapIntersect.x < 0;
 	box.y = (LONG) mapIntersect.y / (HEX_HEIGHT*3/4);
 	box.x = (LONG)(mapIntersect.x /(HEX_WIDTH) - ((box.y % 2) ? 0.5 : 0));
-	y = (int)(mapIntersect.y) % (HEX_HEIGHT*3/4);
-	x = ((int)(mapIntersect.x - ((box.y % 2) ? HEX_WIDTH/2 : 0)));
-	x -= ((int)(x/HEX_WIDTH))*HEX_WIDTH;
+	tempY = (mapIntersect.y);
+	tempY -= (int)(tempY/(HEX_HEIGHT*3/4))*(HEX_HEIGHT*3/4);
+	tempX = mapIntersect.x - ((box.y % 2) ? HEX_WIDTH/2 : 0);
+	tempX -= (int)((tempX/HEX_WIDTH))*HEX_WIDTH;
 	if (bNegative)
 	{
 		box.x -= 1;
-		x+= HEX_WIDTH;
+		tempX+= HEX_WIDTH;
 	}
-	if (y < HEX_HEIGHT/4)
+	if (tempY < HEX_HEIGHT/4)
 	{
-		if (y < -0.5*x + (HEX_HEIGHT/4-1))
+		if (tempY < -0.5*tempX + (HEX_HEIGHT/4-1))
 		{
 			//upper left
 			box.y--;
 			if (box.y % 2)
 				box.x--;
 		}
-		else if (y < 0.5*x + -(HEX_HEIGHT/4+1))
+		else if (tempY < 0.5*tempX + -(HEX_HEIGHT/4+1))
 		{
 			//upper right
 			box.y--;
