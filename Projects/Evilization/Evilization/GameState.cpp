@@ -525,9 +525,9 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	box.y = (LONG) mapIntersect.y / (HEX_HEIGHT*3/4);
 	box.x = (LONG)(mapIntersect.x /(HEX_WIDTH) - ((box.y % 2) ? 0.5 : 0));
 	tempY = (mapIntersect.y);
-	tempY -= (int)(tempY/(HEX_HEIGHT*3/4))*(HEX_HEIGHT*3/4);
+	tempY -= ((int)(tempY/(HEX_HEIGHT*3/4)))*(HEX_HEIGHT*3/4);
 	tempX = mapIntersect.x - ((box.y % 2) ? HEX_WIDTH/2 : 0);
-	tempX -= (int)((tempX/HEX_WIDTH))*HEX_WIDTH;
+	tempX -= ((int)((tempX/HEX_WIDTH)))*HEX_WIDTH;
 	if (bNegative)
 	{
 		box.x -= 1;
