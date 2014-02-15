@@ -660,11 +660,11 @@ void CHexMap::GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset
 		}
 }
 
-void CHexMap::RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, FLOATPOINT ptMouseoverTile )
+void CHexMap::RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile )
 {
 	//POINT pt = TileToScreen(ptMouseoverTile.x, ptMouseoverTile.y, fpMapOffset);
 	//g_Renderer.AddSpriteToRenderList(pSelectedTile, pt, 0xffffffff, ZOOM_PERCENT);
-	D3DXVECTOR3 vPoint = D3DXVECTOR3(ptMouseoverTile.x, ptMouseoverTile.y, 0.1f);
+	D3DXVECTOR3 vPoint = D3DXVECTOR3((float)ptMouseoverTile.x, (float)ptMouseoverTile.y, 0.1f);
 	g_Renderer.RenderCubeAtPoint(vPoint);
 	// show pathfinding info
 /*

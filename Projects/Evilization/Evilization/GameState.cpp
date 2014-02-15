@@ -7,7 +7,6 @@
 #include "flexDebugConsole.h"
 int g_HexSize;
 
-
 CGameState::CGameState()
 {
 	pPlayers = NULL;
@@ -348,8 +347,8 @@ void CGameState::Render()
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 			{
 				MouseHandlerAdditionalRendering();
-				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
-				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToMapIntersect(ptMousePos.x, ptMousePos.y));
+				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
+				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToMapIntersect(ptMousePos.x, ptMousePos.y));
 			}
 
 			//UI.Render();
@@ -489,7 +488,8 @@ POINT CGameState::TilePtToScreenPt(int x, int y)
 POINT CGameState::PixelToTilePt(int x, int y)
 {
 	POINT box = {0,0};
-	FLOATPOINT scaledCoords = {0,0};
+	FLOATPOINT mapIntersect = {0,0};
+	//int size = HEX_HEIGHT;
 	//bool bNegative = x+fpMapOffset.x < 0;
 	//box.y = (LONG)(y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
 	//box.x = (LONG)((x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0));
@@ -517,117 +517,59 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	//			box.x++;
 	//	}
 	//}
-	
-	D3DXVECTOR3 mapIntersect, mapPoint, mapNormal, rayPoint1, rayPoint2;
-	D3DXVECTOR4 temp1, temp2;
-	D3DXMATRIX matView, matViewInv;
-	float zn, zf;
 
-	//normalize and scale screen coordinates to frustum
-	scaledCoords = g_Renderer.ScaleScreenCoords(x, y);
+	mapIntersect = PixelToMapIntersect(x, y);
 
-	zn = g_Renderer.GetCamera()->GetFrustum()->GetNearPlaneDist();
-	zf = g_Renderer.GetCamera()->GetFrustum()->GetFarPlaneDist();
-
-	//calculate ray points in viewspace
-	rayPoint1 = D3DXVECTOR3(scaledCoords.x * zn, scaledCoords.y * zn, zn);
-	rayPoint2 = D3DXVECTOR3(scaledCoords.x * zf, scaledCoords.y * zf, zf);
-
-	//convert ray to worldspace
-	g_Renderer.GetD3DDevice()->GetTransform(D3DTS_VIEW, &matView);
-	D3DXMatrixInverse(&matViewInv, NULL, &matView);
-	D3DXVec3Transform(&temp1, &rayPoint1, &matViewInv);
-	D3DXVec3Transform(&temp2, &rayPoint2, &matViewInv);
-
-	for (int i = 0; i < 3; i++)
+	bool bNegative = mapIntersect.x < 0;
+	box.y = (LONG) mapIntersect.y / (HEX_HEIGHT*3/4);
+	box.x = (LONG)(mapIntersect.x /(HEX_WIDTH) - ((box.y % 2) ? 0.5 : 0));
+	y = (int)(mapIntersect.y) % (HEX_HEIGHT*3/4);
+	x = ((int)(mapIntersect.x - ((box.y % 2) ? HEX_WIDTH/2 : 0)));
+	x -= ((int)(x/HEX_WIDTH))*HEX_WIDTH;
+	if (bNegative)
 	{
-		rayPoint1[i] = temp1[i];
-		rayPoint2[i] = temp2[i];
+		box.x -= 1;
+		x+= HEX_WIDTH;
+	}
+	if (y < HEX_HEIGHT/4)
+	{
+		if (y < -0.5*x + (HEX_HEIGHT/4-1))
+		{
+			//upper left
+			box.y--;
+			if (box.y % 2)
+				box.x--;
+		}
+		else if (y < 0.5*x + -(HEX_HEIGHT/4+1))
+		{
+			//upper right
+			box.y--;
+			if (!(box.y % 2))
+				box.x++;
+		}	
 	}
 
-	//get the ray worldspace intersection with the map
-	mapPoint = D3DXVECTOR3(0,0,0);
-	mapNormal = D3DXVECTOR3(0,0,-1);
-	g_Renderer.PlaneIntersectRay(&mapIntersect, &mapPoint, &mapNormal, &rayPoint1, &rayPoint2);
-
-	//get the hex coords that correspond to the intersection
-	box.x = (LONG) (mapIntersect.x / HEX_HEIGHT);
-	box.y = (LONG) (mapIntersect.y / HEX_WIDTH);
-	
 	return box;
 }
 
 FLOATPOINT CGameState::PixelToMapIntersect(int x, int y)
 {
-	//FLOATPOINT scaledCoords = {0,0}, retCoords = {0,0};
-	//
-	//D3DXVECTOR3 mapIntersect, mapPoint, mapNormal, rayPoint1, rayPoint2;
-	//D3DXVECTOR4 temp1, temp2;
-	//D3DXMATRIX matView, matViewInv;
-	//float zn, zf;
+	FLOATPOINT retCoords = {0,0};
+	D3DXVECTOR3 vMapIntersect, vMapPoint, vMapNormal;
+	D3DXVECTOR3 vRayOriginDir[2], vRayPoints[2];
 
-	////normalize and scale screen coordinates to frustum
-	//scaledCoords = g_Renderer.ScaleScreenCoords(x, y);
+	g_Renderer.CastRayThroughPixel(vRayOriginDir, x, y);
 
-	//zn = g_Renderer.GetCamera()->GetFrustum()->GetNearPlaneDist();
-	//zf = g_Renderer.GetCamera()->GetFrustum()->GetFarPlaneDist();
+	vRayPoints[0] = vRayOriginDir[0];
+	vRayPoints[1] = vRayOriginDir[0] + (2*vRayOriginDir[1]);
 
-	////calculate ray points in viewspace
-	//rayPoint1 = D3DXVECTOR3(scaledCoords.x * zn, scaledCoords.y * zn, zn);
-	//rayPoint2 = D3DXVECTOR3(scaledCoords.x * zf, scaledCoords.y * zf, zf);
-
-	////convert ray to worldspace
-	//g_Renderer.GetD3DDevice()->GetTransform(D3DTS_VIEW, &matView);
-	//D3DXMatrixInverse(&matViewInv, NULL, &matView);
-	//D3DXVec3Transform(&temp1, &rayPoint1, &matViewInv);
-	//D3DXVec3Transform(&temp2, &rayPoint2, &matViewInv);
-
-	//for (int i = 0; i < 3; i++)
-	//{
-	//	rayPoint1[i] = temp1[i];
-	//	rayPoint2[i] = temp2[i];
-	//}
-
-	////get the ray worldspace intersection with the map
-	//mapPoint = D3DXVECTOR3(0,0,0);
-	//mapNormal = D3DXVECTOR3(0,0,-1);
-	//g_Renderer.PlaneIntersectRay(&mapIntersect, &mapPoint, &mapNormal, &rayPoint1, &rayPoint2);
-
-	//retCoords.x = mapIntersect.x;
-	//retCoords.y = mapIntersect.y;
-	
-	//return retCoords;
-	float fScreenWidth, fScreenHeight, fNearFrustWidth, fNearFrustHeight, fFarFrustWidth, fFarFrustHeight;
-	D3DXVECTOR3 vFrustNTL, vFrustFTL, vRayPoint1, vRayPoint2, vMapPoint, vMapNormal, vMapIntersect;
-	FLOATPOINT retCoords;
-
-	fScreenWidth = (float) g_Renderer.GetScreenWidth();
-	fScreenHeight = (float) g_Renderer.GetScreenHeight();
-
-	fNearFrustWidth = g_Renderer.GetCamera()->GetFrustum()->GetNearPlaneWidth();
-	fNearFrustHeight = g_Renderer.GetCamera()->GetFrustum()->GetNearPlaneHeight();
-	fFarFrustWidth = g_Renderer.GetCamera()->GetFrustum()->GetFarPlaneWidth();
-	fFarFrustHeight = g_Renderer.GetCamera()->GetFrustum()->GetFarPlaneHeight();
-
-	g_Renderer.GetCamera()->GetFrustum()->GetNearTopLeft(&vFrustNTL);
-	g_Renderer.GetCamera()->GetFrustum()->GetFarTopLeft(&vFrustFTL);
-
-	vRayPoint1.x = x/fScreenWidth * fNearFrustWidth + vFrustNTL.x;
-	vRayPoint1.y = y/fScreenHeight * fNearFrustHeight + vFrustNTL.y;
-	vRayPoint1.z = g_Renderer.GetCamera()->GetFrustum()->GetNearPlaneDist();
-
-	vRayPoint2.x = x/fScreenWidth * fFarFrustWidth + vFrustFTL.x;
-	vRayPoint2.y = y/fScreenHeight * fFarFrustHeight + vFrustFTL.y;
-	vRayPoint2.z = g_Renderer.GetCamera()->GetFrustum()->GetFarPlaneDist();
-
-	//get the ray worldspace intersection with the map
 	vMapPoint = D3DXVECTOR3(0,0,0);
 	vMapNormal = D3DXVECTOR3(0,0,-1);
-	g_Renderer.PlaneIntersectRay(&vMapIntersect, &vMapPoint, &vMapNormal, &vRayPoint1, &vRayPoint2);
+	g_Renderer.PlaneIntersectRay(&vMapIntersect, &vMapPoint, &vMapNormal, &vRayPoints[0], &vRayPoints[1]);
 
 	retCoords.x = vMapIntersect.x;
 	retCoords.y = vMapIntersect.y;
-	
+
 	return retCoords;
 }
 

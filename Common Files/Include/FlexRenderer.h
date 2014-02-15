@@ -130,6 +130,8 @@ class FlexFrustum
 public:
 	//only needs to be called when matProj changes
 	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+	void PointToFrustumRay(D3DXVECTOR3 pOut[2], float fScaledX, float fScaledY);
+
 
 	float GetNearPlaneDist();
 	float GetFarPlaneDist();
@@ -163,6 +165,7 @@ public:
 	}
 	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
 	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
+
 };
 
 //struct representing the camera
@@ -205,6 +208,7 @@ public:
 	{
 		return &cameraFrustum;
 	}
+	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y, int iWidth, int iHeight);
 };
 
 struct ModelCall
@@ -319,9 +323,9 @@ public:
 	void ProcessRenderLists();
 	HRESULT CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle);
 	void RenderCubeAtPoint(D3DXVECTOR3 vPoint);
-
+	void PixelToFrustumRay(D3DXVECTOR3 pOut[2], int x, int y); 
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
-
+	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
 };
 
 extern FlexRenderer g_Renderer;

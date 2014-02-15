@@ -293,6 +293,19 @@ float FlexFrustum::GetFarPlaneDist()
 	return zf;
 }
 
+void FlexFrustum::PointToFrustumRay(D3DXVECTOR3 pOut[2], float fScaledX, float fScaledY)
+{
+	pOut[0].x = fScaledX * fWnear + ntl.x;
+	pOut[0].y = fScaledY * fHnear + ntl.y;
+	//pOut[0].y = ntl.y - (fScaledY * fHnear);
+	pOut[0].z = fScaledY * fHnear * (ntl.z - nbl.z) + ntl.z;
+
+	pOut[1].x = fScaledX * fWfar + ftl.x;
+	pOut[1].y = fScaledY * fHfar + ftl.y;
+	//pOut[1].y = ftl.y - (fScaledY * fHfar);
+	pOut[1].z = fScaledY * fHfar * (ftl.z - fbl.z) + ftl.z;
+}
+
 void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2)
 {
 
@@ -1197,13 +1210,61 @@ HRESULT FlexRenderer::CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD
 }
 void FlexRenderer::RenderCubeAtPoint(D3DXVECTOR3 vPoint)
 {
-	float pos[3] = {vPoint.x - 2.5f, vPoint.y - 2.5f, -2.5f};
-	float scale[3] = {5,5,5};
+	float pos[3] = {vPoint.x - 0.5f, vPoint.y - 0.5f, -0.5f};
+	float scale[3] = {1,1,1};
 	float rot[3] = {0,0,0};
 	static int numCubeTris = 12;
 	AddModelToRenderList(&g_pCubeVertex, &numCubeTris, NULL, pos, scale, rot, true);
 }
 
+void FlexRenderer::PixelToFrustumRay(D3DXVECTOR3 pOut[2], int x, int y)
+{
+	float fScaledX, fScaledY;
+	fScaledX = x/(float) iScreenW;
+	fScaledY = y/(float) iScreenH;
+
+	pCamera->GetFrustum()->PointToFrustumRay(pOut, fScaledX, fScaledY);
+}
+
+void FlexCamera::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y, int iWidth, int iHeight)
+{
+	D3DXVECTOR3 vCamDir, vHoriz, vVert, vRayOrigin, vRayDir;
+	float vLength, hLength, newX, newY;
+
+	vCamDir = vAt - vEye;
+	D3DXVec3Normalize(&vCamDir, &vCamDir);
+
+	D3DXVec3Cross(&vHoriz, &vCamDir, &vUp);
+	D3DXVec3Normalize(&vHoriz, &vHoriz);
+
+	D3DXVec3Cross(&vVert, &vHoriz, &vCamDir);
+	D3DXVec3Normalize(&vVert, &vVert);
+
+	vLength = tanf( FOVY / 2.0f ) * cameraFrustum.GetNearPlaneDist();
+	hLength = vLength * ((float) iWidth/ (float) iHeight);
+
+	vVert *= vLength;
+	vHoriz *= hLength;
+
+	//translate mouse coords
+	newX = x - (iWidth / 2.0f);
+	newY = y - (iHeight / 2.0f);
+
+	//scale mouse coords
+	newY /= (iHeight / 2.0f);
+	newX /= (iWidth / 2.0f);
+
+	vRayOrigin = vEye + (vCamDir * cameraFrustum.GetNearPlaneDist()) + (vHoriz*newX*(-1)) + (vVert*newY*(-1));
+	vRayDir = vRayOrigin - vEye;
+
+	pOut[0] = vRayOrigin;
+	pOut[1] = vRayDir;
+}
+
+void FlexRenderer::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y)
+{
+	pCamera->CastRayThroughPixel(pOut, x, y, iScreenW, iScreenH);
+}
 FlexRenderer g_Renderer;
 
 #include "Autogen\flexrenderer_h_ast.cpp"

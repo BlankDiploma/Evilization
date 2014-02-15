@@ -22,7 +22,7 @@ struct hexTileDef;
 
 #define SQRT_3 (1.7321f)
 
-#define HEX_HALF_HEIGHT 2.0f
+#define HEX_HALF_HEIGHT 2
 #define HEX_HALF_WIDTH ((SQRT_3/2.0f) * HEX_HALF_HEIGHT)
 #define HEX_HEIGHT (HEX_HALF_HEIGHT*2)
 #define HEX_WIDTH (HEX_HALF_WIDTH*2)
@@ -119,7 +119,7 @@ public:
 		return h;
 	}
 	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
-	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, FLOATPOINT ptMouseoverTile );
+	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
 	void Generate(int w, int h, int seed);
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
