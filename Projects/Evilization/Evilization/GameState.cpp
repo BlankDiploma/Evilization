@@ -5,6 +5,7 @@
 #include "techtree.h"
 #include "texturelibrary.h"
 #include "flexDebugConsole.h"
+
 int g_HexSize;
 
 CGameState::CGameState()
@@ -88,6 +89,7 @@ void CGameState::Update(DWORD tick)
 	{
 		g_Console.Update(tick/1000.0f);
 	}
+	ghettoAnimTick += tick;
 }
 
 static POINT points[32];
@@ -792,21 +794,21 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 			fYThreeQuarters = (fYMin+fYMax*3)/4;
 
 			FlexVertex hexVerts[] = {
-				{HEX_HALF_WIDTH,	HEX_HEIGHT,				-0.01f, 0xFFFFFFFF,	fXHalf, fYMin},
-				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{0.0f,				HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
+				{0.0f,				HEX_HALF_HEIGHT,				-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},
+				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
 		
-				{0.0f,				HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
-				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
+				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
+				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
 		
-				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
-				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
+				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
+				{HEX_HALF_WIDTH,	HEX_HEIGHT/4.0f,		-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
 		
-				{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
-				{HEX_HALF_WIDTH,	0.0f,					-0.01f, 0xFFFFFFFF,	fXHalf, fYMax},
-				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters}
+				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
+				{0.0f,				-HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMax},
+				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters}
 			};
 
 			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
@@ -820,26 +822,24 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 	case kTextureSplatGeo_Rectangle:
 		{
 			const float fScalar = 0.033f;
-			float fUMin, fUMax, fWidth, fXOffset;
-			float fVMin, fVMax, fHeight, fYOffset;
+			float fUMin, fUMax, fHalfWidth;
+			float fVMin, fVMax, fHalfHeight;
 			fUMin = ((float)pTex->rSrc->left)/pSourceTexture->width;
 			fUMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
-			fWidth = (float)(pTex->rSrc->right-pTex->rSrc->left) * fScalar;
-			fXOffset = (HEX_HALF_WIDTH-(fWidth/2)) + pTex->offset->x;
+			fHalfWidth = (float)(pTex->rSrc->right-pTex->rSrc->left) * fScalar * 0.5f;
 
 
 			fVMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
 			fVMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
-			fHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar;
-			fYOffset = (HEX_HALF_HEIGHT-(fHeight/2)) + pTex->offset->y;
+			fHalfHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar * 0.5f;
 
 			FlexVertex quadVerts[] = {
-				{fXOffset,			fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMin},
-				{fXOffset+fWidth,	fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
-				{fXOffset,			fYOffset,			-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
-				{fXOffset,			fYOffset,			-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
-				{fXOffset+fWidth,	fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
-				{fXOffset+fWidth,	fYOffset,			-0.01f, 0xFFFFFFFF,	fUMax, fVMax},
+				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMin},
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
+				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMax},
 			};
 
 			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
@@ -885,8 +885,8 @@ void CGameState::CreateSplatBuffers()
 
 void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale)
 {
-	float vPos[3] = {x*HEX_WIDTH, y*HEX_HEIGHT*3/4, 0.0f};
-	float vRot[3] = {0.0f, rot, 0.0f};
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, 0.0f};
+	float vRot[3] = {0.0f, 0.0f, rot};
 	float vScale[3] = {scale, scale, 1.0f};
 	if (y & 1)
 		vPos[0] += HEX_HALF_WIDTH;
@@ -901,6 +901,7 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 	//i starts at 1, don't render first tile of the path
 	int iMovement = pUnit->GetMovRemaining();
 	int iTurn = 0;
+	float fRot = 0.0f;
 	for (int i = pPath->start; i < pPath->size; i++)
 	{
 		iMovement -= pCurrentMap->GetTile(pPath->pPoints[i])->pDef->iMoveCost;
@@ -909,6 +910,7 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 		{
 			eSplat = kTextureSplat_PathTarget;
 			bShowTurnCount = true;
+			fRot = (ghettoAnimTick % 9000)/9000.0f * PI * 2.0f;
 			iTurn++;
 		}
 		else if (iMovement <= 0)
@@ -922,7 +924,7 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 		{
 			eSplat = kTextureSplat_PathBlipSmall;
 		}
-		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, 0.0f, 1.0f);
+		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, fRot, 1.0f);
 //		g_Renderer.AddSpriteToRenderList(pathSeg, renderPt, alpha << 24, ZOOM_PERCENT);
 		if (bShowTurnCount)
 		{

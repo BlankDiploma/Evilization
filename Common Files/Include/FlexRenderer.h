@@ -19,6 +19,8 @@
 #define CAM_ANGLE 45.0f
 #define FOVY D3DX_PI/4.0f
 
+#define PI 3.1415928f
+
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
 
 PARSE_STRUCT(GameTexturePortion)

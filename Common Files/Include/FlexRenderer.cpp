@@ -703,7 +703,7 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* p
 
 	D3DXMATRIX matTrans, matRot, matScale;
 
-	D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
+	D3DXMatrixRotationYawPitchRoll(&matRot,rot[1],rot[0],rot[2]);
 	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
 	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
 	D3DXMatrixMultiply(&pModel->matWorld, &matScale, &matRot);

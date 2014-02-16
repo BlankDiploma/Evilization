@@ -353,6 +353,7 @@ private:
 	int screenW;
 	int screenH;
 	bool bMouseOverGameplay;
+	DWORD ghettoAnimTick;
 	DWORD uiDragStart;
 
 	//mutable
