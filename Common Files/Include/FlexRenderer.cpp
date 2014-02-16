@@ -457,6 +457,10 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
 	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
 	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);			//anisotropic filtering
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_ANISOTROPIC);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 8);
 //	pD3DDevice->SetRenderState ( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 //	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
 	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
@@ -477,6 +481,10 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
 	pD3DDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
 	pD3DDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_NONE);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 1);
 	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_2D] );
 
 	//Wireframe 3D

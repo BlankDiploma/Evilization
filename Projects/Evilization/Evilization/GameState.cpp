@@ -794,7 +794,7 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 			fYThreeQuarters = (fYMin+fYMax*3)/4;
 
 			FlexVertex hexVerts[] = {
-				{0.0f,				HEX_HALF_HEIGHT,				-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},
+				{0.0f,				HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},
 				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
 				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
 		
@@ -834,12 +834,12 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 			fHalfHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar * 0.5f;
 
 			FlexVertex quadVerts[] = {
-				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMin},
-				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
-				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
-				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
-				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
-				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMax},
+				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMin},
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},
+				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMax},
 			};
 
 			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
