@@ -545,7 +545,7 @@ void MinimapClick(lua_State *L)
 {
 	POINT pt = g_pCurContext->mousePt;
 	pt.x -= ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->left;
-	pt.y -= ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->top;
+	pt.y = ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->bottom-pt.y;
 	pt.x /= 2;
 	pt.y /= 2;
 	g_GameState.CenterView(pt);
