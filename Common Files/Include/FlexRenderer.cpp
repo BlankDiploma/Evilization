@@ -243,6 +243,24 @@ void FlexCamera::Rotate(float rot[3])
 	LeaveCriticalSection(&_csCamera);
 }
 
+void FlexCamera::WorldSpaceToHomogenousScreen(D3DXVECTOR3* pWorld, D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXMATRIX matViewProj = matProj * matView;
+	LeaveCriticalSection(&_csCamera);
+
+	D3DXVec3TransformCoord(pOut, pWorld, &matView);
+	D3DXVec3TransformCoord(pOut, pOut, &matProj);
+}
+
+void FlexRenderer::WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut)
+{
+	D3DXVECTOR3 homogenous(0,0,0);
+	pCamera->WorldSpaceToHomogenousScreen(pWorld ,&homogenous);
+	pOut->x = (LONG)(((homogenous[0] + 1)/2.0f)*iScreenW);
+	pOut->y = (LONG)(((1-homogenous[1])/2.0f)*iScreenH);
+}
+
 void FlexRenderer::UpdateCamera()
 {
 	D3DXMATRIX matView;

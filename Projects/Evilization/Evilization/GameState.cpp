@@ -393,12 +393,12 @@ inline void findLabor(hexTile* pTile, void* pOwner, void*** peaOut)
 
 void CGameState::GetOnscreenCityList(hexTile*** peaTilesOut, bool bOwned)
 {
-	pCurrentMap->GetMatchingOnscreenTiles(&mapViewport, fpMapOffset, (void***)peaTilesOut, findCity, bOwned ? &iCurPlayer : NULL);
+	pCurrentMap->GetMatchingOnscreenTiles((void***)peaTilesOut, findCity, bOwned ? &iCurPlayer : NULL);
 }
 
 void CGameState::GetOnscreenLaborList(laborSlot*** peaLaborOut, CHexCity* pCity)
 {
-	pCurrentMap->GetMatchingOnscreenTiles(&mapViewport, fpMapOffset, (void***)peaLaborOut, findLabor, pCity);
+	pCurrentMap->GetMatchingOnscreenTiles((void***)peaLaborOut, findLabor, pCity);
 }
 
 void CGameState::RenderMainMenu()
@@ -487,7 +487,12 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 
 POINT CGameState::TilePtToScreenPt(int x, int y)
 {
-	return TileToScreen(x, y, fpMapOffset);
+	D3DXVECTOR3 world((float)(x*HEX_WIDTH + HEX_HALF_WIDTH), (float)(y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT), 0.0f);
+	if (y&1)
+		world[0] += HEX_HALF_WIDTH;
+	POINT screen;
+	g_Renderer.WorldSpaceToScreen(&world, &screen);
+	return screen;
 }
 
 POINT CGameState::PixelToTilePt(int x, int y)
@@ -929,9 +934,10 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 		if (bShowTurnCount)
 		{
 			TCHAR buf[4];
+			POINT screenSpace = TilePtToScreenPt(pPath->pPoints[i].x, pPath->pPoints[i].y);
+			screenSpace.y -= 5;	//adjust slightly to make it look right
 			wsprintf(buf, _T("%i"), iTurn);
-//			g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2+1), (float)(renderPt.y+HEX_SIZE/2-7+1), (alpha << 24), true, false, false);
-//			g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2), (float)(renderPt.y+HEX_SIZE/2-7), (alpha << 24) | (iTurn > 1 ? 0xff0000 : 0xff00), true, false, false);
+			g_Renderer.AddStringToRenderList(pFont, buf, (float)screenSpace.x, (float)screenSpace.y, (alpha << 24) | (iTurn > 1 ? 0xff0000 : 0xff00), true, false, true);
 		}
 	}
 }

@@ -318,11 +318,8 @@ void CHexMap::CreateAllTerrainVertexBuffers()
 	}
 }
 
-void CHexMap::RenderTerrain()
+void CHexMap::GetTilespaceCullRect(RECT* pOut)
 {
-	float pos[3] = {0.0f, 0.0f, 0.0f};
-	float scl[3] = {1.0f, 1.0f, 1.0f};
-	float rot[3] = {0.0f, 0.0f, 0.0f};
 	D3DXVECTOR3 cameraCullPoints[4];
 	D3DXVECTOR3 planePoint(0,0,0);
 	D3DXVECTOR3 planeNormal(0,0,-1);
@@ -352,22 +349,73 @@ void CHexMap::RenderTerrain()
 	chunkRect[1] -= HEX_HEIGHT/4;
 
 
-	//calculate chunk coordinates
+	//calculate tile coordinates
+	chunkRect[0] /= (HEX_WIDTH);
+	chunkRect[1] /= (HEX_HEIGHT*3.0f/4.0f);
+	chunkRect[2] /= (HEX_WIDTH);
+	chunkRect[3] /= (HEX_HEIGHT*3.0f/4.0f);
+
+	SetRect(pOut, (LONG)chunkRect[0], (LONG)chunkRect[1], (LONG)chunkRect[2], (LONG)chunkRect[3]);
+}
+
+void CHexMap::GetChunkspaceCullRect(RECT* pOut)
+{
+	D3DXVECTOR3 cameraCullPoints[4];
+	D3DXVECTOR3 planePoint(0,0,0);
+	D3DXVECTOR3 planeNormal(0,0,-1);
+
+	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
+	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
+	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (cameraCullPoints[i].x < chunkRect[0])
+			chunkRect[0] = cameraCullPoints[i].x;
+		if (cameraCullPoints[i].x > chunkRect[2])
+			chunkRect[2] = cameraCullPoints[i].x;
+
+		if (cameraCullPoints[i].y < chunkRect[1])
+			chunkRect[1] = cameraCullPoints[i].y;
+		if (cameraCullPoints[i].y > chunkRect[3])
+			chunkRect[3] = cameraCullPoints[i].y;
+	}
+
+	//adjust edges to account for hex staggering
+	chunkRect[0] -= HEX_WIDTH/2;
+	chunkRect[1] -= HEX_HEIGHT/4;
+
+
+	//calculate tile coordinates
 	chunkRect[0] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
-	chunkRect[2] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
-	chunkRect[1] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
+	chunkRect[1] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
+	chunkRect[2] /= (TERRAIN_CHUNK_WIDTH*HEX_WIDTH);
 	chunkRect[3] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
+
+	SetRect(pOut, (LONG)floor(chunkRect[0]), (LONG)floor(chunkRect[1]), (LONG)ceil(chunkRect[2]), (LONG)ceil(chunkRect[3]));
+}
+
+void CHexMap::RenderTerrain()
+{
+	float pos[3] = {0.0f, 0.0f, 0.0f};
+	float scl[3] = {1.0f, 1.0f, 1.0f};
+	float rot[3] = {0.0f, 0.0f, 0.0f};
+	RECT chunks;
+	GetChunkspaceCullRect(&chunks);
 
 	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
 	
-	for (float i = floor(chunkRect[0]); i < ceil(chunkRect[2]); i++)
+	for (int i = chunks.left; i < chunks.right; i++)
 	{
-		float iNormalized = i;
+		int iNormalized = i;
 		if (i < 0)
 			iNormalized += iNumChunksWide;
 		if (i >= iNumChunksWide)
 			iNormalized -= iNumChunksWide;
-		for (float j = floor(chunkRect[1]); j < ceil(chunkRect[3]); j++)
+		for (int j = chunks.top; j < chunks.bottom; j++)
 		{
 			if (j < 0 || j >= iNumChunksHigh)
 				continue;
@@ -568,17 +616,11 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 }
 
 
-void CHexMap::GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset, void*** peaTilesOut, findTileFunc pFunc, void* pData)
+void CHexMap::GetMatchingOnscreenTiles(void*** peaTilesOut, findTileFunc pFunc, void* pData)
 {
 	RECT tilesToRender;
 	eaClear(peaTilesOut);
-	CopyRect(&tilesToRender, mapViewport);
-	OffsetRect(&tilesToRender, (int)(fpMapOffset.x), (int)(fpMapOffset.y));
-	tilesToRender.left /= HEX_SIZE;
-	tilesToRender.right /= HEX_SIZE;
-	tilesToRender.top /= HEX_SIZE*3/4;
-	tilesToRender.bottom /= HEX_SIZE*3/4;
-	InflateRect(&tilesToRender, 1, 1);
+	GetTilespaceCullRect(&tilesToRender);
 	for (int i = tilesToRender.left; i < tilesToRender.right; i++)
 		for (int j = max(0,tilesToRender.top); j < min(tilesToRender.bottom,h); j++)
 		{

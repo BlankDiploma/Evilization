@@ -139,12 +139,14 @@ public:
 	bool MoveUnit( CHexUnit* pUnit, POINT pt);
 	int GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut );
 	int HexPathfindTile(CHexUnit* pUnit, POINT a, POINT b, HEXPATH** pPathOut);
-	void GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset, void*** peaListOut, findTileFunc pFunc, void* pData);
+	void GetMatchingOnscreenTiles(void*** peaListOut, findTileFunc pFunc, void* pData);
 	HEXPATH* pCachedPath;
 	CHexBuilding* CreateBuilding(hexBuildingDef* pDef, CHexPlayer* pOwner, POINT loc);
 	CHexUnit* CreateUnit(hexUnitDef* pDef, CHexPlayer* pOwner, POINT loc);
 	void RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset);
 	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
+	void GetChunkspaceCullRect(RECT* pOut);
+	void GetTilespaceCullRect(RECT* pOut);
 private:
 
 	IDirect3DVertexBuffer9** ppVertBuffers;

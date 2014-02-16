@@ -208,6 +208,7 @@ public:
 	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 	void Rotate(float rot[3]);
+	void WorldSpaceToHomogenousScreen(D3DXVECTOR3* pWorld, D3DXVECTOR3* pOut);
 	void SetAxisWrapValues(int axis, float min, float max, bool bEnable)
 	{
 		fCameraWrapBoundaries[axis][0] = min;
@@ -318,7 +319,8 @@ public:
 
 	void PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2);
 	FLOATPOINT ScaleScreenCoords(int x, int y);
-
+	
+	void WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut);
 	void StartNewRenderList();
 	void CommitRenderList();
 	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
