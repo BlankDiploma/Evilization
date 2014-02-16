@@ -328,9 +328,23 @@ struct MouseHandlerState
 	}
 };
 
+
 class CGameState
 {
 private:
+
+	enum SplattableTexture {kTextureSplat_SelectedTile = 0, kTextureSplat_PathBlipSmall, kTextureSplat_PathBlipLarge, kTextureSplat_PathTarget, kTextureSplat_Count};
+	
+	enum SplattableTextureGeo {kTextureSplatGeo_Hexagon = 0, kTextureSplatGeo_Rectangle, kTextureSplatGeo_Count};
+	
+	struct
+	{
+		SplattableTextureGeo eGeo;
+		IDirect3DVertexBuffer9* pBuf;
+		int iNumTris;
+		GameTexture* pTex;
+	} pTextureSplatBuffers[kTextureSplat_Count];
+
 	CHexPlayer* pPlayers;
 	FLOATPOINT fpMapOffset;
 	POINT ptMousePos;
@@ -364,6 +378,11 @@ private:
 	void DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	void DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	
+	IDirect3DVertexBuffer9* CreateSplatBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
+	void CreateSplatBuffers();
+	void RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale);
+	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );
+
 public:
 	CGameState();
 	void Update(DWORD tick);

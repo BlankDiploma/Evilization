@@ -79,7 +79,7 @@ GameTexturePortion path
 {
 	hTex interface
 	rSrc 234 22 266 54
-	offset -48 -48
+	offset 0 0
 }
  
 GameTexturePortion terrain_badlands
@@ -107,14 +107,14 @@ GameTexturePortion pathblip
 {
 	hTex interface
 	rSrc 266 10 322 66
-	offset -36 -36
+	offset 0 0
 }
  
 GameTexturePortion pathend
 {
 	hTex interface
 	rSrc 322 0 398 76
-	offset -26 -26
+	offset 0 0
 }
  
 GameTexturePortion terrain_swamp

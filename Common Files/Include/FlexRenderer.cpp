@@ -10,6 +10,7 @@ LPDIRECT3DVERTEXBUFFER9 g_p2DVertices = NULL;
 FlexCamera::FlexCamera()
 {
 	InitializeCriticalSection(&_csCamera);
+	bCameraWrapsAlongAxis[0] = bCameraWrapsAlongAxis[1] = bCameraWrapsAlongAxis[2] = false;
 }
 
 FlexCamera::~FlexCamera()
@@ -135,6 +136,26 @@ void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
 
 	vEye += vVert;
 	vAt +=  vVert;
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (bCameraWrapsAlongAxis[i])
+		{
+			while (vEye[i] < fCameraWrapBoundaries[i][0])
+			{
+				float fCorrection = (fCameraWrapBoundaries[i][1] - fCameraWrapBoundaries[i][0]);
+				vEye[i] += fCorrection;
+				vAt[i] += fCorrection;
+			}
+
+			while (vEye[i] > fCameraWrapBoundaries[i][1])
+			{
+				float fCorrection = -(fCameraWrapBoundaries[i][1] - fCameraWrapBoundaries[i][0]);
+				vEye[i] += fCorrection;
+				vAt[i] += fCorrection;
+			}
+		}
+	}
 	
 	if (!(((vEye.z + vZoom.z) >= -15.0f) || ((vEye.z + vZoom.z) <= -70.0f)))
 	{

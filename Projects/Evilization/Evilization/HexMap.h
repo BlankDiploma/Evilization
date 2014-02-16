@@ -22,7 +22,7 @@ struct hexTileDef;
 
 #define SQRT_3 (1.7321f)
 
-#define HEX_HALF_HEIGHT 2
+#define HEX_HALF_HEIGHT 2.0f
 #define HEX_HALF_WIDTH ((SQRT_3/2.0f) * HEX_HALF_HEIGHT)
 #define HEX_HEIGHT (HEX_HALF_HEIGHT*2)
 #define HEX_WIDTH (HEX_HALF_WIDTH*2)

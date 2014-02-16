@@ -242,59 +242,26 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 //		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
 }
 
-IDirect3DVertexBuffer9* CHexMap::CreateSplatVertexBuffer(int x, int y)
-{
-	IDirect3DVertexBuffer9* pNewBuffer;
-	static FlexVertex hexRingVerts[] = {
-		{HEX_HALF_WIDTH, 0.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		
-		{0.0f, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		
-		{HEX_WIDTH, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f}
-	};
-
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
-
-	void* vb_vertices;
-
-	pNewBuffer->Lock(0, 0, &vb_vertices, 0);
-
-	memcpy(vb_vertices, hexRingVerts, 12);
-
-	pNewBuffer->Unlock();
-
-	return pNewBuffer;
-}
-
 IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
 	IDirect3DVertexBuffer9* pNewBuffer;
-	static FlexVertex hexVerts[] = {
-		{HEX_HALF_WIDTH, 0.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+	
+	FlexVertex hexVerts[] = {
+		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0, 0},
+		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
 		
-		{0.0f, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
 		
-		{HEX_WIDTH, HEX_HALF_HEIGHT/2.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_WIDTH, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
 		
-		{HEX_WIDTH, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{0.0f, HEX_HEIGHT*3.0f/4.0f, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f},
-		{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 0xFFFFFFFF, 0.0f, 0.0f}
+		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
+		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0, 0},
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0}
 	};
 
 	numTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
@@ -392,6 +359,7 @@ void CHexMap::RenderTerrain()
 	chunkRect[3] /= (TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f);
 
 	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
+	
 	for (float i = floor(chunkRect[0]); i < ceil(chunkRect[2]); i++)
 	{
 		float iNormalized = i;
@@ -403,11 +371,20 @@ void CHexMap::RenderTerrain()
 		{
 			if (j < 0 || j >= iNumChunksHigh)
 				continue;
-			pos[0] = ((int)iNormalized) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
+			pos[0] = ((int)i) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
 			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
 			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], &iNumTris, NULL, pos, scl, rot, false);
 		}
 	}
+	/*
+	g_Renderer.AddModelToRenderList(&ppVertBuffers[0], &iNumTris, NULL, pos, scl, rot, false);
+	pos[0] = HEX_WIDTH*TERRAIN_CHUNK_WIDTH;
+	g_Renderer.AddModelToRenderList(&ppVertBuffers[1], &iNumTris, NULL, pos, scl, rot, false);
+	pos[0] = 0;
+	pos[1] = TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3/4;
+
+	g_Renderer.AddModelToRenderList(&ppVertBuffers[iNumChunksWide], &iNumTris, NULL, pos, scl, rot, false);
+	*/
 }
 
 void CHexMap::RenderFog(POINT tilePt)
@@ -481,13 +458,13 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 		for (int i = 0; i < w; i++)
 		{
 
-			if (!pVis || pVis->GetTileVis(i, j/2) == kVis_Clear)
+			if (!pVis || pVis->GetTileVis(i, (h - (j/2+1))) == kVis_Clear)
 			{
-				color = GetMinimapColorAt(i, j/2);
+				color = GetMinimapColorAt(i, (h - (j/2+1)));
 			}
-			else if (pVis->GetTileVis(i, j/2) == kVis_Fog)
+			else if (pVis->GetTileVis(i, (h - (j/2+1))) == kVis_Fog)
 			{
-				color = GetMinimapColorAt(i, j/2);
+				color = GetMinimapColorAt(i, (h - (j/2+1)));
  				color = color >> 2;
 				color &= ~0x00C0C0C0;
 				color |= 0xff000000;
@@ -507,6 +484,7 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 	}
 	//render "what you're looking at" box
 	//top and bottom
+	/*
 	pDst = (char*)d3dlr.pBits + d3dlr.Pitch*tilesToRender.top*2;
 	for (int j = 0; j < RECT_HEIGHT(tilesToRender.)*2; j++)
 	{
@@ -526,7 +504,7 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 		*pPixel++ = 0xffff00ff;
 		*pPixel2++ = 0xffff00ff;
 	}
-
+	*/
 	pTex->pD3DTex->UnlockRect(0);
 	//			D3DXSaveTextureToFile(_T("derp.png"), D3DXIFF_PNG, pTileLightmapDXT1Texture, NULL);
 }
@@ -589,57 +567,6 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 	RenderTerrain();
 }
 
-void CHexMap::RenderPath( RECT* view, FLOATPOINT fpMapOffset, CHexUnit* pUnit, HEXPATH* pPath, int alpha )
-{
-	if (!pPath)
-		 return;
-	RECT tilesToRender;
-	GameTexturePortion* pathSeg;
-	CopyRect(&tilesToRender, view);
-	OffsetRect(&tilesToRender, (int)(fpMapOffset.x), (int)(fpMapOffset.y));
-	tilesToRender.left /= HEX_SIZE;
-	tilesToRender.right /= HEX_SIZE;
-	tilesToRender.top /= HEX_SIZE*3/4;
-	tilesToRender.bottom /= HEX_SIZE*3/4;
-	InflateRect(&tilesToRender, 1, 1);
-	//i starts at 1, don't render first tile of the path
-	int iMovement = pUnit->GetMovRemaining();
-	int iTurn = 0;
-	for (int i = pPath->start; i < pPath->size; i++)
-	{
-		iMovement -= GetTile(pPath->pPoints[i])->pDef->iMoveCost;
-		bool bShowTurnCount = false;
-		if (i == pPath->size-1)
-		{
-			pathSeg = ppathend;
-			bShowTurnCount = true;
-			iTurn++;
-		}
-		else if (iMovement <= 0)
-		{
-			pathSeg = ppathblip;
-			bShowTurnCount = true;
-			iMovement = pUnit->GetDef()->movement;
-			iTurn++;
-		}
-		else
-		{
-			pathSeg = ppath;
-		}
-		if (PtInRect(&tilesToRender, pPath->pPoints[i]))
-		{
-			POINT renderPt = TileToScreen(pPath->pPoints[i].x, pPath->pPoints[i].y, fpMapOffset);
-			g_Renderer.AddSpriteToRenderList(pathSeg, renderPt, alpha << 24, ZOOM_PERCENT);
-			if (bShowTurnCount)
-			{
-				TCHAR buf[4];
-				wsprintf(buf, _T("%i"), iTurn);
-				g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2+1), (float)(renderPt.y+HEX_SIZE/2-7+1), (alpha << 24), true, false, false);
-				g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2), (float)(renderPt.y+HEX_SIZE/2-7), (alpha << 24) | (iTurn > 1 ? 0xff0000 : 0xff00), true, false, false);
-			}
-		}
-	}
-}
 
 void CHexMap::GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset, void*** peaTilesOut, findTileFunc pFunc, void* pData)
 {

@@ -45,6 +45,7 @@ void CGameState::Initialize(int screenW, int screenH)
 	minimapTexture.width = 256;
 	minimapTexture.height = 256;
 	g_Renderer.GetD3DDevice()->CreateTexture(256, 256, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &minimapTexture.pD3DTex, NULL);
+	CreateSplatBuffers();
 }
 
 void CGameState::Update(DWORD tick)
@@ -300,7 +301,7 @@ void CGameState::MouseHandlerAdditionalRendering()
 		{
 			hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
 			if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
-				pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pTopOrder->pPath, 0x55);
+				RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
 
 			HEXPATH* pPath = NULL;
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
@@ -308,7 +309,7 @@ void CGameState::MouseHandlerAdditionalRendering()
 				int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
 				if (iPathLength > 0)
 				{
-					pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pPath, 0xff);
+					RenderPath(curSelUnit, pPath, 0xff);
 				}
 			}
 		}break;
@@ -347,11 +348,13 @@ void CGameState::Render()
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 			{
 				MouseHandlerAdditionalRendering();
-				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
+				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, );
 				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToMapIntersect(ptMousePos.x, ptMousePos.y));
+				POINT mouseoverTile = PixelToTilePt(ptMousePos.x, ptMousePos.y);
+				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, kTextureSplat_SelectedTile, 0, 1.0f);
 			}
 
-			//UI.Render();
+			UI.Render();
 		}break;
 	}
 	if (g_Console.IsEnabled())
@@ -427,7 +430,7 @@ void CGameState::SwitchToState(GameState newState)
 
 void CGameState::CenterView(POINT pt)
 {
-	D3DXVECTOR3 pos(pt.x * HEX_WIDTH, pt.y * HEX_HEIGHT * 3.0f / 4.0f, -30);
+	D3DXVECTOR3 pos(pt.x * HEX_WIDTH, pt.y * HEX_HEIGHT * 3.0f / 4.0f - 30, -30);
 	g_Renderer.GetCamera()->SetCameraPosition(&pos);
 }
 
@@ -522,7 +525,7 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	mapIntersect = PixelToMapIntersect(x, y);
 
 	bool bNegative = mapIntersect.x < 0;
-	box.y = (LONG) mapIntersect.y / (HEX_HEIGHT*3/4);
+	box.y = (LONG) (mapIntersect.y / (HEX_HEIGHT*3/4));
 	box.x = (LONG)(mapIntersect.x /(HEX_WIDTH) - ((box.y % 2) ? 0.5 : 0));
 	tempY = (mapIntersect.y);
 	tempY -= ((int)(tempY/(HEX_HEIGHT*3/4)))*(HEX_HEIGHT*3/4);
@@ -535,16 +538,16 @@ POINT CGameState::PixelToTilePt(int x, int y)
 	}
 	if (tempY < HEX_HEIGHT/4)
 	{
-		if (tempY < -0.5*tempX + (HEX_HEIGHT/4-1))
+		if (tempY < -tempX/SQRT_3 + (HEX_HEIGHT*1/4))
 		{
-			//upper left
+			//lower left
 			box.y--;
 			if (box.y % 2)
 				box.x--;
 		}
-		else if (tempY < 0.5*tempX + -(HEX_HEIGHT/4+1))
+		else if (tempY < tempX/SQRT_3 - (HEX_HEIGHT*1/4))
 		{
-			//upper right
+			//lower right
 			box.y--;
 			if (!(box.y % 2))
 				box.x++;
@@ -593,7 +596,10 @@ void CGameState::StartNewGame()
 
 	if (!pCurrentMap)
 		pCurrentMap = new CHexMap;
-	pCurrentMap->Generate(128,128, GetTickCount());
+	int mapWidth = 128;
+	int mapHeight = 128;
+	pCurrentMap->Generate(mapWidth,mapHeight, GetTickCount());
+	g_Renderer.GetCamera()->SetAxisWrapValues(0, 0, mapWidth*HEX_WIDTH, true);
 
 	SwitchToState(kGameState_Gameplay);
 	UI.Reset(screenW, screenH);
@@ -759,6 +765,173 @@ void CGameState::AdjustMapZoom( int rot )
 CHexPlayer* CGameState::GetCurrentPlayer()
 {
 	return &pPlayers[iCurPlayer];
+}
+
+
+IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo)
+{
+	void* vb_vertices;
+	GameTexture* pSourceTexture = pTex->hTex.pTex;
+	IDirect3DVertexBuffer9* pSplatBuffer = NULL;
+	
+	switch(eGeo)
+	{
+	case kTextureSplatGeo_Hexagon:
+		{
+			float fXMin, fXHalf, fXMax;
+			float fYMin, fYOneQuarter, fYThreeQuarters, fYMax;
+
+			//calculate helpful coordinates
+			fXMin = ((float)pTex->rSrc->left)/pSourceTexture->width;
+			fXMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
+			fXHalf = (fXMin+fXMax)/2;
+
+			fYMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
+			fYMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
+			fYOneQuarter = (fYMin*3+fYMax)/4;
+			fYThreeQuarters = (fYMin+fYMax*3)/4;
+
+			FlexVertex hexVerts[] = {
+				{HEX_HALF_WIDTH,	HEX_HEIGHT,				-0.01f, 0xFFFFFFFF,	fXHalf, fYMin},
+				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{0.0f,				HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
+		
+				{0.0f,				HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
+				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
+		
+				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
+				{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYOneQuarter},
+				{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
+		
+				{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
+				{HEX_HALF_WIDTH,	0.0f,					-0.01f, 0xFFFFFFFF,	fXHalf, fYMax},
+				{0.0f,				HEX_HALF_HEIGHT/2.0f,	-0.01f, 0xFFFFFFFF,	fXMin, fYThreeQuarters}
+			};
+
+			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+			
+			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
+
+			memcpy(vb_vertices, hexVerts, sizeof(FlexVertex)*12);
+
+			pSplatBuffer->Unlock();
+		}break;
+	case kTextureSplatGeo_Rectangle:
+		{
+			const float fScalar = 0.033f;
+			float fUMin, fUMax, fWidth, fXOffset;
+			float fVMin, fVMax, fHeight, fYOffset;
+			fUMin = ((float)pTex->rSrc->left)/pSourceTexture->width;
+			fUMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
+			fWidth = (float)(pTex->rSrc->right-pTex->rSrc->left) * fScalar;
+			fXOffset = (HEX_HALF_WIDTH-(fWidth/2)) + pTex->offset->x;
+
+
+			fVMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
+			fVMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
+			fHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar;
+			fYOffset = (HEX_HALF_HEIGHT-(fHeight/2)) + pTex->offset->y;
+
+			FlexVertex quadVerts[] = {
+				{fXOffset,			fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMin, fVMin},
+				{fXOffset+fWidth,	fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
+				{fXOffset,			fYOffset,			-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
+				{fXOffset,			fYOffset,			-0.01f, 0xFFFFFFFF,	fUMin, fVMax},
+				{fXOffset+fWidth,	fYOffset+fHeight,	-0.01f, 0xFFFFFFFF,	fUMax, fVMin},
+				{fXOffset+fWidth,	fYOffset,			-0.01f, 0xFFFFFFFF,	fUMax, fVMax},
+			};
+
+			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+			
+			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
+
+			memcpy(vb_vertices, quadVerts, sizeof(FlexVertex)*6);
+
+			pSplatBuffer->Unlock();
+		}break;
+	}
+
+
+	return pSplatBuffer;
+}
+
+void CGameState::CreateSplatBuffers()
+{
+	GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Hexagon);
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].iNumTris = 4;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].eGeo = kTextureSplatGeo_Hexagon;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"path");
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathblip");
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathend");
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathTarget].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pTex = pPortion->hTex.pTex;
+}
+
+void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale)
+{
+	float vPos[3] = {x*HEX_WIDTH, y*HEX_HEIGHT*3/4, 0.0f};
+	float vRot[3] = {0.0f, rot, 0.0f};
+	float vScale[3] = {scale, scale, 1.0f};
+	if (y & 1)
+		vPos[0] += HEX_HALF_WIDTH;
+	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pBuf, &pTextureSplatBuffers[eType].iNumTris, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, false);
+}
+
+void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
+{
+	if (!pPath)
+		 return;
+	SplattableTexture eSplat;
+	//i starts at 1, don't render first tile of the path
+	int iMovement = pUnit->GetMovRemaining();
+	int iTurn = 0;
+	for (int i = pPath->start; i < pPath->size; i++)
+	{
+		iMovement -= pCurrentMap->GetTile(pPath->pPoints[i])->pDef->iMoveCost;
+		bool bShowTurnCount = false;
+		if (i == pPath->size-1)
+		{
+			eSplat = kTextureSplat_PathTarget;
+			bShowTurnCount = true;
+			iTurn++;
+		}
+		else if (iMovement <= 0)
+		{
+			eSplat = kTextureSplat_PathBlipLarge;
+			bShowTurnCount = true;
+			iMovement = pUnit->GetDef()->movement;
+			iTurn++;
+		}
+		else
+		{
+			eSplat = kTextureSplat_PathBlipSmall;
+		}
+		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, 0.0f, 1.0f);
+//		g_Renderer.AddSpriteToRenderList(pathSeg, renderPt, alpha << 24, ZOOM_PERCENT);
+		if (bShowTurnCount)
+		{
+			TCHAR buf[4];
+			wsprintf(buf, _T("%i"), iTurn);
+//			g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2+1), (float)(renderPt.y+HEX_SIZE/2-7+1), (alpha << 24), true, false, false);
+//			g_Renderer.AddStringToRenderList(pFont, buf, (float)(renderPt.x+HEX_SIZE/2), (float)(renderPt.y+HEX_SIZE/2-7), (alpha << 24) | (iTurn > 1 ? 0xff0000 : 0xff00), true, false, false);
+		}
+	}
 }
 
 int CHexPlayer::GetTechProgress( LPCTSTR name )

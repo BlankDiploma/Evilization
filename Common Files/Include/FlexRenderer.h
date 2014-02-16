@@ -177,6 +177,8 @@ class FlexCamera
 	//float fPitch, fYaw, fRoll;
 	CRITICAL_SECTION _csCamera;
 	FlexFrustum cameraFrustum;	
+	float fCameraWrapBoundaries[3][2];	//[x y z][min max]
+	bool bCameraWrapsAlongAxis[3];	//[x y z]
 	
 	void BuildViewFrustum();
 
@@ -204,6 +206,12 @@ public:
 	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
 	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
 	void Rotate(float rot[3]);
+	void SetAxisWrapValues(int axis, float min, float max, bool bEnable)
+	{
+		fCameraWrapBoundaries[axis][0] = min;
+		fCameraWrapBoundaries[axis][1] = max;
+		bCameraWrapsAlongAxis[axis] = bEnable;
+	}
 	FlexFrustum* GetFrustum()
 	{
 		return &cameraFrustum;
