@@ -401,6 +401,7 @@ void LoadGameData()
 	InitializeBiomeMap(_T("biomes.bmp"));
 //	StoreGameExprFuncs();
 	g_GameState.Initialize(g_screenWidth, g_screenHeight);
+	g_Renderer.CreateAllTextureAtlasBuffers();
 //	hexmap.Generate(128, 128, GetTickCount());
 
 }

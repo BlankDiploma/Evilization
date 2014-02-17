@@ -560,6 +560,7 @@ FlexRenderer::FlexRenderer()
 	pNextRenderList = new RenderList;
 	pCurRenderList = new RenderList;
 	eaVertsToDestroy = NULL;
+	eaAtlasVertexBuffers = NULL;
 }
 
 FlexRenderer::~FlexRenderer()
@@ -569,6 +570,17 @@ FlexRenderer::~FlexRenderer()
 		if (stateBlocks[i])
 			stateBlocks[i]->Release();
 	}
+	for (int i = 0; i < eaSize(&eaAtlasVertexBuffers); i++)
+	{
+		if (eaAtlasVertexBuffers[i])
+			eaAtlasVertexBuffers[i]->Release();
+	}
+	for (int i = 0; i < eaSize(&eaVertsToDestroy); i++)
+	{
+		eaVertsToDestroy[i]->Release();
+	}
+	eaDestroy(&eaAtlasVertexBuffers);
+	eaDestroy(&eaVertsToDestroy);
 	if (pD3D)
 	{
 		pD3D->Release();
@@ -716,6 +728,7 @@ void FlexRenderer::CommitRenderList()
 		pFutureRenderList = pTemp;
 	}
 }
+
 void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
@@ -726,6 +739,32 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* p
 	pModel->ppVerts = ppVerts;
 	pModel->pTex = pTex ? pTex->pD3DTex : NULL;
 	pModel->piNumTris = piNumTris;
+	pModel->iVertStart = 0;
+	pModel->ePrimitiveType = D3DPT_TRIANGLELIST;
+
+	D3DXMATRIX matTrans, matRot, matScale;
+
+	D3DXMatrixRotationYawPitchRoll(&matRot,rot[1],rot[0],rot[2]);
+	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
+	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
+	D3DXMatrixMultiply(&pModel->matWorld, &matScale, &matRot);
+	D3DXMatrixMultiply(&pModel->matWorld, &pModel->matWorld, &matTrans);
+}
+
+void FlexRenderer::Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+{
+	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
+	static int iNumTris = 2;
+
+	ModelCall* pModel = bTranslucent ? 
+		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
+		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
+
+	pModel->ppVerts = &pTex->pVerts;
+	pModel->pTex = pTex->hTex.pTex->pD3DTex;
+	pModel->piNumTris = &iNumTris;
+	pModel->iVertStart = pTex->iVertIndexStart;
+	pModel->ePrimitiveType = D3DPT_TRIANGLESTRIP;
 
 	D3DXMATRIX matTrans, matRot, matScale;
 
@@ -988,8 +1027,8 @@ void FlexRenderer::ProcessRenderLists()
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
 		pD3DDevice->SetTexture ( 0 , pCall->pTex );
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
+		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 	}
 	
 	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
@@ -1000,8 +1039,8 @@ void FlexRenderer::ProcessRenderLists()
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
 		pD3DDevice->SetTexture ( 0 , pCall->pTex );
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
+		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 	}
 	
 	Begin2D();
@@ -1312,6 +1351,74 @@ void FlexRenderer::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y)
 {
 	pCamera->CastRayThroughPixel(pOut, x, y, iScreenW, iScreenH);
 }
+
+void FlexRenderer::CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions)
+{
+	int iNumEntries = eaSize(&eaPortions);
+	int numVerts = iNumEntries*4;
+	IDirect3DVertexBuffer9* pNewBuf = NULL;
+	pD3DDevice->CreateVertexBuffer(numVerts*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNewBuf, NULL);
+	BYTE* pVerts;
+	
+	pNewBuf->Lock(0, 0, (void**)&pVerts, 0);
+	
+	for (int i = 0; i < iNumEntries; i++)
+	{
+		float minU = ((float)eaPortions[i]->rSrc->left)/pSrcTexture->width;
+		float maxU = ((float)eaPortions[i]->rSrc->right)/pSrcTexture->width;
+		float minV = ((float)eaPortions[i]->rSrc->top)/pSrcTexture->height;
+		float maxV = ((float)eaPortions[i]->rSrc->bottom)/pSrcTexture->height;
+		float XYRatio = ((float)(eaPortions[i]->rSrc->right-eaPortions[i]->rSrc->left))/(eaPortions[i]->rSrc->bottom-eaPortions[i]->rSrc->top);
+		eaPortions[i]->iVertIndexStart = i*4;
+		eaPortions[i]->pVerts = pNewBuf;
+
+		FlexVertex verts[4] = 
+		{
+			{-XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,minU,minV},
+			{XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,maxU,minV},
+			{-XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,minU,maxV},
+			{XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,maxU,maxV}
+		};
+		
+		memcpy(pVerts, verts, sizeof(verts));
+		pVerts += sizeof(verts);
+	}
+	pNewBuf->Unlock();
+
+	eaPush(&eaAtlasVertexBuffers, pNewBuf);
+}
+
+void FlexRenderer::CreateAllTextureAtlasBuffers()
+{
+	DefHash::iterator hashIter;
+	DefHash::iterator hashEnd = DEF_ITER_END(GameTexturePortion);
+	PointerPointerHash htTexturePointerToAtlasList;
+	PointerPointerHash::iterator atlasIter;
+
+	for(hashIter = DEF_ITER_BEGIN(GameTexturePortion); hashIter != hashEnd; ++hashIter) 
+	{
+		GameTexturePortion* pPortion = (GameTexturePortion*)hashIter->second;
+		GameTexturePortion** eaPortions = NULL;
+		if (!pPortion->hTex.pTex)
+			continue;
+		if (htTexturePointerToAtlasList.find(pPortion->hTex.pTex) != htTexturePointerToAtlasList.end())
+		{
+			eaPortions = (GameTexturePortion**)htTexturePointerToAtlasList[pPortion->hTex.pTex];
+		}	
+
+		eaPush(&eaPortions, pPortion);
+		htTexturePointerToAtlasList[pPortion->hTex.pTex] = eaPortions;
+		
+	}
+
+	for (atlasIter = htTexturePointerToAtlasList.begin(); atlasIter != htTexturePointerToAtlasList.end(); atlasIter++)
+	{
+		//for each referenced texture, iterate over all its portions and build a vertex buffer.
+		CreateTextureAtlasVertexBuffer((GameTexture*)atlasIter->first, (GameTexturePortion**)atlasIter->second);
+		eaDestroy(&atlasIter->second);
+	}
+}
+
 FlexRenderer g_Renderer;
 
 #include "Autogen\flexrenderer_h_ast.cpp"

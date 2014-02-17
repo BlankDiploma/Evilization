@@ -565,20 +565,16 @@ inline POINT TileToScreen(int x, int y, FLOATPOINT fpOffset)
 
 void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 {
-	RECT tilesToRender;
+	RECT screenTiles;
+	GetTilespaceCullRect(&screenTiles);
 	playerVisibility* pVis = FOG_OF_WAR ? pPlayer->GetVisibility() : NULL;
-	CopyRect(&tilesToRender, view);
-	OffsetRect(&tilesToRender, (int)fpMapOffset.x, (int)fpMapOffset.y);
-	tilesToRender.left /= HEX_SIZE;
-	tilesToRender.right /= HEX_SIZE;
-	tilesToRender.top /= HEX_SIZE*3/4;
-	tilesToRender.bottom /= HEX_SIZE*3/4;
-	InflateRect(&tilesToRender, 1, 1);
-	for (int j = max(0,tilesToRender.top); j < min(tilesToRender.bottom,h); j++)
-		for (int i = tilesToRender.left; i < tilesToRender.right; i++)
+
+	//for SOME FUCKING REASON putting this call after the below chunk ruins transparency
+
+	for (int j = max(0,screenTiles.top); j < min(screenTiles.bottom,h); j++)
+		for (int i = screenTiles.left; i < screenTiles.right; i++)
 		{
 			POINT validPt = {i, j};
-			POINT screenPt = TileToScreen(i, j, fpMapOffset);
 			MakeLocValid(&validPt);
 			if (!pVis || pVis->GetTileVis(validPt.x, validPt.y) != kVis_Shroud)
 			{
@@ -587,17 +583,14 @@ void CHexMap::Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer)
 				//else
 				//	RenderTile(screenPt, GetTile(i, j), 0xFFFFFFFF, ZOOM_PERCENT);
 			}
-/*
-			POINT sanitizedPt = {i,j};
-			MakeLocValid(&sanitizedPt);
-			if (pPathMap && pPathMap[sanitizedPt.x + sanitizedPt.y*w] > 0)
-			{
-				CAtlString str;
-				str.Format(_T("%i"), pPathMap[sanitizedPt.x + sanitizedPt.y*w]);
-				POINT pt = TileToScreen(i, j, fpMapOffset);
-				pFont->RenderString(str, pt.x + 32, pt.y + 32, 0xffff0000);
-			}
-			*/
+			
+			hexTile* pTile = GetTile(validPt);
+
+			if (pTile->pBuilding)
+				g_GameState.RenderTileObject(i, j, GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), 0.0f, 3.0f);
+			if (pTile->pUnit)
+				g_GameState.RenderTileObject(i, j, GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), 0.0f, 3.0f);
+
 		}
 	for (int iCity = 0; iCity < eaSize(&pPlayer->eaCities); iCity++)
 	{

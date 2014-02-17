@@ -19,7 +19,7 @@
 #define CAM_ANGLE 45.0f
 #define FOVY D3DX_PI/4.0f
 
-#define PI 3.1415928f
+#define PI D3DX_PI
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
 
@@ -29,6 +29,8 @@ PARSE_STRUCT(GameTexturePortion)
 	TEXTURE_REF hTex;
 	RECT* rSrc;
 	POINT* offset;
+	PARSE_IGNORE IDirect3DVertexBuffer9* pVerts;
+	PARSE_IGNORE int iVertIndexStart;
 	GameTexturePortion()
 	{
 	}
@@ -227,7 +229,9 @@ struct ModelCall
 	D3DXMATRIX matWorld;
 	LPDIRECT3DVERTEXBUFFER9* ppVerts;
 	int* piNumTris;
+	int iVertStart;
 	LPDIRECT3DTEXTURE9 pTex;
+	D3DPRIMITIVETYPE ePrimitiveType;
 };
 
 #define RENDER_LIST_BUFFER_SIZE 4096
@@ -291,7 +295,12 @@ class FlexRenderer
 	void End2D();
 
 	IDirect3DVertexBuffer9* pCubeVertBuffer;
+	
 
+	void CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
+
+
+	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
 public:
 	FlexRenderer();
 	~FlexRenderer();
@@ -323,6 +332,7 @@ public:
 	void WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut);
 	void StartNewRenderList();
 	void CommitRenderList();
+	void Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
 	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
 	void AddSpriteToRenderList(GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
@@ -338,6 +348,7 @@ public:
 	void PixelToFrustumRay(D3DXVECTOR3 pOut[2], int x, int y); 
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
+	void CreateAllTextureAtlasBuffers();
 };
 
 extern FlexRenderer g_Renderer;

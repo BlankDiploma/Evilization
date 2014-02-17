@@ -20,6 +20,7 @@ struct playerVisibility;
 struct laborSlotDef;
 struct hexTileDef;
 
+#define SQRT_2 (1.4142f)
 #define SQRT_3 (1.7321f)
 
 #define HEX_HALF_HEIGHT 2.0f

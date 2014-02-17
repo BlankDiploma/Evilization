@@ -324,6 +324,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 			}
 		}
 		delete [] buf;
+		fclose(input);
 		return true;
 	}
 	catch (ios_base::failure* e)

@@ -898,6 +898,20 @@ void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float
 	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pBuf, &pTextureSplatBuffers[eType].iNumTris, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, false);
 }
 
+void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
+{
+	float f45DegreeAnglePosCorrection = (float)(scale/(2*SQRT_2));
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT + f45DegreeAnglePosCorrection, -f45DegreeAnglePosCorrection};
+	float vRot[3] = {D3DXToRadian(-45.0f), 0.0f, rot};
+	float vScale[3] = {scale, scale, 1.0f};
+	static int numTris = 2;
+
+	if (y & 1)
+		vPos[0] += HEX_HALF_WIDTH;
+
+	g_Renderer.Add3DTexturePortionToRenderList(pPortion, vPos, vScale, vRot, false);
+}
+
 void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 {
 	if (!pPath)

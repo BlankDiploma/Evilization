@@ -402,6 +402,7 @@ public:
 	POINT PixelToTilePt(int x, int y);
 	FLOATPOINT PixelToMapIntersect(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
+	void RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
 	{
@@ -481,6 +482,7 @@ public:
 	POINT GetViewCenter();
 	void ShowTechTreeUI();
 	CHexPlayer* GetCurrentPlayer();
+
 	CHexMap* GetCurrentMap()
 	{
 		return pCurrentMap;
