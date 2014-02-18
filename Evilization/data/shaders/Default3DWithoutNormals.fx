@@ -5,9 +5,6 @@ float4x4 matView;
 float4 eye;
 Texture shaderTexture;
 
-//float4 AmbientColor= float4(1, 1, 1, 1);
-//float AmbientIntensity = 1.0f;
-
 sampler2D Sampler =
 sampler_state
 {
@@ -26,12 +23,25 @@ struct ApplicationToVertex
 	float2 Tex : TEXCOORD0;
 };
 
+struct ApplicationToVertex2D
+{
+    float4 Position : POSITION0;
+	float4 Color : COLOR0;
+	float2 Tex : TEXCOORD0;
+};
+
 struct VertexToPixel
 {
 	float4 Position : POSITION0;
 	float4 Color : COLOR0;
 	float2 Tex : TEXCOORD0;
-	//float3 ViewDirection : TEXCOORD1;
+};
+
+struct VertexToPixel2D
+{
+	float4 Position : POSITION0;
+	float4 Color : COLOR0;
+	float2 Tex : TEXCOORD0;
 };
 
 VertexToPixel VertexShaderFunction(ApplicationToVertex input)
@@ -46,14 +56,12 @@ VertexToPixel VertexShaderFunction(ApplicationToVertex input)
 
 	output.Tex = input.Tex;
 
-	//output.ViewDirection = normalize(eye.xyz - worldPosition.xyz);
-
     return output;
 }
 
-VertexToPixel VertexShaderFunction2D(ApplicationToVertex input)
+VertexToPixel2D VertexShaderFunction2D(ApplicationToVertex2D input)
 {
-	VertexToPixel output;
+	VertexToPixel2D output;
 	output.Position = input.Position;
 	output.Color = input.Color;
 	output.Tex = input.Tex;
@@ -65,23 +73,16 @@ float4 PixelShaderFunction(VertexToPixel input) : COLOR0
 	float4 textureColor, color;
 	textureColor = tex2D(Sampler, input.Tex);
 
-	if (textureColor.r || textureColor.b || textureColor.g)
-		color = saturate(textureColor * input.Color);
-	else
-		color = saturate(input.Color * textureColor.a);
+	color = saturate(textureColor * input.Color);
 	return color;
 }
 
-float4 PixelShaderFunction2D(VertexToPixel input) : COLOR0
+float4 PixelShaderFunction2D(VertexToPixel2D input) : COLOR0
 {
 	float4 textureColor, color;
 	textureColor = tex2D(Sampler, input.Tex);
 
-	if (textureColor.r || textureColor.b || textureColor.g)
-		color = saturate(textureColor);
-	else
-		color = saturate(input.Color * textureColor.a);
-	//color = textureColor;
+	color = saturate(textureColor * input.Color);
 	return color;
 }
 
@@ -92,7 +93,7 @@ technique Default3D
         VertexShader = compile vs_3_0 VertexShaderFunction();
         PixelShader = compile ps_3_0 PixelShaderFunction();
 
-        //ShadeMode = FLAT;
+        ShadeMode = FLAT;
         FillMode = SOLID;
         CullMode = CCW;
 		ZEnable = TRUE;
@@ -121,7 +122,7 @@ technique Default2D
         VertexShader = compile vs_3_0 VertexShaderFunction2D();
         PixelShader = compile ps_3_0 PixelShaderFunction2D();
 
-        //ShadeMode = FLAT;
+        ShadeMode = FLAT;
         FillMode = SOLID;
         CullMode = NONE;
 		ZEnable = FALSE;
@@ -165,7 +166,7 @@ technique Translucent3D
         VertexShader = compile vs_3_0 VertexShaderFunction();
         PixelShader = compile ps_3_0 PixelShaderFunction();
 
-        //ShadeMode = FLAT;
+        ShadeMode = FLAT;
         FillMode = SOLID;
         CullMode = CCW;
 		ZEnable = TRUE;
