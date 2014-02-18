@@ -1076,7 +1076,14 @@ void FlexRenderer::AddNinepatchToRenderList(GameTexture* pSet, int iIndex, RECT*
 
 void FlexRenderer::ProcessRenderLists()
 {
+	static IDirect3DTexture9* pWhite = NULL;
 
+	if (!pWhite)
+	{
+		GameTexture* pGameTex = GET_TEXTURE(L"white");
+		assert(pGameTex);	//there must be a "white" texture available
+		pWhite = pGameTex->pD3DTex;
+	}
 #ifdef FLEX_RENDERER_SINGLE_THREAD
 	if (pCurRenderList->bUsed && !pNextRenderList->bUsed)
 	{
@@ -1131,7 +1138,7 @@ void FlexRenderer::ProcessRenderLists()
 		p3DShader->SetMatrix("matProj", &matProj);
 		p3DShader->SetMatrix("matView", &matView);
 		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
-		p3DShader->SetTexture("shaderTexture", pCall->pTex);
+		p3DShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
 
 		p3DShader->CommitChanges();
 
@@ -1171,7 +1178,7 @@ void FlexRenderer::ProcessRenderLists()
 		p3DShader->SetMatrix("matProj", &matProj);
 		p3DShader->SetMatrix("matView", &matView);
 		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
-		p3DShader->SetTexture("shaderTexture", pCall->pTex);
+		p3DShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
 
 		p3DShader->CommitChanges();
 
@@ -1191,7 +1198,7 @@ void FlexRenderer::ProcessRenderLists()
 	for (int i = 0; i < pCurRenderList->spritesUsed; i++)
 	{
 		if (i == 0 || pCurRenderList->eaSpriteTextures[i] != pCurRenderList->eaSpriteTextures[i-1])
-			p3DShader->SetTexture("shaderTexture", pCurRenderList->eaSpriteTextures[i]);
+			p3DShader->SetTexture("shaderTexture", pCurRenderList->eaSpriteTextures[i] ? pCurRenderList->eaSpriteTextures[i] : pWhite);
 			//pD3DDevice->SetTexture ( 0 , pCurRenderList->eaSpriteTextures[i] );
 		D3DXMATRIXA16 matWorld, matProj, matView;
 		D3DXVECTOR3 camEye;
