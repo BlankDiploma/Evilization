@@ -271,6 +271,11 @@ class FlexRenderer
 	IDirect3DStateBlock9* stateBlocks[kRendererMode_Count];
 	D3DVIEWPORT9 mainView;
 	FlexCamera* pCamera;
+	ID3DXEffect* p3DShader, *p2DShader;
+	LPDIRECT3DVERTEXDECLARATION9 FlexVertexDecl, FlexVertex2DDecl;
+	D3DXHANDLE default3DTech, default2DTech, wireframe3DTech, translucent3DTech;
+
+
 	int iScreenW;
 	int iScreenH;
 	float fAspect;

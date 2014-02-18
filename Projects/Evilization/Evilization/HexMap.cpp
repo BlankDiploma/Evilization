@@ -265,7 +265,9 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 	};
 
 	numTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+	//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+
 
 	void* vb_vertices;
 

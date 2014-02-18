@@ -816,8 +816,11 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters}
 			};
 
-			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-			
+			//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+
+			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+
+
 			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
 
 			memcpy(vb_vertices, hexVerts, sizeof(FlexVertex)*12);
@@ -847,8 +850,10 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMax},
 			};
 
-			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-			
+			//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+
+
 			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
 
 			memcpy(vb_vertices, quadVerts, sizeof(FlexVertex)*6);

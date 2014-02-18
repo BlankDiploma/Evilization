@@ -465,57 +465,142 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->SetViewport(&mainView);
 
 	//set vertex shader
+	LPD3DXBUFFER effectErrors = NULL;
+
+	HRESULT error = D3DXCreateEffectFromFileW(pD3DDevice,
+		_T("data/shaders/Default3DWithoutNormals.fx"),
+		0,
+		0,
+		0,
+		0,
+		&p3DShader,
+		&effectErrors
+		);
+
+
+	if (effectErrors)
+	{
+		size_t origsize = strlen((char*)effectErrors->GetBufferPointer()) + 1;
+		const size_t newsize = 100;
+		wchar_t wcstring[1000];
+		size_t convertedChars = 0;
+		mbstowcs_s(&convertedChars, wcstring, origsize, (char*)effectErrors->GetBufferPointer(), _TRUNCATE);
+		MessageBoxW(0, wcstring, 0, 0);
+		effectErrors->Release();
+	}
+
+	//D3DVERTEXELEMENT9 decl3D[] = {
+	//	{0,
+	//	0,
+	//	D3DDECLTYPE_FLOAT3,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_POSITION,
+	//	0},
+	//	{0,
+	//	12,
+	//	D3DDECLTYPE_D3DCOLOR,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_COLOR,
+	//	0},
+	//	{0,
+	//	16,
+	//	D3DDECLTYPE_FLOAT2,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_TEXCOORD,
+	//	0},
+	//	D3DDECL_END()};
+
+	D3DVERTEXELEMENT9 decl3D[MAX_FVF_DECL_SIZE];
+	D3DVERTEXELEMENT9 decl2D[MAX_FVF_DECL_SIZE];
+
+	D3DXDeclaratorFromFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl3D);
+	D3DXDeclaratorFromFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl2D);
+
+	pD3DDevice->CreateVertexDeclaration(decl3D, &FlexVertexDecl);
+
+	//D3DVERTEXELEMENT9 decl2D[] = {
+	//	{0,
+	//	0,
+	//	D3DDECLTYPE_FLOAT4,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_POSITIONT,
+	//	0},
+	//	{0,
+	//	16,
+	//	D3DDECLTYPE_D3DCOLOR,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_COLOR,
+	//	0},
+	//	{0,
+	//	20,
+	//	D3DDECLTYPE_FLOAT2,
+	//	D3DDECLMETHOD_DEFAULT,
+	//	D3DDECLUSAGE_TEXCOORD,
+	//	0},
+	//	D3DDECL_END()};
+
+	pD3DDevice->CreateVertexDeclaration(decl2D, &FlexVertex2DDecl);
+
+	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
+
+	default3DTech = p3DShader->GetTechniqueByName("Default3D");
+	default2DTech = p3DShader->GetTechniqueByName("Default2D");
+	wireframe3DTech = p3DShader->GetTechniqueByName("Wireframe3D");
+	translucent3DTech = p3DShader->GetTechniqueByName("Translucent3D");
+
+	error = p3DShader->SetTechnique(default3DTech);
 
 	//set up render modes
 
 	//Default 3D Rendering
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetFVF ( D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);			//anisotropic filtering
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_ANISOTROPIC);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 8);
-//	pD3DDevice->SetRenderState ( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
-//	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
+//	pD3DDevice->BeginStateBlock();
+//	pD3DDevice->SetFVF ( D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
+//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
+//	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);			//anisotropic filtering
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_ANISOTROPIC);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 8);
+////	pD3DDevice->SetRenderState ( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+////	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
+//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
+//
+//	//Default 2D Rendering
+//	pD3DDevice->BeginStateBlock();
+//	pD3DDevice->SetFVF ( D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
+//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_NONE ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_FALSE);
+//	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
+//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_ALPHABLENDENABLE , TRUE ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_ALPHAFUNC , D3DCMP_GREATEREQUAL ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_ALPHAREF , 1 ) ;
+//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_MODULATE  );
+//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_TEXTURE );
+//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG2,D3DTA_DIFFUSE );
+//	pD3DDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+//	pD3DDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+//	pD3DDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_NONE);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 1);
+//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_2D] );
+//
+//	//Wireframe 3D
+//	pD3DDevice->BeginStateBlock();
+//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
+//	pD3DDevice->SetRenderState ( D3DRS_FILLMODE , D3DFILL_WIREFRAME ) ;
+//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Wireframe3D] );
 
-	//Default 2D Rendering
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetFVF ( D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_NONE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_FALSE);
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHABLENDENABLE , TRUE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHAFUNC , D3DCMP_GREATEREQUAL ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHAREF , 1 ) ;
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_MODULATE  );
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_TEXTURE );
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG2,D3DTA_DIFFUSE );
-	pD3DDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-	pD3DDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-	pD3DDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_NONE);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 1);
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_2D] );
-
-	//Wireframe 3D
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-	pD3DDevice->SetRenderState ( D3DRS_FILLMODE , D3DFILL_WIREFRAME ) ;
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Wireframe3D] );
-
-	stateBlocks[kRendererMode_Default3D]->Apply();
+	//stateBlocks[kRendererMode_Default3D]->Apply();
 	//stateBlocks[kRendererMode_Wireframe3D]->Apply();
 
-	pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &g_pCubeVertex, NULL);
+	//pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &g_pCubeVertex, NULL);
+	pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &g_pCubeVertex, NULL);
 
 	BYTE* pVertices;
 	FlexVertex data[]={
@@ -544,11 +629,17 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	g_pCubeVertex->Unlock();
 
 	//let's assume that 1,000 2d sprites is enough for now
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
+	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
 	
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
+	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
 	
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
+	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
+
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
+	
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
+	
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
 	
 }
 
@@ -1026,21 +1117,73 @@ void FlexRenderer::ProcessRenderLists()
 		ModelCall* pCall = &pCurRenderList->models[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		pD3DDevice->SetTexture ( 0 , pCall->pTex );
+		//pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+
+		D3DXMATRIXA16 matWorld, matProj, matView;
+		D3DXVECTOR3 camEye;
+		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+		pCamera->GetProjMatrix(&matProj);
+		pCamera->GetViewMatrix(&matView);
+		pCamera->GetCameraEye(&camEye);
+
+		p3DShader->SetMatrix("matWorld", &matWorld);
+		p3DShader->SetMatrix("matProj", &matProj);
+		p3DShader->SetMatrix("matView", &matView);
+		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+		p3DShader->SetTexture("shaderTexture", pCall->pTex);
+
+		p3DShader->CommitChanges();
+
+		unsigned passes = 0;
+		p3DShader->Begin(&passes,0);
+		for(unsigned i = 0; i < passes; i++)
+		{
+			p3DShader->BeginPass(i);
+
+			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+
+			p3DShader->EndPass();
+		}
+		p3DShader->End();
 	}
 	
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
+	//pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
+	p3DShader->SetTechnique(translucent3DTech);
+	//p3DShader->SetTechnique(wireframe3DTech);
 
 	for (int i = 0; i < pCurRenderList->translucentModelsUsed; i++)
 	{
 		ModelCall* pCall = &pCurRenderList->translucentModels[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		pD3DDevice->SetTexture ( 0 , pCall->pTex );
+		//pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+
+		D3DXMATRIXA16 matWorld, matProj, matView;
+		D3DXVECTOR3 camEye;
+		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+		pCamera->GetProjMatrix(&matProj);
+		pCamera->GetViewMatrix(&matView);
+		pCamera->GetCameraEye(&camEye);
+
+		p3DShader->SetMatrix("matWorld", &matWorld);
+		p3DShader->SetMatrix("matProj", &matProj);
+		p3DShader->SetMatrix("matView", &matView);
+		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+		p3DShader->SetTexture("shaderTexture", pCall->pTex);
+
+		p3DShader->CommitChanges();
+
+		unsigned passes = 0;
+		p3DShader->Begin(&passes,0);
+		for(unsigned i = 0; i < passes; i++)
+		{
+			p3DShader->BeginPass(i);
+			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+			p3DShader->EndPass();
+		}
+		p3DShader->End();
 	}
 	
 	Begin2D();
@@ -1048,9 +1191,33 @@ void FlexRenderer::ProcessRenderLists()
 	for (int i = 0; i < pCurRenderList->spritesUsed; i++)
 	{
 		if (i == 0 || pCurRenderList->eaSpriteTextures[i] != pCurRenderList->eaSpriteTextures[i-1])
-			pD3DDevice->SetTexture ( 0 , pCurRenderList->eaSpriteTextures[i] );
-		pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, i*4, 2);
+			p3DShader->SetTexture("shaderTexture", pCurRenderList->eaSpriteTextures[i]);
+			//pD3DDevice->SetTexture ( 0 , pCurRenderList->eaSpriteTextures[i] );
+		D3DXMATRIXA16 matWorld, matProj, matView;
+		D3DXVECTOR3 camEye;
+		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+		pCamera->GetProjMatrix(&matProj);
+		pCamera->GetViewMatrix(&matView);
+		pCamera->GetCameraEye(&camEye);
+
+		p3DShader->SetMatrix("matWorld", &matWorld);
+		p3DShader->SetMatrix("matProj", &matProj);
+		p3DShader->SetMatrix("matView", &matView);
+		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+
+		p3DShader->CommitChanges();
+
+		unsigned passes = 0;
+		p3DShader->Begin(&passes,0);
+		for(unsigned i = 0; i < passes; i++)
+		{
+			p3DShader->BeginPass(i);
+			pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
+
+			pD3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, i*4, 2);
+			p3DShader->EndPass();
+		}
+		p3DShader->End();
 	}
 	End2D();
 
@@ -1073,6 +1240,8 @@ void FlexRenderer::BeginFrame()
 	bActiveFrame = true;
 	pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET  , D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 	pD3DDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER , D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	//pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET  , D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	//pD3DDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER , D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
 	pD3DDevice->BeginScene();
 }
 
@@ -1089,14 +1258,20 @@ void FlexRenderer::Begin2D()
 {
 	assert(bActiveFrame);
 	bActive2D = true;
-	stateBlocks[kRendererMode_2D]->Apply();
+	//stateBlocks[kRendererMode_2D]->Apply();
+	pD3DDevice->SetVertexDeclaration(FlexVertex2DDecl);
+	p3DShader->SetTechnique(default2DTech);
+	//p3DShader->SetTechnique(wireframe3DTech);
 }
 
 void FlexRenderer::End2D()
 {
 	assert(bActive2D);
 	bActive2D = false;
-	stateBlocks[kRendererMode_Default3D]->Apply();
+	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
+	p3DShader->SetTechnique(default3DTech);
+	//p3DShader->SetTechnique(wireframe3DTech);
+	//stateBlocks[kRendererMode_Default3D]->Apply();
 	//stateBlocks[kRendererMode_Wireframe3D]->Apply();
 }
 
@@ -1357,7 +1532,8 @@ void FlexRenderer::CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, Game
 	int iNumEntries = eaSize(&eaPortions);
 	int numVerts = iNumEntries*4;
 	IDirect3DVertexBuffer9* pNewBuf = NULL;
-	pD3DDevice->CreateVertexBuffer(numVerts*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNewBuf, NULL);
+	//pD3DDevice->CreateVertexBuffer(numVerts*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNewBuf, NULL);
+	pD3DDevice->CreateVertexBuffer(numVerts*sizeof(FlexVertex), 0, 0, D3DPOOL_DEFAULT, &pNewBuf, NULL);
 	BYTE* pVerts;
 	
 	pNewBuf->Lock(0, 0, (void**)&pVerts, 0);
