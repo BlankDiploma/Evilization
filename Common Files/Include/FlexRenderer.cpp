@@ -1144,9 +1144,9 @@ void FlexRenderer::ProcessRenderLists()
 
 		unsigned passes = 0;
 		p3DShader->Begin(&passes,0);
-		for(unsigned i = 0; i < passes; i++)
+		for(unsigned j = 0; j < passes; j++)
 		{
-			p3DShader->BeginPass(i);
+			p3DShader->BeginPass(j);
 
 			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 
@@ -1184,9 +1184,9 @@ void FlexRenderer::ProcessRenderLists()
 
 		unsigned passes = 0;
 		p3DShader->Begin(&passes,0);
-		for(unsigned i = 0; i < passes; i++)
+		for(unsigned j = 0; j < passes; j++)
 		{
-			p3DShader->BeginPass(i);
+			p3DShader->BeginPass(j);
 			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 			p3DShader->EndPass();
 		}
@@ -1194,32 +1194,21 @@ void FlexRenderer::ProcessRenderLists()
 	}
 	
 	Begin2D();
+	
+	pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
 
 	for (int i = 0; i < pCurRenderList->spritesUsed; i++)
 	{
 		if (i == 0 || pCurRenderList->eaSpriteTextures[i] != pCurRenderList->eaSpriteTextures[i-1])
+		{
 			p3DShader->SetTexture("shaderTexture", pCurRenderList->eaSpriteTextures[i] ? pCurRenderList->eaSpriteTextures[i] : pWhite);
-			//pD3DDevice->SetTexture ( 0 , pCurRenderList->eaSpriteTextures[i] );
-		D3DXMATRIXA16 matWorld, matProj, matView;
-		D3DXVECTOR3 camEye;
-		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
-		pCamera->GetProjMatrix(&matProj);
-		pCamera->GetViewMatrix(&matView);
-		pCamera->GetCameraEye(&camEye);
-
-		p3DShader->SetMatrix("matWorld", &matWorld);
-		p3DShader->SetMatrix("matProj", &matProj);
-		p3DShader->SetMatrix("matView", &matView);
-		p3DShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
-
-		p3DShader->CommitChanges();
+		}
 
 		unsigned passes = 0;
 		p3DShader->Begin(&passes,0);
-		for(unsigned i = 0; i < passes; i++)
+		for(unsigned j = 0; j < passes; j++)
 		{
-			p3DShader->BeginPass(i);
-			pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
+			p3DShader->BeginPass(j);
 
 			pD3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, i*4, 2);
 			p3DShader->EndPass();
