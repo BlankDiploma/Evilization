@@ -109,6 +109,7 @@ hexTileDef* BiomeLookup(float elev, float temp, float rain)
 void CHexMap::Generate(int w, int h, int seed)
 {
 	assert (w <= 128 && h <= 128 && w > 0 && h > 0);
+	assert((w % TERRAIN_CHUNK_WIDTH == 0) && (h % TERRAIN_CHUNK_HEIGHT == 0));
 	if (pTiles)
 		pTiles = NULL;
 	randomFloats.seed(seed);
@@ -247,26 +248,15 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 	IDirect3DVertexBuffer9* pNewBuffer;
 	
 	FlexVertex hexVerts[] = {
-		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0, 0},
-		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		
-		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		
-		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		
-		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},
-		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0, 0},
-		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0}
+		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0, 0},//0
+		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},//1
+		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},//2
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},//3
+		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},//4
+		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0, 0},//5
 	};
 
-	numTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
-	//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pNewBuffer, NULL);
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*numTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+	g_Renderer.CreateVertexBuffer(sizeof(hexVerts)*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
 
 
 	void* vb_vertices;
@@ -285,7 +275,7 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
 			currTile = pTiles[iActualTileX + iActualTileY*w];
 
-			for (int k = 0; k < 12; k++)
+			for (int k = 0; k < 6; k++)
 			{
 				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
 				if (j&1)
@@ -295,6 +285,38 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 				pIter->u = hexVerts[k].u;
 				pIter->v = hexVerts[k].v;
 				pIter->diffuse = currTile.pDef->color;
+				pIter++;
+			}
+		}
+	}
+
+	pNewBuffer->Unlock();
+
+	return pNewBuffer;
+}
+
+IDirect3DIndexBuffer9* CHexMap::CreateTerrainIndexBufferChunk()
+{
+	IDirect3DIndexBuffer9* pNewBuffer;
+
+	int hexInds[] = {0,1,2, 2,1,3,
+					 3,1,4, 4,5,3};
+
+	g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(int)*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*12, D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+
+	void* ib_indices;
+
+	pNewBuffer->Lock(0, 0, &ib_indices, 0);
+
+	int* pIter = (int*)ib_indices;
+
+	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
+	{
+		for (int j = 0; j < TERRAIN_CHUNK_HEIGHT; j++)
+		{
+			for (int k = 0; k < 12; k++)
+			{
+				*pIter = hexInds[k] + ((i + (j*TERRAIN_CHUNK_WIDTH))*6);
 				pIter++;
 			}
 		}
@@ -318,6 +340,7 @@ void CHexMap::CreateAllTerrainVertexBuffers()
 			ppVertBuffers[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
 		}
 	}
+	pIndexBuffer = CreateTerrainIndexBufferChunk();
 }
 
 void CHexMap::GetTilespaceCullRect(RECT* pOut)
@@ -409,7 +432,8 @@ void CHexMap::RenderTerrain()
 	GetChunkspaceCullRect(&chunks);
 
 	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
-	
+	static int iNumVerts = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*6;
+
 	for (int i = chunks.left; i < chunks.right; i++)
 	{
 		int iNormalized = i;
@@ -423,7 +447,7 @@ void CHexMap::RenderTerrain()
 				continue;
 			pos[0] = ((int)i) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
 			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
-			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], &iNumTris, NULL, pos, scl, rot, false);
+			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTris, &iNumVerts, NULL, pos, scl, rot, false);
 		}
 	}
 	/*
@@ -971,6 +995,8 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 		}break;
 	case kOrder_Melee:
 		{
+			//last path to that unit
+			//move path at end of turn
 		}break;
 	}
 	return false;

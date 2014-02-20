@@ -228,7 +228,9 @@ struct ModelCall
 {
 	D3DXMATRIX matWorld;
 	LPDIRECT3DVERTEXBUFFER9* ppVerts;
+	IDirect3DIndexBuffer9* pIndices;
 	int* piNumTris;
+	int* piNumVerts;
 	int iVertStart;
 	LPDIRECT3DTEXTURE9 pTex;
 	D3DPRIMITIVETYPE ePrimitiveType;
@@ -338,7 +340,7 @@ public:
 	void StartNewRenderList();
 	void CommitRenderList();
 	void Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
-	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
 	void AddSpriteToRenderList(GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);

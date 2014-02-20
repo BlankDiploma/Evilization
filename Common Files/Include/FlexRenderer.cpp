@@ -5,6 +5,7 @@
 #include "DefLibrary.h"
 
 LPDIRECT3DVERTEXBUFFER9 g_pCubeVertex = NULL;
+LPDIRECT3DINDEXBUFFER9 g_pCubeIndex = NULL;
 LPDIRECT3DVERTEXBUFFER9 g_p2DVertices = NULL;
 
 FlexCamera::FlexCamera()
@@ -489,27 +490,6 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 		effectErrors->Release();
 	}
 
-	//D3DVERTEXELEMENT9 decl3D[] = {
-	//	{0,
-	//	0,
-	//	D3DDECLTYPE_FLOAT3,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_POSITION,
-	//	0},
-	//	{0,
-	//	12,
-	//	D3DDECLTYPE_D3DCOLOR,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_COLOR,
-	//	0},
-	//	{0,
-	//	16,
-	//	D3DDECLTYPE_FLOAT2,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_TEXCOORD,
-	//	0},
-	//	D3DDECL_END()};
-
 	D3DVERTEXELEMENT9 decl3D[MAX_FVF_DECL_SIZE];
 	D3DVERTEXELEMENT9 decl2D[MAX_FVF_DECL_SIZE];
 
@@ -517,27 +497,6 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	D3DXDeclaratorFromFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl2D);
 
 	pD3DDevice->CreateVertexDeclaration(decl3D, &FlexVertexDecl);
-
-	//D3DVERTEXELEMENT9 decl2D[] = {
-	//	{0,
-	//	0,
-	//	D3DDECLTYPE_FLOAT4,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_POSITIONT,
-	//	0},
-	//	{0,
-	//	16,
-	//	D3DDECLTYPE_D3DCOLOR,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_COLOR,
-	//	0},
-	//	{0,
-	//	20,
-	//	D3DDECLTYPE_FLOAT2,
-	//	D3DDECLMETHOD_DEFAULT,
-	//	D3DDECLUSAGE_TEXCOORD,
-	//	0},
-	//	D3DDECL_END()};
 
 	pD3DDevice->CreateVertexDeclaration(decl2D, &FlexVertex2DDecl);
 
@@ -550,91 +509,58 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	error = p3DShader->SetTechnique(default3DTech);
 
-	//set up render modes
+	pD3DDevice->CreateVertexBuffer(8*sizeof(FlexVertex), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &g_pCubeVertex, NULL);
+	
+	pD3DDevice->CreateIndexBuffer(36*sizeof(int), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &g_pCubeIndex, NULL);
 
-	//Default 3D Rendering
-//	pD3DDevice->BeginStateBlock();
-//	pD3DDevice->SetFVF ( D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
-//	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);			//anisotropic filtering
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_ANISOTROPIC);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 8);
-////	pD3DDevice->SetRenderState ( D3DRS_FILLMODE, D3DFILL_WIREFRAME);
-////	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
-//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
-//
-//	//Default 2D Rendering
-//	pD3DDevice->BeginStateBlock();
-//	pD3DDevice->SetFVF ( D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_NONE ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_FALSE);
-//	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
-//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_ALPHABLENDENABLE , TRUE ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_ALPHAFUNC , D3DCMP_GREATEREQUAL ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_ALPHAREF , 1 ) ;
-//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_MODULATE  );
-//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_TEXTURE );
-//	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG2,D3DTA_DIFFUSE );
-//	pD3DDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-//	pD3DDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-//	pD3DDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_NONE);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-//	pD3DDevice->SetSamplerState( 0, D3DSAMP_MAXANISOTROPY, 1);
-//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_2D] );
-//
-//	//Wireframe 3D
-//	pD3DDevice->BeginStateBlock();
-//	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-//	pD3DDevice->SetRenderState ( D3DRS_FILLMODE , D3DFILL_WIREFRAME ) ;
-//	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Wireframe3D] );
+	BYTE* pData;
+	//FlexVertex data[]={
+	////Cube vertices
+	//			//Front face
+	//			{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
+	//			{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
+	//			//Back face
+	//			{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
+	//			{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
+	//			//Top face
+	//			{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
+	//			{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
+	//			//Bottom face
+	//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
+	//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
+	//			//Left face
+	//			{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
+	//			{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
+	//			//Right face
+	//			{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
+	//			{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
+	//		};
 
-	//stateBlocks[kRendererMode_Default3D]->Apply();
-	//stateBlocks[kRendererMode_Wireframe3D]->Apply();
-
-	//pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &g_pCubeVertex, NULL);
-	pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &g_pCubeVertex, NULL);
-
-	BYTE* pVertices;
-	FlexVertex data[]={
+	FlexVertex verts[]=
+	{
 	//Cube vertices
-				//Front face
-				{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
-				{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
-				//Back face
-				{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
-				{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
-				//Top face
-				{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
-				{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
-				//Bottom face
-				{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-				{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-				//Left face
-				{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
-				{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-				//Right face
-				{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
-				{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-			};
-	g_pCubeVertex->Lock(0, 0, (void**)&pVertices, 0);
-	memcpy(pVertices, data, sizeof(data));
+				{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
+				{1.0f, 1.0f,0.0f,0xFF603913,0,0},{1.0f,0.0f,0.0f,0xFF603913,0,0},
+				{1.0f,0.0f, 1.0f,0xFF603913,0,0},{1.0f, 1.0f, 1.0f,0xFF603913,0,0},
+				{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0}
+	};
+
+	int indices[] = {0,1,2, 2,3,0,
+					 4,5,6, 6,7,4,
+				     0,3,5, 5,4,0,
+					 3,2,6, 6,5,3,
+					 2,1,7, 7,6,2,
+					 1,0,4, 4,7,1};
+
+	g_pCubeVertex->Lock(0, 0, (void**)&pData, 0);
+	memcpy(pData, verts, sizeof(verts));
 	g_pCubeVertex->Unlock();
 
-	//let's assume that 1,000 2d sprites is enough for now
-	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
-	
-	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
-	
-	//pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
+	g_pCubeIndex->Lock(0, 0, (void**)&pData, 0);
+	memcpy(pData, indices, sizeof(indices));
+	g_pCubeIndex->Unlock();
 
+	//let's assume that 1,000 2d sprites is enough for now
 	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
 	
 	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
@@ -701,101 +627,7 @@ FlexRenderer::~FlexRenderer()
 void FlexRenderer::SetRenderMode(FlexRendererMode eMode)
 {
 }
-/*
-void FlexRenderer::PutModel(FlexModel* pModel, float pos[3], float scale[3], float rot[3])
-{
-}
 
-void FlexRenderer::PutVertexBuffer(IDirect3DVertexBuffer9* pVerts, int numTris, LPDIRECT3DTEXTURE9 pTex, float pos[3], float scale[3], float rot[3])
-{
-	D3DXMATRIX matWorld;
-	D3DXMATRIX matTrans, matRot, matScale;
-
-	D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
-	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
-	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
-	D3DXMatrixMultiply(&matWorld, &matScale, &matRot);
-	D3DXMatrixMultiply(&matWorld, &matWorld, &matTrans);
-
-	pD3DDevice->SetTransform(D3DTS_WORLD,&matWorld);
-
-	if (pTex)
-		pD3DDevice->SetTexture ( 0 , pTex );
-	pD3DDevice->SetStreamSource(0, pVerts, 0, sizeof(FlexVertex));
-	pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, numTris);
-}
-
-void FlexRenderer::PutPrimitive(FlexPrimitiveType eType, LPDIRECT3DTEXTURE9 pTex, float pos[3], float scale[3], float rot[3])
-{
-	switch (eType)
-	{
-	case kPrimitiveType_Cube:
-		{
-			D3DXMATRIX matWorld;
-			D3DXMATRIX matTrans, matRot, matScale;
-
-			D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
-			D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
-			D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
-			D3DXMatrixMultiply(&matWorld, &matScale, &matRot);
-			D3DXMatrixMultiply(&matWorld, &matWorld, &matTrans);
-
-			pD3DDevice->SetTransform(D3DTS_WORLD,&matWorld);
-			
-			pD3DDevice->SetStreamSource(0, g_pCubeVertex, 0, sizeof(FlexVertex));
-			if (pTex)
-				pD3DDevice->SetTexture ( 0 , pTex );
-			pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, 12);
-		}break;
-	}
-}
-
-
-
-void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, RECT*pDst, RECT*pSrc)
-{
-	const float pos[2] = {pDst->left, pDst->top};
-	const float scale[2] = {(pDst->right-pDst->left)/(pSrc->right-pSrc->left),(pDst->bottom-pDst->top)/(pSrc->bottom-pSrc->top)};
-
-
-	SetSpriteTransform(pos, scale);
-	pSprite->Draw(pTex,pSrc,NULL,NULL,0xFFFFFFFF);
-
-}
-
-
-void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, const float pos[2], const float scale[2], RECT* pSrc)
-{
-	const float identityPos[2] = {0,0};
-	const float identityScale[2] = {1,1};
-
-	if (!pos)
-		pos = identityPos;
-
-	if (!scale)
-		scale = identityScale;
-
-	SetSpriteTransform(pos, scale);
-	pSprite->Draw(pTex,pSrc,NULL,NULL,0xFFFFFFFF);
-
-}
-//void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, const float topleft[2], const float bottomright[2])
-//{
-//	//pSprite->Draw(pTex,NULL,NULL,&pos,0xFFFFFFFF);
-//
-//}
-//
-//void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, RECT* screenArea)
-//{
-//
-//	//pSprite->Draw(pTex,NULL,NULL,&pos,0xFFFFFFFF);
-//}
-
-void FlexRenderer::PutTexturedQuad3D(IDirect3DTexture9* pTex, float topleft[3], float bottomright[3])
-{
-}
-*/
-	
 void FlexRenderer::StartNewRenderList()
 {
 	pFutureRenderList->bUsed = false;
@@ -820,7 +652,7 @@ void FlexRenderer::CommitRenderList()
 	}
 }
 
-void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
 
@@ -828,8 +660,10 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* p
 		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
 		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
 	pModel->ppVerts = ppVerts;
+	pModel->pIndices = pIndices;
 	pModel->pTex = pTex ? pTex->pD3DTex : NULL;
 	pModel->piNumTris = piNumTris;
+	pModel->piNumVerts = piNumVerts;
 	pModel->iVertStart = 0;
 	pModel->ePrimitiveType = D3DPT_TRIANGLELIST;
 
@@ -846,6 +680,7 @@ void FlexRenderer::Add3DTexturePortionToRenderList(GameTexturePortion* pTex, flo
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
 	static int iNumTris = 2;
+	//static int iNumVerts = 4;
 
 	ModelCall* pModel = bTranslucent ? 
 		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
@@ -854,6 +689,8 @@ void FlexRenderer::Add3DTexturePortionToRenderList(GameTexturePortion* pTex, flo
 	pModel->ppVerts = &pTex->pVerts;
 	pModel->pTex = pTex->hTex.pTex->pD3DTex;
 	pModel->piNumTris = &iNumTris;
+	//pModel->piNumVerts = &iNumVerts;
+
 	pModel->iVertStart = pTex->iVertIndexStart;
 	pModel->ePrimitiveType = D3DPT_TRIANGLESTRIP;
 
@@ -1126,6 +963,8 @@ void FlexRenderer::ProcessRenderLists()
 
 		//pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			pD3DDevice->SetIndices(pCall->pIndices);
 
 		D3DXMATRIXA16 matWorld, matProj, matView;
 		D3DXVECTOR3 camEye;
@@ -1148,8 +987,10 @@ void FlexRenderer::ProcessRenderLists()
 		{
 			p3DShader->BeginPass(j);
 
-			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
-
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
+			else
+				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 			p3DShader->EndPass();
 		}
 		p3DShader->End();
@@ -1166,6 +1007,8 @@ void FlexRenderer::ProcessRenderLists()
 
 		//pD3DDevice->SetTexture ( 0 , pCall->pTex );
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			pD3DDevice->SetIndices(pCall->pIndices);
 
 		D3DXMATRIXA16 matWorld, matProj, matView;
 		D3DXVECTOR3 camEye;
@@ -1187,7 +1030,10 @@ void FlexRenderer::ProcessRenderLists()
 		for(unsigned j = 0; j < passes; j++)
 		{
 			p3DShader->BeginPass(j);
-			pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
+			else
+				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
 			p3DShader->EndPass();
 		}
 		p3DShader->End();
@@ -1471,7 +1317,8 @@ void FlexRenderer::RenderCubeAtPoint(D3DXVECTOR3 vPoint)
 	float scale[3] = {1,1,1};
 	float rot[3] = {0,0,0};
 	static int numCubeTris = 12;
-	AddModelToRenderList(&g_pCubeVertex, &numCubeTris, NULL, pos, scale, rot, true);
+	static int numCubeVerts = 8;
+	AddModelToRenderList(&g_pCubeVertex, g_pCubeIndex, &numCubeTris, &numCubeVerts, NULL, pos, scale, rot, true);
 }
 
 void FlexRenderer::PixelToFrustumRay(D3DXVECTOR3 pOut[2], int x, int y)

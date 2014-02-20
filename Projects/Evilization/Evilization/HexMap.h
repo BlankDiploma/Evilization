@@ -151,6 +151,7 @@ public:
 private:
 
 	IDirect3DVertexBuffer9** ppVertBuffers;
+	IDirect3DIndexBuffer9* pIndexBuffer;
 	int numTris;
 
 	POINT screenOffset;
@@ -172,6 +173,7 @@ private:
 
 	void CreateAllTerrainVertexBuffers();
 	IDirect3DVertexBuffer9* CreateTerrainVertexBufferChunk(int x, int y);
+	IDirect3DIndexBuffer9* CreateTerrainIndexBufferChunk();
 	IDirect3DVertexBuffer9* CreateSplatVertexBuffer(int x, int y);
 	void IndexToPixel(int index);
 	void XYToIndex(int x, int y);

@@ -116,6 +116,12 @@ UIBoxDef UnitPane
 		Y 36
 		X -4
 	}
+	eaChildren AttackButton
+	{
+		Anchor Top Right
+		Y 68
+		X -4
+	}
 }
 
 UIButtonDef SleepButton
@@ -160,6 +166,27 @@ UIButtonDef AutoexploreButton
 	textcolor 0 0 0
 }
 
+UIButtonDef AttackButton
+{
+	Width 74
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	clickFunc <& SelectedUnit_IssueOrder(2) &>
+	
+	textFlags CenterX CenterY
+	text "Attack"
+	hFont courier_new
+	textcolor 0 0 0
+}
+
 UIBoxDef Portrait
 {
 	Width 64
@@ -177,7 +204,7 @@ UITextDef UnitText
 	eType Text
 	hFont courier_new
 	textcolor 255 255 255
-	textFunc <&  return Unit_FormatString(Player_GetSelectedUnit(), "    {name}{\n}{\n}{\n}{\n}{mov}/{maxmov} movement remaining{\n}  {str} combat strength") &>
+	textFunc <&  return Unit_FormatString(Player_GetSelectedUnit(), "    {name}{\n}{\n}{\n}{\n}{\n}{\n}{mov}/{maxmov} movement remaining{\n}  {str} combat strength") &>
 }
 
 UIBoxDef Minimap

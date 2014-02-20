@@ -340,8 +340,10 @@ private:
 	struct
 	{
 		SplattableTextureGeo eGeo;
-		IDirect3DVertexBuffer9* pBuf;
+		IDirect3DVertexBuffer9* pVertBuf;
+		IDirect3DIndexBuffer9* pIndBuf;
 		int iNumTris;
+		int iNumVerts;
 		GameTexture* pTex;
 	} pTextureSplatBuffers[kTextureSplat_Count];
 
@@ -379,7 +381,8 @@ private:
 	void DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	void DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	
-	IDirect3DVertexBuffer9* CreateSplatBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
+	IDirect3DVertexBuffer9* CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
+	IDirect3DIndexBuffer9* CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo);
 	void CreateSplatBuffers();
 	void RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale);
 	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );

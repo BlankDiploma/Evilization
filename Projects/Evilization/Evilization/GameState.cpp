@@ -775,7 +775,7 @@ CHexPlayer* CGameState::GetCurrentPlayer()
 }
 
 
-IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo)
+IDirect3DVertexBuffer9* CGameState::CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo)
 {
 	void* vb_vertices;
 	GameTexture* pSourceTexture = pTex->hTex.pTex;
@@ -799,31 +799,19 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 			fYThreeQuarters = (fYMin+fYMax*3)/4;
 
 			FlexVertex hexVerts[] = {
-				{0.0f,				HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},
-				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
-		
-				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},
-				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
-		
-				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},
-				{HEX_HALF_WIDTH,	HEX_HEIGHT/4.0f,		-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},
-				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
-		
-				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},
-				{0.0f,				-HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMax},
-				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters}
+				{0.0f,				HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},     //0
+				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},//1
+				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},//2
+				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},//3
+				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},//4
+				{0.0f,				-HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMax},//5
 			};
 
-			//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-
-			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*12, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-
+			g_Renderer.CreateVertexBuffer(sizeof(hexVerts), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
 
 			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
 
-			memcpy(vb_vertices, hexVerts, sizeof(FlexVertex)*12);
+			memcpy(vb_vertices, hexVerts, sizeof(hexVerts));
 
 			pSplatBuffer->Unlock();
 		}break;
@@ -836,27 +824,22 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 			fUMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
 			fHalfWidth = (float)(pTex->rSrc->right-pTex->rSrc->left) * fScalar * 0.5f;
 
-
 			fVMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
 			fVMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
 			fHalfHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar * 0.5f;
 
 			FlexVertex quadVerts[] = {
-				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMin},
-				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},
-				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},
-				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},
-				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},
-				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMax},
+				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMin},//0
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},//1
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},//2
+				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMax},//3
 			};
 
-			//g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-			g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*6, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
-
+			g_Renderer.CreateVertexBuffer(sizeof(quadVerts), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
 
 			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
 
-			memcpy(vb_vertices, quadVerts, sizeof(FlexVertex)*6);
+			memcpy(vb_vertices, quadVerts, sizeof(quadVerts));
 
 			pSplatBuffer->Unlock();
 		}break;
@@ -866,29 +849,76 @@ IDirect3DVertexBuffer9* CGameState::CreateSplatBufferForTexture(GameTexturePorti
 	return pSplatBuffer;
 }
 
+IDirect3DIndexBuffer9* CGameState::CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo)
+{
+	void* pData;
+	IDirect3DIndexBuffer9* pSplatIndBuffer = NULL;
+	
+	switch(eGeo)
+	{
+	case kTextureSplatGeo_Hexagon:
+		{
+			int hexInds[] = {0,1,2, 2,1,3,
+							 3,1,4, 4,5,3};
+
+			g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(hexInds), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pSplatIndBuffer, NULL);
+
+			pSplatIndBuffer->Lock(0, 0, &pData, 0);
+
+			memcpy(pData, hexInds, sizeof(hexInds));
+
+			pSplatIndBuffer->Unlock();
+		}break;
+	case kTextureSplatGeo_Rectangle:
+		{
+
+			int quadInds[] = {0,1,2, 2,1,3};
+
+			g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(quadInds), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pSplatIndBuffer, NULL);
+
+			pSplatIndBuffer->Lock(0, 0, &pData, 0);
+
+			memcpy(pData, quadInds, sizeof(quadInds));
+
+			pSplatIndBuffer->Unlock();
+		}break;
+	}
+
+
+	return pSplatIndBuffer;
+}
+
 void CGameState::CreateSplatBuffers()
 {
 	GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
-	pTextureSplatBuffers[kTextureSplat_SelectedTile].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Hexagon);
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Hexagon);
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Hexagon);
 	pTextureSplatBuffers[kTextureSplat_SelectedTile].iNumTris = 4;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].iNumVerts = 6;
 	pTextureSplatBuffers[kTextureSplat_SelectedTile].eGeo = kTextureSplatGeo_Hexagon;
 	pTextureSplatBuffers[kTextureSplat_SelectedTile].pTex = pPortion->hTex.pTex;
 	
 	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"path");
-	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
 	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].iNumVerts = 4;
 	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].eGeo = kTextureSplatGeo_Rectangle;
 	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pTex = pPortion->hTex.pTex;
 	
 	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathblip");
-	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
 	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].iNumVerts = 4;
 	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].eGeo = kTextureSplatGeo_Rectangle;
 	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pTex = pPortion->hTex.pTex;
 	
 	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathend");
-	pTextureSplatBuffers[kTextureSplat_PathTarget].pBuf = CreateSplatBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
 	pTextureSplatBuffers[kTextureSplat_PathTarget].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].iNumVerts = 4;
 	pTextureSplatBuffers[kTextureSplat_PathTarget].eGeo = kTextureSplatGeo_Rectangle;
 	pTextureSplatBuffers[kTextureSplat_PathTarget].pTex = pPortion->hTex.pTex;
 }
@@ -900,7 +930,7 @@ void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float
 	float vScale[3] = {scale, scale, 1.0f};
 	if (y & 1)
 		vPos[0] += HEX_HALF_WIDTH;
-	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pBuf, &pTextureSplatBuffers[eType].iNumTris, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, true);
+	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pVertBuf, pTextureSplatBuffers[eType].pIndBuf, &pTextureSplatBuffers[eType].iNumTris, &pTextureSplatBuffers[eType].iNumVerts, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, true);
 }
 
 void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
