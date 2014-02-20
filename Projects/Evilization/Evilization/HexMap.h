@@ -148,6 +148,7 @@ public:
 	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
 	void GetChunkspaceCullRect(RECT* pOut);
 	void GetTilespaceCullRect(RECT* pOut);
+	void GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4]);
 private:
 
 	IDirect3DVertexBuffer9** ppVertBuffers;

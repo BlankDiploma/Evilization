@@ -383,6 +383,16 @@ void CHexMap::GetTilespaceCullRect(RECT* pOut)
 	SetRect(pOut, (LONG)chunkRect[0], (LONG)chunkRect[1], (LONG)chunkRect[2], (LONG)chunkRect[3]);
 }
 
+void CHexMap::GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4])
+{
+	D3DXVECTOR3 cameraCullPoints[4];
+	D3DXVECTOR3 planePoint(0,0,0);
+	D3DXVECTOR3 planeNormal(0,0,-1);
+
+	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(pointsOut, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
+
+}
+
 void CHexMap::GetChunkspaceCullRect(RECT* pOut)
 {
 	D3DXVECTOR3 cameraCullPoints[4];
@@ -509,15 +519,63 @@ inline DWORD CHexMap::GetMinimapColorAt(int x, int y)
 	return pTiles[x + y*w].pDef->color;
 }
 
+void D3DLockedRectDrawLine(D3DLOCKED_RECT* pD3dlr, int w, int h, D3DXVECTOR3* pVecA, D3DXVECTOR3* pVecB, DWORD color)
+{
+	if (abs(pVecB->y-pVecA->y) > abs(pVecB->x-pVecA->x))
+	{
+		//y axis distance is greater
+		if (pVecB->y < pVecA->y)
+		{
+			D3DXVECTOR3* temp = pVecB;
+			pVecB = pVecA;
+			pVecA = temp;
+		}
+		int vAX = (int)pVecA->x * 2;
+		int vAY = (int)pVecA->y * 2;
+		int vBX = (int)pVecB->x * 2;
+		int vBY = (int)pVecB->y * 2;
+		for (int i = vAY; i < vBY; i++)
+		{
+			int iLerpX = (vBX-vAX) * (i-vAY);
+			iLerpX /= (vBY-vAY);
+			iLerpX += vAX;
+			int offset = (iLerpX + ((h - i - 1) * h));
+			if (offset >= w*h)
+				continue;
+			DWORD* pPixel = (DWORD*)pD3dlr->pBits + offset;
+			(*pPixel) = color;
+		}
+	}
+	else
+	{
+		//x axis distance is greater
+		if (pVecB->x < pVecA->x)
+		{
+			D3DXVECTOR3* temp = pVecB;
+			pVecB = pVecA;
+			pVecA = temp;
+		}
+		int vAX = (int)pVecA->x * 2;
+		int vAY = (int)pVecA->y * 2;
+		int vBX = (int)pVecB->x * 2;
+		int vBY = (int)pVecB->y * 2;
+		for (int i = vAX; i < vBX; i++)
+		{
+			int iLerpY = (vBY-vAY) * (i-vAX);
+			iLerpY /= (vBX-vAX);
+			iLerpY += vAY;
+			int offset = (((h - iLerpY - 1) *  h) + i);
+			if (offset >= w*h)
+				continue;
+			DWORD* pPixel = (DWORD*)pD3dlr->pBits + offset;
+			(*pPixel) = color;
+		}
+	}
+}
+
 void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis)
 {
-	RECT tilesToRender;
-	CopyRect(&tilesToRender, view);
-	OffsetRect(&tilesToRender, (int)fpMapOffset.x, (int)fpMapOffset.y);
-	tilesToRender.left /= HEX_SIZE;
-	tilesToRender.right /= HEX_SIZE;
-	tilesToRender.top /= HEX_SIZE*3/4;
-	tilesToRender.bottom /= HEX_SIZE*3/4;
+	D3DXVECTOR3 trapezoid[4];
 	D3DLOCKED_RECT d3dlr;
 	pTex->pD3DTex->LockRect(0, &d3dlr, 0, 0); 
 	char* pDst = (char*)d3dlr.pBits;
@@ -527,7 +585,7 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 	{
 		pPixel = (DWORD*)pDst;
 		pDst += d3dlr.Pitch;
-		if ((j/2) % 2)
+		if (!((j/2) & 1))
 			pPixel++;
 		for (int i = 0; i < w; i++)
 		{
@@ -558,6 +616,18 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 	}
 	//render "what you're looking at" box
 	//top and bottom
+	
+	GetWorldspaceCullTrapezoid(trapezoid);
+
+	for (int i = 0; i < 4; i++)
+	{
+		trapezoid[i].x /= HEX_WIDTH;
+		trapezoid[i].y /= (HEX_HEIGHT*3/4);
+	}
+	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[0], &trapezoid[1], 0xffff00ff);
+	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[1], &trapezoid[3], 0xffff00ff);
+	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[3], &trapezoid[2], 0xffff00ff);
+	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[2], &trapezoid[0], 0xffff00ff);
 	/*
 	pDst = (char*)d3dlr.pBits + d3dlr.Pitch*tilesToRender.top*2;
 	for (int j = 0; j < RECT_HEIGHT(tilesToRender.)*2; j++)
@@ -579,6 +649,7 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 		*pPixel2++ = 0xffff00ff;
 	}
 	*/
+	
 	pTex->pD3DTex->UnlockRect(0);
 	//			D3DXSaveTextureToFile(_T("derp.png"), D3DXIFF_PNG, pTileLightmapDXT1Texture, NULL);
 }
