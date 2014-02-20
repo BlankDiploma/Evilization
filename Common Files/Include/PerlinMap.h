@@ -16,8 +16,8 @@ public:
 	~CPerlinMap();
 	float GetAt(int x, int y);
 	void Generate(int size, int factor);
-	void GenerateMutlipleLevels(int size, int min, int max, float** ppNeighborVectors);
-	void AdditiveGenerate(int factor, float finalMulti, float** ppNeighborVectors, int neighboroffset);
+	void GenerateMutlipleLevels(int size, int min, int max, float** ppNeighborVectors, bool bWrapX);
+	void AdditiveGenerate(int factor, float finalMulti, float** ppNeighborVectors, int neighboroffset, bool bWrapX);
 	float GetAt(int x, int y, int z);
 	void Generate3D(int size, int factor);
 	void GenerateMutlipleLevels3D(int size, int min, int max, float** ppNeighborVectors);

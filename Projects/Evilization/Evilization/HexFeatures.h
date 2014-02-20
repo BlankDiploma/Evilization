@@ -52,6 +52,7 @@ struct HEXPATH
 	//pPoints may be larger than size;
 	int size;
 	int start;
+	POINT ptOrigin;
 };
 
 PARSE_STRUCT(hexAbilityDef)

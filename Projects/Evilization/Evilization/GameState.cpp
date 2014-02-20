@@ -301,17 +301,20 @@ void CGameState::MouseHandlerAdditionalRendering()
 		}break;
 	case kGameplayMouse_UnitSelected:
 		{
-			hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
-			if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
-				RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
-
-			HEXPATH* pPath = NULL;
-			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
+			if (!uiDragStart)
 			{
-				int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
-				if (iPathLength > 0)
+				hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
+				if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
+					RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
+
+				HEXPATH* pPath = NULL;
+				if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 				{
-					RenderPath(curSelUnit, pPath, 0xff);
+					int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
+					if (iPathLength > 0)
+					{
+						RenderPath(curSelUnit, pPath, 0xff);
+					}
 				}
 			}
 		}break;
@@ -320,15 +323,18 @@ void CGameState::MouseHandlerAdditionalRendering()
 		}break;
 	case kGameplayMouse_PlaceBuilding:
 		{
-			cityProject* pProj = (cityProject*)pCurHandler->pMouseHandlerParam;
-			hexBuildingDef* pDef = (hexBuildingDef*)pProj->pDef;
-			DWORD color = 0xaaffffff;
-			
-			if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y)))
+			if (!uiDragStart)
 			{
-				color = 0xaaff0000;
+				cityProject* pProj = (cityProject*)pCurHandler->pMouseHandlerParam;
+				hexBuildingDef* pDef = (hexBuildingDef*)pProj->pDef;
+				DWORD color = 0xaaffffff;
+			
+				if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y)))
+				{
+					color = 0xaaff0000;
+				}
+				pCurrentMap->RenderBuildingOnTile(pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y), color, fpMapOffset);
 			}
-			pCurrentMap->RenderBuildingOnTile(pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y), color, fpMapOffset);
 		}break;
 	case kGameplayMouse_SelectAbilityTarget:
 		{

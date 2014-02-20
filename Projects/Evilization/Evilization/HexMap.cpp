@@ -116,9 +116,9 @@ void CHexMap::Generate(int w, int h, int seed)
 	CPerlinMap elev;
  	CPerlinMap temp;
 	CPerlinMap rain;
-	elev.GenerateMutlipleLevels(max(w,h), 4, 16, NULL);
-	temp.GenerateMutlipleLevels(max(w,h), 4, 16, NULL);
-	rain.GenerateMutlipleLevels(max(w,h), 2, 8, NULL);
+	elev.GenerateMutlipleLevels(max(w,h), 4, 16, NULL, true);
+	temp.GenerateMutlipleLevels(max(w,h), 4, 16, NULL, true);
+	rain.GenerateMutlipleLevels(max(w,h), 2, 8, NULL, true);
 	pTiles = new hexTile[w*h];
 	this->w = w;
 	this->h = h;
@@ -816,6 +816,7 @@ int CHexMap::HexPathfindInternal(POINT a, CHexUnit* pUnit, finishedFunc pfFinish
 	int smallestAdj;
 
 	(*pPathOut)->start = maxDist;
+	(*pPathOut)->ptOrigin = a;
 	if (pPathMap[currentPoint.x + currentPoint.y*w] > 0)
 	{
 		(*pPathOut)->pPoints[maxDist-1].x = currentPoint.x;
@@ -861,7 +862,8 @@ int CHexMap::HexPathfindInternal(POINT a, CHexUnit* pUnit, finishedFunc pfFinish
 int CHexMap::HexPathfindTile(CHexUnit* pUnit, POINT a, POINT b, HEXPATH** pPathOut)
 {
 	HEXPATH* pNew = NULL;
-	if (pCachedPath && pCachedPath->pPoints[pCachedPath->start].x == a.x && pCachedPath->pPoints[pCachedPath->start].y == a.y &&
+
+	if (pCachedPath && pCachedPath->ptOrigin.x == a.x && pCachedPath->ptOrigin.y == a.y &&
 		pCachedPath->pPoints[pCachedPath->size-1].x == b.x && pCachedPath->pPoints[pCachedPath->size-1].y == b.y)
 	{
 		//use cached path

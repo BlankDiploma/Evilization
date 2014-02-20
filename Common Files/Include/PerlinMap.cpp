@@ -57,7 +57,7 @@ void CPerlinMap::Generate(int size, int factor)
 		delete [] pVectors;
 }
 
-void CPerlinMap::AdditiveGenerate(int factor, float finalMulti, float** ppNeighborVectors, int neighboroffset)
+void CPerlinMap::AdditiveGenerate(int factor, float finalMulti, float** ppNeighborVectors, int neighboroffset, bool bWrapX)
 {
 	int vectorSize = (size/factor)+1;
 	FLOATPOINT* pVectors = new FLOATPOINT[vectorSize * vectorSize];
@@ -66,6 +66,14 @@ void CPerlinMap::AdditiveGenerate(int factor, float finalMulti, float** ppNeighb
 		float angle = ((float)randomFloats()) * 3.14159f * 2;
 		pVectors[i].x = cos(angle);
 		pVectors[i].y = sin(angle);
+	}
+	if (bWrapX)
+	{
+		for (int i = 0; i < vectorSize; i++)
+		{
+			pVectors[vectorSize*i].x = pVectors[vectorSize*i + vectorSize-1].x;
+			pVectors[vectorSize*i].y = pVectors[vectorSize*i + vectorSize-1].y;
+		}
 	}
 	//load angles from neighbors
 	
@@ -147,7 +155,7 @@ void CPerlinMap::AdditiveGenerate(int factor, float finalMulti, float** ppNeighb
 		delete [] pVectors;
 }
 
-void CPerlinMap::GenerateMutlipleLevels(int size, int min, int max, float** ppNeighborVectors)
+void CPerlinMap::GenerateMutlipleLevels(int size, int min, int max, float** ppNeighborVectors, bool bWrapX)
 {
 	int num = 0;
 	this->size = size;
@@ -173,7 +181,7 @@ void CPerlinMap::GenerateMutlipleLevels(int size, int min, int max, float** ppNe
 
 	for (int i = max; i >= min; i = i >> 1)
 	{
-		AdditiveGenerate(i, pow(0.5f, num), ppNeighborVectors, neighboroffset);
+		AdditiveGenerate(i, pow(0.5f, num), ppNeighborVectors, neighboroffset, bWrapX);
 		neighboroffset += (size/max+1)*2;
 		num++;
 	}
