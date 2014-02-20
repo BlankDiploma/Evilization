@@ -25,12 +25,6 @@ hexTileDef* pOcean;
 hexTileDef* pShallow;
 hexTileDef* pMountain;
 
-//map generation constants
-#define SEA_LEVEL 0.55
-
-#define MOUNTAIN_ELEV_THRESHOLD 0.875
-#define LAND_ELEV_THRESHOLD SEA_LEVEL
-#define SHALLOWS_ELEV_THRESHOLD (SEA_LEVEL-0.055)
 #define BIOME_MAP_SIZE 32
 
 //vertex buffer constants
@@ -89,15 +83,15 @@ void InitializeBiomeMap(LPCTSTR  filename)
 }
 
 
-hexTileDef* BiomeLookup(float elev, float temp, float rain)
+hexTileDef* BiomeLookup(hexMapGenerationDesc* pDesc, float elev, float temp, float rain)
 {
 	temp *= BIOME_MAP_SIZE-1;
 	rain *= BIOME_MAP_SIZE-1;
-	if (elev <= SHALLOWS_ELEV_THRESHOLD)
+	if (elev <= pDesc->fOceanThreshold)
 		return pOcean;
-	else if (elev <= LAND_ELEV_THRESHOLD)
+	else if (elev <= pDesc->fShallowWaterThreshold)
 		return pShallow;
-	else if (elev > MOUNTAIN_ELEV_THRESHOLD)
+	else if (elev > pDesc->fMountainThreshold)
 		return pMountain;
 	else
 	{
@@ -106,12 +100,16 @@ hexTileDef* BiomeLookup(float elev, float temp, float rain)
 	return NULL;
 }
 
-void CHexMap::Generate(int w, int h, int seed)
+void CHexMap::Generate(hexMapGenerationDesc* pDesc, int seed)
 {
-	assert (w <= 128 && h <= 128 && w > 0 && h > 0);
-	assert((w % TERRAIN_CHUNK_WIDTH == 0) && (h % TERRAIN_CHUNK_HEIGHT == 0));
+	assert (pDesc && pDesc->w <= 128 && pDesc->h <= 128 && pDesc->w > 0 && pDesc->h > 0);
+	assert((pDesc->w % TERRAIN_CHUNK_WIDTH == 0) && (pDesc->h % TERRAIN_CHUNK_HEIGHT == 0));
 	if (pTiles)
 		pTiles = NULL;
+
+	this->w = pDesc->w;
+	this->h = pDesc->h;
+
 	randomFloats.seed(seed);
 	CPerlinMap elev;
  	CPerlinMap temp;
@@ -120,12 +118,10 @@ void CHexMap::Generate(int w, int h, int seed)
 	temp.GenerateMutlipleLevels(max(w,h), 4, 16, NULL, true);
 	rain.GenerateMutlipleLevels(max(w,h), 2, 8, NULL, true);
 	pTiles = new hexTile[w*h];
-	this->w = w;
-	this->h = h;
 	for (int j = 0; j < h; j++)
 		for (int i = 0; i < w; i++)
 		{
-			hexTileDef* pDef = BiomeLookup(elev.GetAt(i, j), temp.GetAt(i, j), rain.GetAt(i, j));
+			hexTileDef* pDef = BiomeLookup(pDesc, elev.GetAt(i, j), temp.GetAt(i, j), rain.GetAt(i, j));
 			pTiles[i + j*w].pDef = pDef;
 			pTiles[i + j*w].pUnit = NULL;
 			pTiles[i + j*w].pBuilding = NULL;
@@ -368,9 +364,9 @@ void CHexMap::RenderTerrain()
 	for (int i = chunks.left; i < chunks.right; i++)
 	{
 		int iNormalized = i;
-		if (i < 0)
+		while (iNormalized < 0)
 			iNormalized += iNumChunksWide;
-		if (i >= iNumChunksWide)
+		while (iNormalized >= iNumChunksWide)
 			iNormalized -= iNumChunksWide;
 		for (int j = chunks.top; j < chunks.bottom; j++)
 		{

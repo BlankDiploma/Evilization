@@ -1093,6 +1093,14 @@ void PopMouseHandler(lua_State *L)
 {
 	g_GameState.MouseHandlerPopState();
 }
+
+void GenerateMapFromDesc(lua_State *L, const char* pchDescName, int numPlayers)
+{
+	TCHAR widebuf[32];
+	swprintf_s(widebuf, L"%S", pchDescName);
+	g_GameState.EndCurrentGame();
+	g_GameState.StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, widebuf), numPlayers);
+}
 	
 void DoAllLuaBinds()
 {
@@ -1151,6 +1159,7 @@ void DoAllLuaBinds()
 		luabind::def("City_GetProductionQueue", &GetProductionQueue),
 		luabind::def("City_GetCurrentProject", &GetCurrentProject),
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
+		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

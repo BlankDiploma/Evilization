@@ -399,7 +399,7 @@ public:
 	void KeyInput(int keyCode, bool bDown);
 	void NewGame();
 	void EndCurrentGame();
-	void StartNewGame();
+	void StartNewGame(hexMapGenerationDesc* pMapDesc, int iNumPlayers);
 	void Initialize(int screenW, int screenH);
 	void SwitchToState(GameState newState);
 	void CenterView(POINT pt);

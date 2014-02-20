@@ -65,6 +65,15 @@ PARSE_STRUCT(hexTileDef)
 	laborSlotDef* slotDef;
 	DEF_REF(GameTexturePortion) hTex;
 };
+
+PARSE_STRUCT(hexMapGenerationDesc)
+{
+	int w;
+	int h;
+	float fMountainThreshold;
+	float fShallowWaterThreshold;
+	float fOceanThreshold;
+};
  
 struct hexTile
 {
@@ -92,6 +101,7 @@ struct tilePathfindCompare: binary_function <PATHFINDPOINT,PATHFINDPOINT,bool>
 };
 
 typedef bool (*finishedFunc)(POINT pt, void* pData);
+
 
 class CHexMap
 {
@@ -122,7 +132,7 @@ public:
 	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
 	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
-	void Generate(int w, int h, int seed);
+	void Generate(hexMapGenerationDesc* pDesc, int seed);
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
 	void GetTileDescription( hexTile* pTile, TCHAR* pchDescOut );
 	void RenderTile(POINT tilePt, hexTile* pTile, DWORD color = 0xFFFFFFFF, float scale = 1.0);
@@ -149,6 +159,7 @@ public:
 	void GetChunkspaceCullRect(RECT* pOut);
 	void GetTilespaceCullRect(RECT* pOut);
 	void GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4]);
+
 private:
 
 	IDirect3DVertexBuffer9** ppVertBuffers;

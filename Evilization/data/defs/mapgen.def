@@ -1,0 +1,17 @@
+hexMapGenerationDesc Default
+{
+	w 128
+	h 128
+	fMountainThreshold 0.875
+	fShallowWaterThreshold 0.55
+	fOceanThreshold 0.50
+}
+
+hexMapGenerationDesc TestCombat
+{
+	w 32
+	h 32
+	fMountainThreshold 1.0
+	fShallowWaterThreshold 0.0
+	fOceanThreshold 0.0
+}

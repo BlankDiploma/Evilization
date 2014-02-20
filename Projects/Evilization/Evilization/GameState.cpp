@@ -412,7 +412,7 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 					OffsetRect(&button, 0, -20);
 					if (PtInRect(&button, pt))
 					{
-						StartNewGame();
+						StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, L"Default"), 4);
 					}
 					OffsetRect(&button, 0, 40);
 					if (PtInRect(&button, pt))
@@ -519,11 +519,19 @@ void CGameState::EndCurrentGame()
 {
 	delete pCurrentMap;
 	pCurrentMap = NULL;
+	curSelCity = NULL;
+	curSelUnit = NULL;
+	
+	for (int i = 0; i < eaSize(&eaMouseStates); i++)
+	{
+		delete eaMouseStates[i];
+	}
+	eaClear(&eaMouseStates);
 	SwitchToState(kGameState_MainMenu);
 }
 
 
-void CGameState::StartNewGame()
+void CGameState::StartNewGame(hexMapGenerationDesc* pMapDesc, int iNumPlayers)
 {
 	assert(!pCurrentMap);
 
@@ -531,13 +539,13 @@ void CGameState::StartNewGame()
 		pCurrentMap = new CHexMap;
 	int mapWidth = 128;
 	int mapHeight = 128;
-	pCurrentMap->Generate(mapWidth,mapHeight, GetTickCount());
+	pCurrentMap->Generate(pMapDesc, GetTickCount());
 	g_Renderer.GetCamera()->SetAxisWrapValues(0, 0, mapWidth*HEX_WIDTH, true);
 
 	SwitchToState(kGameState_Gameplay);
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("gameplay"));
-	iNumPlayers = 4;
+	this->iNumPlayers = iNumPlayers;
 	pPlayers = new CHexPlayer[iNumPlayers];
 	for (int i = 0; i < iNumPlayers; i++)
 	{
@@ -619,6 +627,9 @@ void CGameState::SelectNextUnit( CHexPlayer* pPlayer )
 
 void CGameState::RenderMinimap(RECT* uiRect)
 {
+	if (pCurrentMap->GetHeight() != 128 || pCurrentMap->GetWidth() != 128)
+		return;
+
 	pCurrentMap->UpdateMinimapTexture(&minimapTexture, &mapViewport, fpMapOffset, FOG_OF_WAR ? pPlayers[iCurPlayer].GetVisibility() : NULL);
 
 	g_Renderer.AddSolidColorToRenderList(uiRect, 0xff111111);
