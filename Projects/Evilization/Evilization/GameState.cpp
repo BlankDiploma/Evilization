@@ -517,7 +517,8 @@ void CGameState::KeyInput(int keyCode, bool bDown)
 
 void CGameState::EndCurrentGame()
 {
-	delete pCurrentMap;
+	if (pCurrentMap)
+		delete pCurrentMap;
 	pCurrentMap = NULL;
 	curSelCity = NULL;
 	curSelUnit = NULL;
