@@ -74,7 +74,6 @@ void CGameState::Update(DWORD tick)
 				g_Renderer.GetCamera()->MoveCamera((float)(ptMousePos.x - ptMousePosLastFrame.x), (float)(ptMousePos.y - ptMousePosLastFrame.y ), 0);
 			}
 			POINT mouseDeltas = {ptMouse.x - ptMousePosLastFrame.x, ptMouse.y - ptMousePosLastFrame.y};
-//			g_Renderer.DoMouselook(mouseDeltas);
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;
@@ -121,7 +120,6 @@ void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam,
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
@@ -151,7 +149,6 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
@@ -172,7 +169,6 @@ void CGameState::DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
@@ -208,7 +204,6 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			//g_Renderer.GetCamera()->ZoomCamera(rot);
 			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
@@ -244,51 +239,6 @@ void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPA
 			DoGameplayMouseInput_SelectAbilityTarget(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
 		}break;
 	}
-	//old handler
-	/*
-	switch (msg)
-	{
-	case WM_LBUTTONUP:
-		{
-			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
-			//uncomment for path demo
-//			points[num++] = PixelToTilePt(pt.x, pt.y);
-		}break;
-	case WM_RBUTTONUP:
-		{
-			if (curSelUnit)
-			{
-				HEXPATH* pPath = NULL;
-				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
-				if (pPath)
-					IssueOrder(kOrder_Move, pPath);
-			}
-			else if (curSelCity)
-			{
-				hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-				curSelCity->StartLaborOnTile(pTile);
-			}
-		}break;
-	case WM_MOUSEWHEEL:
-		{
-			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
-		}break;
-		//uncomment to make l/r buttons place units/buildings
-		
-	case WM_LBUTTONUP:
-		{
-			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-			pTile->pUnit = new hexUnit;
-		}break;
-	case WM_RBUTTONUP:
-		{
-			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-			pTile->pBuilding = new hexBuilding;
-		}break;
-		
-	}
-*/
 }
 
 void CGameState::MouseHandlerAdditionalRendering()
@@ -356,8 +306,6 @@ void CGameState::Render()
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 			{
 				MouseHandlerAdditionalRendering();
-				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, );
-				//pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToMapIntersect(ptMousePos.x, ptMousePos.y));
 				POINT mouseoverTile = PixelToTilePt(ptMousePos.x, ptMousePos.y);
 				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, kTextureSplat_SelectedTile, 0, 1.0f);
 			}
@@ -505,34 +453,6 @@ POINT CGameState::PixelToTilePt(int x, int y)
 {
 	POINT box = {0,0};
 	FLOATPOINT mapIntersect = {0,0};
-	//int size = HEX_HEIGHT;
-	//bool bNegative = x+fpMapOffset.x < 0;
-	//box.y = (LONG)(y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
-	//box.x = (LONG)((x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0));
-	//y = (int)(y+fpMapOffset.y) % (HEX_SIZE*3/4 + 1);
-	//x = ((int)(x+fpMapOffset.x - ((box.y % 2) ? HEX_SIZE/2 : 0)) % HEX_SIZE);
-	//if (bNegative)
-	//{
-	//	box.x -= 1;
-	//	x+= HEX_SIZE;
-	//}
-	//if (y < HEX_SIZE/4)
-	//{
-	//	if (y < -0.5*x + (HEX_SIZE/4-1))
-	//	{
-	//		//upper left
-	//		box.y--;
-	//		if (box.y % 2)
-	//			box.x--;
-	//	}
-	//	else if (y < 0.5*x + -(HEX_SIZE/4+1))
-	//	{
-	//		//upper right
-	//		box.y--;
-	//		if (!(box.y % 2))
-	//			box.x++;
-	//	}
-	//}
 	float tempX, tempY;
 
 	mapIntersect = PixelToMapIntersect(x, y);
@@ -985,7 +905,6 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 			eSplat = kTextureSplat_PathBlipSmall;
 		}
 		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, fRot, 1.0f);
-//		g_Renderer.AddSpriteToRenderList(pathSeg, renderPt, alpha << 24, ZOOM_PERCENT);
 		if (bShowTurnCount)
 		{
 			TCHAR buf[4];

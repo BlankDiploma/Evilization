@@ -162,85 +162,14 @@ RECT selectedTile = {0,0,64,64};
 RECT unit = {64,0,128,64};
 RECT building = {128,0,192,64};
 
-//static int gNumHexTris = 4;
 void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 {
-//	/*
-//	int index ;
-//	GfxSheetVertex vert [ 6 ] ;
-//
-//	vert[0].x = tilePt.x;
-//	vert[0].y = tilePt.y + HEX_SIZE/4;
-//
-//	vert[1].x = tilePt.x + HEX_SIZE/2;
-//	vert[1].y = tilePt.y;
-//
-//	vert[2].x = tilePt.x + HEX_SIZE;
-//	vert[2].y = tilePt.y + HEX_SIZE/4;
-//
-//	vert[3].x = tilePt.x + HEX_SIZE;
-//	vert[3].y = tilePt.y + HEX_SIZE*3/4;
-//
-//	vert[4].x = tilePt.x + HEX_SIZE/2;
-//	vert[4].y = tilePt.y + HEX_SIZE;
-//
-//	vert[5].x = tilePt.x;
-//	vert[5].y = tilePt.y + HEX_SIZE*3/4;
-//
-//	for ( index = 0 ; index < 6 ; index ++ )
-//	{
-//		vert[index].u = 0.0f;
-//		vert[index].v = 0.0f;
-//		vert[index].z = 0.0f;
-//		vert[index].u1 = 0.0f;
-//		vert[index].v1 = 0.0f;
-//		vert[index].rhw = 1.0f;
-//		vert[index].diffuseColor = pTile->pDef->color;
-//	}
-//
-//	//set the texture
-//	g_pMainDevice->SetTexture ( 0 , NULL );
-//	g_pMainDevice->DrawPrimitiveUP ( D3DPT_TRIANGLEFAN , 4 , &vert , sizeof ( GfxSheetVertex ) );
-//
-//*/
 	if (pTile->pDef->hTex.pObj)
 		g_Renderer.AddSpriteToRenderList((GameTexturePortion*)pTile->pDef->hTex.pObj, tilePt, color, scale);
 	if (pTile->pBuilding)
 		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pBuilding->pDef->hTex), tilePt, color, scale);
 	if (pTile->pUnit)
 		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
-//
-//
-//	static IDirect3DVertexBuffer9* pVB = NULL;
-//
-//	if(!pVB)
-//	{
-//			FlexVertex data[]={
-			//{0.0f,HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			//{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			//{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},
-			//{HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f},{0.0f,-HEX_HALF_HEIGHT,0.0f,0xFF603913,1.0f,1.0f},{-HEX_HALF_HEIGHT*(sqrt(3.0f)/2.0f),-HEX_HALF_HEIGHT/2.0f,0.0f,0xFF603913,1.0f,1.0f}
-//		};
-//
-//
-//		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*gNumHexTris*3, D3DUSAGE_WRITEONLY, D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1, D3DPOOL_MANAGED, &pVB, NULL);
-//
-//		void *vb_vertices;
-//
-//		pVB->Lock(0, 0, &vb_vertices, 0);
-//
-//		memcpy(vb_vertices, data, sizeof(FlexVertex) * gNumHexTris*3);
-//
-//		pVB->Unlock();		
-//
-//	}
-//
-//	float pos[3] = {0.0f, 0.0f, 0.0f};
-//	float scl[3] = {0.1f, 0.1f, 0.1f};
-//	float rot[3] = {0.0f, 0.0f, 0.0f};
-//
-//	if (pTile->pDef->hTex.pObj)
-//		g_Renderer.AddModelToRenderList(&pVB, &gNumHexTris, NULL, pos, scl, rot, false);
 }
 
 IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
@@ -351,10 +280,6 @@ void CHexMap::GetTilespaceCullRect(RECT* pOut)
 
 	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
 	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -401,10 +326,6 @@ void CHexMap::GetChunkspaceCullRect(RECT* pOut)
 
 	float chunkRect[4] = {FLT_MAX, FLT_MAX, FLT_MIN, FLT_MIN};//minx miny maxx maxy
 	g_Renderer.GetCamera()->CameraFrustumPlaneIntersection(cameraCullPoints, &planePoint, &planeNormal); //topleft topright bottomleft bottomright
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[0]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[1]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[2]);
-	//g_Renderer.RenderCubeAtPoint(cameraCullPoints[3]);
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -460,57 +381,10 @@ void CHexMap::RenderTerrain()
 			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTris, &iNumVerts, NULL, pos, scl, rot, false);
 		}
 	}
-	/*
-	g_Renderer.AddModelToRenderList(&ppVertBuffers[0], &iNumTris, NULL, pos, scl, rot, false);
-	pos[0] = HEX_WIDTH*TERRAIN_CHUNK_WIDTH;
-	g_Renderer.AddModelToRenderList(&ppVertBuffers[1], &iNumTris, NULL, pos, scl, rot, false);
-	pos[0] = 0;
-	pos[1] = TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3/4;
-
-	g_Renderer.AddModelToRenderList(&ppVertBuffers[iNumChunksWide], &iNumTris, NULL, pos, scl, rot, false);
-	*/
 }
 
 void CHexMap::RenderFog(POINT tilePt)
 {
-	/*
-	int index ;
-	GfxSheetVertex vert [ 6 ] ;
-
- 	vert[0].x = (float)tilePt.x;
-	vert[0].y = (float)tilePt.y + HEX_SIZE/4;
-
-	vert[1].x = (float)tilePt.x + HEX_SIZE/2;
-	vert[1].y = (float)tilePt.y;
-
-	vert[2].x = (float)tilePt.x + HEX_SIZE;
-	vert[2].y = (float)tilePt.y + HEX_SIZE/4;
-
-	vert[3].x = (float)tilePt.x + HEX_SIZE;
-	vert[3].y = (float)tilePt.y + HEX_SIZE*3/4;
-
-	vert[4].x = (float)tilePt.x + HEX_SIZE/2;
-	vert[4].y = (float)tilePt.y + HEX_SIZE;
-
-	vert[5].x = (float)tilePt.x;
-	vert[5].y = (float)tilePt.y + HEX_SIZE*3/4;
-
-	for ( index = 0 ; index < 6 ; index ++ )
-	{
-		vert[index].u = 0.0f;
-		vert[index].v = 0.0f;
-		vert[index].z = 0.0f;
-		vert[index].u1 = 0.0f;
-		vert[index].v1 = 0.0f;
-		vert[index].rhw = 1.0f;
-		vert[index].diffuseColor = 0xcc000000;
-	}
-
-	//set the texture
-	g_pMainDevice->SetTexture ( 0 , NULL );
-	g_pMainDevice->DrawPrimitiveUP ( D3DPT_TRIANGLEFAN , 4 , &vert , sizeof ( GfxSheetVertex ) );
-	//tempDevice->SetTransform(D3DTS_TEXTURE0, NULL );
-	*/
 }
 
 //l/r wrap
@@ -628,30 +502,8 @@ void CHexMap::UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpM
 	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[1], &trapezoid[3], 0xffff00ff);
 	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[3], &trapezoid[2], 0xffff00ff);
 	D3DLockedRectDrawLine(&d3dlr, 256, 256, &trapezoid[2], &trapezoid[0], 0xffff00ff);
-	/*
-	pDst = (char*)d3dlr.pBits + d3dlr.Pitch*tilesToRender.top*2;
-	for (int j = 0; j < RECT_HEIGHT(tilesToRender.)*2; j++)
-	{
-		pPixel = (DWORD*)pDst + tilesToRender.left*2;
-		pDst += d3dlr.Pitch;
-		*pPixel = 0xffff00ff;
-		pPixel+= (tilesToRender.right-tilesToRender.left)*2-1;
-		*pPixel = 0xffff00ff;
-	}
-	//left and right
-	pDst = (char*)d3dlr.pBits + d3dlr.Pitch*tilesToRender.top*2;
-	DWORD* pPixel2;
-	pPixel = (DWORD*)pDst + tilesToRender.left*2;
-	pPixel2 = (DWORD*)(pDst + d3dlr.Pitch * ((tilesToRender.bottom-tilesToRender.top)*2-1)) + tilesToRender.left*2;
-	for (int i = 0; i < RECT_WIDTH(tilesToRender.)*2; i++)
-	{
-		*pPixel++ = 0xffff00ff;
-		*pPixel2++ = 0xffff00ff;
-	}
-	*/
 	
 	pTex->pD3DTex->UnlockRect(0);
-	//			D3DXSaveTextureToFile(_T("derp.png"), D3DXIFF_PNG, pTileLightmapDXT1Texture, NULL);
 }
 
 inline POINT TileToScreen(int x, int y, FLOATPOINT fpOffset)
@@ -721,35 +573,6 @@ void CHexMap::GetMatchingOnscreenTiles(void*** peaTilesOut, findTileFunc pFunc, 
 
 void CHexMap::RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile )
 {
-	//POINT pt = TileToScreen(ptMouseoverTile.x, ptMouseoverTile.y, fpMapOffset);
-	//g_Renderer.AddSpriteToRenderList(pSelectedTile, pt, 0xffffffff, ZOOM_PERCENT);
-	//D3DXVECTOR3 vPoint = D3DXVECTOR3((float)ptMouseoverTile.x, (float)ptMouseoverTile.y, 0.1f);
-	//g_Renderer.RenderCubeAtPoint(vPoint);
-	// show pathfinding info
-/*
-	RECT tilesToRender;
-	CopyRect(&tilesToRender, mapViewport);
-	OffsetRect(&tilesToRender, fpMapOffset.x, fpMapOffset.y);
-	tilesToRender.left /= HEX_SIZE;
-	tilesToRender.right /= HEX_SIZE;
-	tilesToRender.top /= HEX_SIZE*3/4;
-	tilesToRender.bottom /= HEX_SIZE*3/4;
-	InflateRect(&tilesToRender, 1, 1);
-	for (int i = tilesToRender.left; i < tilesToRender.right; i++)
-		for (int j = max(0,tilesToRender.top); j < min(tilesToRender.bottom,h); j++)
-		{
-			POINT sanitizedPt = {i,j};
-			MakeLocValid(&sanitizedPt);
-			if (pPathMap && pPathMap[sanitizedPt.x + sanitizedPt.y*w] != 0)
-			{
-				CAtlString str;
-				str.Format(_T("%i"), pPathMap[sanitizedPt.x + sanitizedPt.y*w]);
-				POINT pt = TileToScreen(i, j, fpMapOffset);
-				pFont->RenderString(str, pt.x + 32, pt.y + 32, 0xffff0000);
-			}
-
-		}
-		*/
 }
 
 void CHexMap::GetTileDescription( hexTile* pTile, TCHAR* pchDescOut )

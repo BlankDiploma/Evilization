@@ -134,7 +134,6 @@ class FlexFrustum
 public:
 	//only needs to be called when matProj changes
 	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
-	void PointToFrustumRay(D3DXVECTOR3 pOut[2], float fScaledX, float fScaledY);
 
 
 	float GetNearPlaneDist();
@@ -177,8 +176,6 @@ class FlexCamera
 {
 	D3DXMATRIX matView, matProj;
 	D3DXVECTOR3 vEye, vAt, vUp;
-	//D3DXVECTOR3 vVelocity;
-	//float fPitch, fYaw, fRoll;
 	CRITICAL_SECTION _csCamera;
 	FlexFrustum cameraFrustum;	
 	float fCameraWrapBoundaries[3][2];	//[x y z][min max]
@@ -204,7 +201,6 @@ public:
 	void GetCameraUp(D3DXVECTOR3* pOut);
 	void GetViewMatrix(D3DXMATRIX* pOut);
 	void GetProjMatrix(D3DXMATRIX* pOut);
-	//void DoMouselook(POINT delta);
 	void MoveCamera(float fHoriz, float fVert, int iZoom);
 	void SetCameraPosition(D3DXVECTOR3* pvPos);
 	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
@@ -273,7 +269,7 @@ class FlexRenderer
 	IDirect3DStateBlock9* stateBlocks[kRendererMode_Count];
 	D3DVIEWPORT9 mainView;
 	FlexCamera* pCamera;
-	ID3DXEffect* p3DShader, *p2DShader;
+	ID3DXEffect* pDefaultShader;
 	LPDIRECT3DVERTEXDECLARATION9 FlexVertexDecl, FlexVertex2DDecl;
 	D3DXHANDLE default3DTech, default2DTech, wireframe3DTech, translucent3DTech;
 
@@ -352,7 +348,6 @@ public:
 	void ProcessRenderLists();
 	HRESULT CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle);
 	void RenderCubeAtPoint(D3DXVECTOR3 vPoint);
-	void PixelToFrustumRay(D3DXVECTOR3 pOut[2], int x, int y); 
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
 	void CreateAllTextureAtlasBuffers();
