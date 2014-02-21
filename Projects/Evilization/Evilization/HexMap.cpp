@@ -363,6 +363,8 @@ void CHexMap::RenderTerrain()
 
 	for (int i = chunks.left; i < chunks.right; i++)
 	{
+		if ((i < 0 || i >= iNumChunksWide) && g_DebugFlags.disableMapXWrap)
+				continue;
 		int iNormalized = i;
 		while (iNormalized < 0)
 			iNormalized += iNumChunksWide;
@@ -959,6 +961,23 @@ int CHexMap::GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut )
 		right += 0.5;
 	}
 	return num;
+}
+
+bool CHexMap::IsUnitInTiles(CHexUnit* pUnit, POINT* pTilePts, int numTiles)
+{
+	int i;
+	bool bFound = false;
+	POINT currTilePt;
+	hexTile* currTile;
+	for (i = 0; i < numTiles; i++)
+	{
+		currTilePt = pTilePts[i];
+		currTile = GetTile(currTilePt);
+		if (currTile->pUnit == pUnit)
+			bFound = true;
+	}
+
+	return bFound;
 }
 
 bool CHexMap::BuildingCanBeBuiltOnTile(hexBuildingDef* pBuildingDef, POINT tilePt)

@@ -35,7 +35,7 @@ int count = 0;
 int mouseX;
 int mouseY;
 int numUpdatesInLastSecond = 0;
-
+DebugFlags g_DebugFlags = {0};
 
 MTRand randomFloats(GetTickCount());
 
@@ -1101,7 +1101,12 @@ void GenerateMapFromDesc(lua_State *L, const char* pchDescName, int numPlayers)
 	g_GameState.EndCurrentGame();
 	g_GameState.StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, widebuf), numPlayers);
 }
-	
+
+void DisableMapXWrap(lua_State *L, int disable)
+{
+	g_DebugFlags.disableMapXWrap = disable;
+}
+
 void DoAllLuaBinds()
 {
 	luabind::module(g_LUA)
@@ -1160,6 +1165,7 @@ void DoAllLuaBinds()
 		luabind::def("City_GetCurrentProject", &GetCurrentProject),
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
+		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

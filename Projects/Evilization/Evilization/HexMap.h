@@ -7,6 +7,7 @@
 #include "structparse.h"
 #include "earray.h"
 #include "flexrenderer.h"
+#include "Evilization.h"
 
 #pragma once
 
@@ -159,6 +160,7 @@ public:
 	void GetChunkspaceCullRect(RECT* pOut);
 	void GetTilespaceCullRect(RECT* pOut);
 	void GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4]);
+	bool IsUnitInTiles(CHexUnit* pUnit, POINT* pTilePts, int numTiles); 
 
 private:
 

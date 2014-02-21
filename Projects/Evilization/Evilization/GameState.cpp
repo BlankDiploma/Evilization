@@ -141,10 +141,33 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 		}break;
 	case WM_RBUTTONUP:
 		{
+			//check if there is unit on tile, if not, move, if so, compare owner IDs. If different, issue attack
+			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
 			HEXPATH* pPath = NULL;
-			pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
-			if (pPath)
-				IssueOrder(kOrder_Move, pPath);
+			CHexUnit* pUnit = pTile->pUnit;
+			int numTiles;
+			POINT* pTilePts;
+			if (pUnit)
+			{
+				if(pUnit->GetOwnerID() != curSelUnit->GetOwnerID())
+				{
+					//check if the target is in range
+					int unitRange = pUnit->GetAttackRange();
+					numTiles = 1 + ((unitRange*6 + 6)/2 * unitRange);
+					pTilePts = (POINT*) malloc(sizeof(POINT)*numTiles);
+					pCurrentMap->GetTilesInRadius(curSelUnit->GetLoc(), unitRange, pTilePts);
+					if (pCurrentMap->IsUnitInTiles(pUnit, pTilePts, numTiles))
+					{
+						IssueOrder(kOrder_Melee, pPath);
+					}
+				}
+			}
+			else
+			{
+				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
+				if (pPath)
+					IssueOrder(kOrder_Move, pPath);
+			}
 		}break;
 	case WM_MOUSEWHEEL:
 		{
