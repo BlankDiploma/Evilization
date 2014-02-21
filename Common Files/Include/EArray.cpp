@@ -33,7 +33,7 @@ void eaResize(void*** pData)
 
 void eaPush_void(void*** pData, void* pObj)
 {
-	if (!(*pData))
+	if (!pData || !(*pData))
 	{
 		eaCreate(pData);
 	}
@@ -49,7 +49,7 @@ void eaPush_void(void*** pData, void* pObj)
 
 void eaInsert_void(void*** pData, void* pObj, int index)
 {
-	if (!(*pData))
+	if (!pData || !(*pData))
 	{
 		eaCreate(pData);
 	}
@@ -70,7 +70,7 @@ void eaInsert_void(void*** pData, void* pObj, int index)
 //Use RemoveFast when you don't care about the order of the array.
 void eaRemoveFast_void(void*** pData, int index)
 {
-	if (!(*pData))
+	if (!pData || !(*pData))
 	{
 		return;
 	}
@@ -85,7 +85,7 @@ void eaRemoveFast_void(void*** pData, int index)
 
 void eaRemove_void(void*** pData, int index)
 {
-	if (!(*pData))
+	if (!pData || !(*pData))
 	{
 		return;
 	}
@@ -103,9 +103,12 @@ void eaRemove_void(void*** pData, int index)
 
 void eaDestroy_void(void*** pData)
 {
-	EArray* pArray = EARRAY_FROM_HANDLE(pData);
-	delete pArray;
-	*pData = NULL;
+	if (pData && *pData)
+	{
+		EArray* pArray = EARRAY_FROM_HANDLE(pData);
+		delete pArray;
+		*pData = NULL;
+	}
 }
 
 void eaClear_void(void*** pData)

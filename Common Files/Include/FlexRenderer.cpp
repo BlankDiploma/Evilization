@@ -5,104 +5,353 @@
 #include "DefLibrary.h"
 
 LPDIRECT3DVERTEXBUFFER9 g_pCubeVertex = NULL;
+LPDIRECT3DINDEXBUFFER9 g_pCubeIndex = NULL;
 LPDIRECT3DVERTEXBUFFER9 g_p2DVertices = NULL;
 
-void FlexRenderer::SetCameraEye(float x, float y, float z)
+FlexCamera::FlexCamera()
 {
-	camera.vEye.x = x;
-	camera.vEye.y = y;
-	camera.vEye.z = z;
+	InitializeCriticalSection(&_csCamera);
+	bCameraWrapsAlongAxis[0] = bCameraWrapsAlongAxis[1] = bCameraWrapsAlongAxis[2] = false;
 }
 
-void FlexRenderer::SetCameraAt(float x, float y, float z)
+FlexCamera::~FlexCamera()
 {
-	camera.vAt.x = x;
-	camera.vAt.y = y;
-	camera.vAt.z = z;
+	DeleteCriticalSection(&_csCamera);
 }
 
-void FlexRenderer::SetCameraRight(float x, float y, float z)
-{
-	camera.vRight.x = x;
-	camera.vRight.y = y;
-	camera.vRight.z = z;
-}
-
-void FlexRenderer::SetCameraUp(float x, float y, float z)
-{
-	camera.vUp.x = x;
-	camera.vUp.y = y;
-	camera.vUp.z = z;
-}
- 
-void FlexRenderer::MoveCamera(float fForwards, float fStrafe)
+void FlexCamera::SetCameraEye(float x, float y, float z)
 {
 	EnterCriticalSection(&_csCamera);
-	camera.vEye += camera.vAt * fForwards;
-	camera.vEye += camera.vRight * fStrafe;
+	vEye.x = x;
+	vEye.y = y;
+	vEye.z = z;
 	LeaveCriticalSection(&_csCamera);
 }
 
-void FlexRenderer::DoMouselook(POINT delta)
+void FlexCamera::SetCameraAt(float x, float y, float z)
 {
 	EnterCriticalSection(&_csCamera);
-	float xAngle = delta.x * 1.0f * MOUSELOOK_SENSITIVITY;
-	float yAngle = delta.y * 1.0f * MOUSELOOK_SENSITIVITY;
+	vAt.x = x;
+	vAt.y = y;
+	vAt.z = z;
+	LeaveCriticalSection(&_csCamera);
+}
 
-    D3DXMATRIX rotation;
-	float fMaxPitch = D3DXToRadian( 85.0f );
+void FlexCamera::SetCameraUp(float x, float y, float z)
+{
+	EnterCriticalSection(&_csCamera);
+	vUp.x = x;
+	vUp.y = y;
+	vUp.z = z;
+	LeaveCriticalSection(&_csCamera);
+}
+ 
+void FlexCamera::SetCameraEye(D3DXVECTOR3 newEye)
+{
+	EnterCriticalSection(&_csCamera);
+	vEye = newEye;
+	LeaveCriticalSection(&_csCamera);
+}
 
-	D3DXMatrixRotationAxis( &rotation, &camera.vUp, xAngle );
-	D3DXVec3TransformNormal( &camera.vRight, &camera.vRight, &rotation );
-	D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+void FlexCamera::SetCameraAt(D3DXVECTOR3 newAt)
+{
+	EnterCriticalSection(&_csCamera);
+	vAt = newAt;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::SetCameraUp(D3DXVECTOR3 newUp)
+{
+	EnterCriticalSection(&_csCamera);
+	vUp = newUp;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::SetViewMatrix(D3DXMATRIX newMatView)
+{
+	EnterCriticalSection(&_csCamera);
+	matView = newMatView;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::SetProjMatrix(D3DXMATRIX newMatProj)
+{
+	EnterCriticalSection(&_csCamera);
+	matProj = newMatProj;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::GetCameraEye(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vEye.x;
+	pOut->y= vEye.y;
+	pOut->z= vEye.z;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::GetCameraAt(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vAt.x;
+	pOut->y= vAt.y;
+	pOut->z= vAt.z;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::GetCameraUp(D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	pOut->x= vUp.x;
+	pOut->y= vUp.y;
+	pOut->z= vUp.z;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::GetViewMatrix(D3DXMATRIX* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	*pOut = matView;
+	LeaveCriticalSection(&_csCamera);
+}
+void FlexCamera::GetProjMatrix(D3DXMATRIX* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	*pOut = matProj;
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::MoveCamera(float fHoriz, float fVert, int iZoom)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDir, vHoriz, vVert, vZoom;
+
+	D3DXVec3Normalize(&vVert, &vUp);
+	vDir = vAt - vEye;
+	D3DXVec3Normalize(&vDir, &vDir);
+	D3DXVec3Cross(&vHoriz, &vVert, &vDir);
+
+	vHoriz = D3DXVECTOR3(vHoriz.x*fHoriz*MOUSEDRAG_SENSITIVITY, 0, 0);
+	vVert = D3DXVECTOR3(0, vVert.y*fVert*MOUSEDRAG_SENSITIVITY, 0);
+	vZoom = D3DXVECTOR3(vDir.x*iZoom*MOUSEZOOM_SENSITIVITY, vDir.y*iZoom*MOUSEZOOM_SENSITIVITY,vDir.z*iZoom*MOUSEZOOM_SENSITIVITY);
+
+	vEye -= vHoriz;
+	vAt -= vHoriz;
+
+	vEye += vVert;
+	vAt +=  vVert;
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (bCameraWrapsAlongAxis[i])
+		{
+			while (vEye[i] < fCameraWrapBoundaries[i][0])
+			{
+				float fCorrection = (fCameraWrapBoundaries[i][1] - fCameraWrapBoundaries[i][0]);
+				vEye[i] += fCorrection;
+				vAt[i] += fCorrection;
+			}
+
+			while (vEye[i] > fCameraWrapBoundaries[i][1])
+			{
+				float fCorrection = -(fCameraWrapBoundaries[i][1] - fCameraWrapBoundaries[i][0]);
+				vEye[i] += fCorrection;
+				vAt[i] += fCorrection;
+			}
+		}
+	}
 	
- 
- //   radians = (m_invertY) ? -radians : radians;
-    camera.fPitch -= yAngle;
-    if ( camera.fPitch > fMaxPitch )
-    {
-        yAngle += camera.fPitch - fMaxPitch;
-		camera.fPitch -= camera.fPitch - fMaxPitch;
-    }
-    else if ( camera.fPitch < -fMaxPitch )
-    {
-        yAngle += camera.fPitch + fMaxPitch;
-		camera.fPitch -= camera.fPitch + fMaxPitch;
-    }
- 
-    D3DXMatrixRotationAxis( &rotation, &camera.vRight, yAngle );
-    D3DXVec3TransformNormal( &camera.vUp, &camera.vUp, &rotation );
-    D3DXVec3TransformNormal( &camera.vAt, &camera.vAt, &rotation );
+	if (!(((vEye.z + vZoom.z) >= -15.0f) || ((vEye.z + vZoom.z) <= -70.0f)))
+	{
+		vEye += vZoom;
+		vAt += vZoom;
+	}
+	
+	BuildViewFrustum();
 	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::SetCameraPosition(D3DXVECTOR3* pvPos)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDiff = (*pvPos) - vEye;
+	vAt += vDiff;
+	vEye = (*pvPos);
+	BuildViewFrustum();
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::BuildViewFrustum()
+{
+	cameraFrustum.CalcWorldSpacePlanes(vEye, vAt, vUp);
+}
+
+void FlexCamera::BuildViewMatrix()
+{
+	EnterCriticalSection(&_csCamera);
+	ZeroMemory(&matView, sizeof(matView));
+	D3DXMatrixLookAtLH(&matView, &vEye, &vAt, &vUp);
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::BuildProjMatrix(int screenW, int screenH)
+{
+	EnterCriticalSection(&_csCamera);
+	ZeroMemory(&matProj, sizeof(matProj));
+	float zn = 0.1f;
+	float zf = 400.0f;
+	float fAspect = (float) screenW / (float) screenH;
+	D3DXMatrixPerspectiveFovLH(&matProj, FOVY, fAspect, zn, zf);
+	//Calculate near and far planes of frustum
+	cameraFrustum.CalcNearFarPlaneDimensions(FOVY, fAspect, zn, zf);
+	LeaveCriticalSection(&_csCamera);
+}
+
+int FlexCamera::CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm)
+{
+	EnterCriticalSection(&_csCamera);
+
+	int ret = cameraFrustum.FrustumPlaneIntersection(pOut, pPoint, pNorm);
+
+	LeaveCriticalSection(&_csCamera);
+
+	return ret;
+}
+
+void FlexCamera::CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf)
+{
+	EnterCriticalSection(&_csCamera);
+
+	cameraFrustum.CalcNearFarPlaneDimensions(fovy, Aspect, zn, zf);
+
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::Rotate(float rot[3])
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXVECTOR3 vDirection,vRight;
+	D3DXMATRIX matRotAxis,matRotY;
+
+	D3DXVec3Normalize(&vDirection,&(vAt - vEye));
+	D3DXVec3Cross(&vRight,&vDirection,&vUp);
+	D3DXVec3Normalize(&vRight,&vRight);
+
+	D3DXMatrixRotationAxis(&matRotAxis,&vRight,D3DXToRadian(rot[1]));
+	D3DXMatrixRotationZ(&matRotY,D3DXToRadian(rot[0]));
+
+	D3DXVec3TransformCoord(&vDirection,&vDirection,&(matRotAxis * matRotY));
+	D3DXVec3TransformCoord(&vUp,&vUp,&(matRotAxis * matRotY));
+	vAt = vDirection + vEye;
+
+	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexCamera::WorldSpaceToHomogenousScreen(D3DXVECTOR3* pWorld, D3DXVECTOR3* pOut)
+{
+	EnterCriticalSection(&_csCamera);
+	D3DXMATRIX matViewProj = matProj * matView;
+	LeaveCriticalSection(&_csCamera);
+
+	D3DXVec3TransformCoord(pOut, pWorld, &matView);
+	D3DXVec3TransformCoord(pOut, pOut, &matProj);
+}
+
+void FlexRenderer::WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut)
+{
+	D3DXVECTOR3 homogenous(0,0,0);
+	pCamera->WorldSpaceToHomogenousScreen(pWorld ,&homogenous);
+	pOut->x = (LONG)(((homogenous[0] + 1)/2.0f)*iScreenW);
+	pOut->y = (LONG)(((1-homogenous[1])/2.0f)*iScreenH);
 }
 
 void FlexRenderer::UpdateCamera()
 {
-	EnterCriticalSection(&_csCamera);
-    D3DXVECTOR3 vLookAt = camera.vEye + camera.vAt;
-     
-    // Calculate the new view matrix
-	D3DXVECTOR3 up = D3DXVECTOR3( 0.0f, 1.0f, 0.0f );
-
-    D3DXMatrixLookAtLH( &matView, &camera.vEye, &vLookAt, &up );
- 
-    // Set the camera axes from the view matrix
-	camera.vRight.x = matView._11; 
-    camera.vRight.y = matView._21; 
-    camera.vRight.z = matView._31; 
-    camera.vUp.x = matView._12;
-    camera.vUp.y = matView._22;
-    camera.vUp.z = matView._32;
-    camera.vAt.x = matView._13;
-    camera.vAt.y = matView._23;
-    camera.vAt.z = matView._33;
-
-    // Calculate yaw and pitch
-    float lookLengthOnXZ = sqrtf( camera.vAt.z * camera.vAt.z + camera.vAt.x * camera.vAt.x );
-	camera.fPitch = atan2f( camera.vAt.y, lookLengthOnXZ );
-    camera.fYaw   = atan2f( camera.vAt.x, camera.vAt.z );
+	D3DXMATRIX matView;
+	pCamera->BuildViewMatrix();
+	pCamera->GetViewMatrix(&matView);
 	pD3DDevice->SetTransform(D3DTS_VIEW, &matView);
-	LeaveCriticalSection(&_csCamera);
+}
+
+void FlexFrustum::CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf)
+{
+	this->zn = zn;
+	this->zf = zf;
+	fHnear = 2.0f * tan(fovy/2.0f) * zn;
+	fWnear = fHnear * Aspect;
+	fHfar = 2.0f * tan(fovy/2.0f) * zf;
+	fWfar = fHfar * Aspect;
+}
+
+void FlexFrustum::CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp)
+{
+	camDir = vAt - vEye;
+	D3DXVec3Normalize(&camDir, &camDir);
+	D3DXVECTOR3 vRight;
+	D3DXVec3Cross(&vRight, &vUp, &camDir);
+	D3DXVec3Normalize(&vRight, &vRight);
+	D3DXVec3Normalize(&vUp, &vUp);
+	D3DXVECTOR3 farCenter = vEye + camDir * zf;
+	D3DXVECTOR3 nearCenter = vEye + camDir * zn;
+
+	ftl = farCenter + (vUp * fHfar/2.0f) - (vRight * fWfar/2.0f);
+	ftr = farCenter + (vUp * fHfar/2.0f) + (vRight * fWfar/2.0f);
+	fbl = farCenter - (vUp * fHfar/2.0f) - (vRight * fWfar/2.0f);
+	fbr = farCenter - (vUp * fHfar/2.0f) + (vRight * fWfar/2.0f);
+
+	ntl = nearCenter + (vUp * fHnear/2.0f) - (vRight * fWnear/2.0f);
+	ntr = nearCenter + (vUp * fHnear/2.0f) + (vRight * fWnear/2.0f);
+	nbl = nearCenter - (vUp * fHnear/2.0f) - (vRight * fWnear/2.0f);
+	nbr = nearCenter - (vUp * fHnear/2.0f) + (vRight * fWnear/2.0f);
+
+
+}
+
+int FlexFrustum::FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm)
+{
+	D3DXPLANE plMap;
+	int ret = 0;
+
+	D3DXPlaneFromPointNormal(&plMap, pPoint, pNorm);
+	D3DXPlaneNormalize(&plMap,&plMap);
+
+	if (D3DXPlaneIntersectLine(&pOut[0], &plMap, &ntl, &ftl))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[1], &plMap, &ntr, &ftr))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[2], &plMap, &nbl, &fbl))
+		ret++;
+	if (D3DXPlaneIntersectLine(&pOut[3], &plMap, &nbr, &fbr))
+		ret++;
+	return ret;
+}
+
+float FlexFrustum::GetNearPlaneDist()
+{
+	return zn;
+}
+
+float FlexFrustum::GetFarPlaneDist()
+{
+	return zf;
+}
+
+void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2)
+{
+
+	D3DXPLANE plMap;
+	D3DXPlaneFromPointNormal(&plMap, pPlanePoint, pPlaneNorm);
+	D3DXPlaneIntersectLine(pOut, &plMap, pRayPoint1, pRayPoint2);
+}
+
+FLOATPOINT FlexRenderer::ScaleScreenCoords(int x, int y)
+{
+	FLOATPOINT scaledCoords;
+	float fAspect;
+	static float frustCenterToEdgeDistance = tanf(FOVY*0.5f);
+
+	fAspect = (float) iScreenW / (float) iScreenH;
+	scaledCoords.x = (frustCenterToEdgeDistance * (((float) x / ((float) iScreenW * 0.5f)) - 1.0f) / fAspect);
+	scaledCoords.y = (frustCenterToEdgeDistance * (1.0f - y) / ((float) iScreenH * 0.5f));
+
+	return scaledCoords;
 }
 
 void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
@@ -126,17 +375,19 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	}
 	
 	InitializeCriticalSection(&_csNextRenderList);
-	InitializeCriticalSection(&_csCamera);
 
 	iScreenW = screenW;
 	iScreenH = screenH;
 
 	fAspect = (float) iScreenW / (float) iScreenH;
 
-	SetCameraEye(0,0,-8);
-	SetCameraAt(0,0,1);
-	SetCameraRight(1,0,0);
-	SetCameraUp(0,1,0);
+	pCamera->SetCameraEye(0, 0,-3);
+	pCamera->SetCameraAt(0,0,1);
+	pCamera->SetCameraUp(0,1,0);
+
+	float rot[3] = {0, CAM_ANGLE, 0};
+
+	pCamera->Rotate(rot);
 
 	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
 	d3dpp.Windowed = TRUE;
@@ -146,11 +397,8 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	d3dpp.BackBufferWidth = iScreenW;
 	d3dpp.BackBufferHeight = iScreenH;
 	d3dpp.BackBufferCount = 1;
-//	d3dpp.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES ;
-//	d3dpp.MultiSampleQuality = 0;
 	d3dpp.EnableAutoDepthStencil = true;
 	d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-//	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	//fallback z-buffer support for SHITTY CARDS
@@ -164,29 +412,22 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	r = pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWndMain, D3DCREATE_MULTITHREADED | D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &pD3DDevice);
 
-	/*
-	TCHAR buf[512] = {0};
-	if (FAILED(r)) {
-		wsprintf(buf, L"Error: %s error description: %s\n",
-			DXGetErrorString(r), DXGetErrorDescription(r));
-		assert(0);
-	}
-	*/
-
 	// World matrix setup
 	float pos[3] = {0,0,0};
 	pD3DDevice->SetTransform(D3DTS_WORLD, &matWorld);
 
 	// View matrix setup
-	ZeroMemory(&matView, sizeof(matView));
-	D3DXMatrixLookAtLH(&matView, &camera.vEye, &camera.vAt, &camera.vUp);
+	D3DXMATRIX matView;
+	pCamera->BuildViewMatrix();
+	pCamera->GetViewMatrix(&matView);
 	pD3DDevice->SetTransform(D3DTS_VIEW, &matView); 
 
 	// Projection matrix setup
-	//g_MatProj = MakeProjectionMatrix(1, 20, 120, 120);
-	ZeroMemory(&matProj, sizeof(matProj));
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI/4.0f, fAspect, 0.1f, 400.0f);
+	D3DXMATRIX matProj;
+	pCamera->BuildProjMatrix(screenW, screenH);
+	pCamera->GetProjMatrix(&matProj);
 	pD3DDevice->SetTransform(D3DTS_PROJECTION, &matProj);
+
 
 	mainView.X = 0;
 	mainView.Y = 0;
@@ -198,90 +439,96 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	pD3DDevice->SetViewport(&mainView);
 
 	//set vertex shader
+	LPD3DXBUFFER effectErrors = NULL;
 
-	//set up render modes
+	HRESULT error = D3DXCreateEffectFromFileW(pD3DDevice,
+		_T("data/shaders/DefaultShaderNoNorms.fx"),
+		0,
+		0,
+		0,
+		0,
+		&pDefaultShader,
+		&effectErrors
+		);
 
-	//Default 3D Rendering
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetFVF ( D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_TRUE);
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_TRUE);
-//	pD3DDevice->SetRenderState ( D3DRS_MULTISAMPLEANTIALIAS , TRUE);
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Default3D] );
 
-	//Default 2D Rendering
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetFVF ( D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_NONE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ZENABLE, D3DZB_FALSE);
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHABLENDENABLE , TRUE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHAFUNC , D3DCMP_GREATEREQUAL ) ;
-	pD3DDevice->SetRenderState ( D3DRS_ALPHAREF , 1 ) ;
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_MODULATE  );
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG1,D3DTA_TEXTURE );
-	pD3DDevice->SetTextureStageState(0,D3DTSS_ALPHAARG2,D3DTA_DIFFUSE );
-	pD3DDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-	pD3DDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
-	pD3DDevice->SetRenderState(D3DRS_BLENDOP,D3DBLENDOP_ADD);
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_2D] );
+	if (effectErrors)
+	{
+		size_t origsize = strlen((char*)effectErrors->GetBufferPointer()) + 1;
+		const size_t newsize = 100;
+		wchar_t wcstring[1000];
+		size_t convertedChars = 0;
+		mbstowcs_s(&convertedChars, wcstring, origsize, (char*)effectErrors->GetBufferPointer(), _TRUNCATE);
+		MessageBoxW(0, wcstring, 0, 0);
+		effectErrors->Release();
+	}
 
-	//Wireframe 3D
-	pD3DDevice->BeginStateBlock();
-	pD3DDevice->SetRenderState ( D3DRS_LIGHTING , FALSE ) ;
-	pD3DDevice->SetRenderState ( D3DRS_CULLMODE , D3DCULL_CCW ) ;
-	pD3DDevice->SetRenderState ( D3DRS_FILLMODE , D3DFILL_WIREFRAME ) ;
-	pD3DDevice->EndStateBlock( &stateBlocks[kRendererMode_Wireframe3D] );
+	D3DVERTEXELEMENT9 decl3D[MAX_FVF_DECL_SIZE];
+	D3DVERTEXELEMENT9 decl2D[MAX_FVF_DECL_SIZE];
 
-	stateBlocks[kRendererMode_Default3D]->Apply();
+	D3DXDeclaratorFromFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl3D);
+	D3DXDeclaratorFromFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl2D);
 
-	pD3DDevice->CreateVertexBuffer(36*sizeof(FlexVertex), 0, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &g_pCubeVertex, NULL);
+	pD3DDevice->CreateVertexDeclaration(decl3D, &FlexVertexDecl);
 
-	BYTE* pVertices;
-	FlexVertex data[]={
+	pD3DDevice->CreateVertexDeclaration(decl2D, &FlexVertex2DDecl);
+
+	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
+
+	default3DTech = pDefaultShader->GetTechniqueByName("Default3D");
+	default2DTech = pDefaultShader->GetTechniqueByName("Default2D");
+	wireframe3DTech = pDefaultShader->GetTechniqueByName("Wireframe3D");
+	translucent3DTech = pDefaultShader->GetTechniqueByName("Translucent3D");
+
+	error = pDefaultShader->SetTechnique(default3DTech);
+
+	pD3DDevice->CreateVertexBuffer(8*sizeof(FlexVertex), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &g_pCubeVertex, NULL);
+	
+	pD3DDevice->CreateIndexBuffer(36*sizeof(int), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &g_pCubeIndex, NULL);
+
+	BYTE* pData;
+	FlexVertex verts[]=
+	{
 	//Cube vertices
-				//Front face
-				{0.0f,0.0f,0.0f,0xFF603913,0,0.5},{0.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},
-				{ 1.0f, 1.0f,0.0f,0xFF603913,0.5,0},{ 1.0f,0.0f,0.0f,0xFF603913,0.5,0.5},{0.0f,0.0f,0.0f,0xFF603913,0,0.5},
-				//Back face
-				{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},
-				{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},
-				//Top face
-				{0.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},
-				{ 1.0f, 1.0f, 1.0f,0xFF00a651,0,0},{ 1.0f, 1.0f,0.0f,0xFF00a651,0,0},{0.0f, 1.0f,0.0f,0xFF00a651,0,0},
-				//Bottom face
-				{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-				{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-				//Left face
-				{0.0f,0.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
-				{0.0f, 1.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0},
-				//Right face
-				{ 1.0f,0.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f,0.0f,0xFF603913,0,0},{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},
-				{ 1.0f, 1.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f, 1.0f,0xFF603913,0,0},{ 1.0f,0.0f,0.0f,0xFF603913,0,0},
-			};
-	g_pCubeVertex->Lock(0, 0, (void**)&pVertices, 0);
-	memcpy(pVertices, data, sizeof(data));
+				{0.0f,0.0f,0.0f,0xFF603913,0,0},{0.0f, 1.0f,0.0f,0xFF603913,0,0},
+				{1.0f, 1.0f,0.0f,0xFF603913,0,0},{1.0f,0.0f,0.0f,0xFF603913,0,0},
+				{1.0f,0.0f, 1.0f,0xFF603913,0,0},{1.0f, 1.0f, 1.0f,0xFF603913,0,0},
+				{0.0f, 1.0f, 1.0f,0xFF603913,0,0},{0.0f,0.0f, 1.0f,0xFF603913,0,0}
+	};
+
+	int indices[] = {0,1,2, 2,3,0,
+					 4,5,6, 6,7,4,
+				     0,3,5, 5,4,0,
+					 3,2,6, 6,5,3,
+					 2,1,7, 7,6,2,
+					 1,0,4, 4,7,1};
+
+	g_pCubeVertex->Lock(0, 0, (void**)&pData, 0);
+	memcpy(pData, verts, sizeof(verts));
 	g_pCubeVertex->Unlock();
-	
+
+	g_pCubeIndex->Lock(0, 0, (void**)&pData, 0);
+	memcpy(pData, indices, sizeof(indices));
+	g_pCubeIndex->Unlock();
+
 	//let's assume that 1,000 2d sprites is enough for now
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pFutureRenderList->pSpriteVerts, NULL);
 	
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pNextRenderList->pSpriteVerts, NULL);
 	
-	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
+	pD3DDevice->CreateVertexBuffer(4*RENDER_LIST_BUFFER_SIZE*sizeof(FlexVertex2D), D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &pCurRenderList->pSpriteVerts, NULL);
 	
 }
 
 
 FlexRenderer::FlexRenderer()
 {
+	pCamera = new FlexCamera();
 	pFutureRenderList = new RenderList;
 	pNextRenderList = new RenderList;
 	pCurRenderList = new RenderList;
 	eaVertsToDestroy = NULL;
+	eaAtlasVertexBuffers = NULL;
 }
 
 FlexRenderer::~FlexRenderer()
@@ -291,6 +538,18 @@ FlexRenderer::~FlexRenderer()
 		if (stateBlocks[i])
 			stateBlocks[i]->Release();
 	}
+	for (int i = 0; i < eaSize(&eaAtlasVertexBuffers); i++)
+	{
+		if (eaAtlasVertexBuffers[i])
+			eaAtlasVertexBuffers[i]->Release();
+	}
+	for (int i = 0; i < eaSize(&eaVertsToDestroy); i++)
+	{
+		eaVertsToDestroy[i]->Release();
+	}
+	eaDestroy(&eaAtlasVertexBuffers);
+	eaDestroy(&eaVertsToDestroy);
+
 	if (pD3D)
 	{
 		pD3D->Release();
@@ -309,112 +568,21 @@ FlexRenderer::~FlexRenderer()
 	if (pCurRenderList->pSpriteVerts)
 		pCurRenderList->pSpriteVerts->Release();
 	
+	if (pDefaultShader)
+		pDefaultShader->Release();
+
+	delete pCamera;
 	delete pCurRenderList;
 	delete pNextRenderList;
 	delete pFutureRenderList;
 	
 	DeleteCriticalSection(&_csNextRenderList);
-	DeleteCriticalSection(&_csCamera);
 }
 
 void FlexRenderer::SetRenderMode(FlexRendererMode eMode)
 {
 }
-/*
-void FlexRenderer::PutModel(FlexModel* pModel, float pos[3], float scale[3], float rot[3])
-{
-}
 
-void FlexRenderer::PutVertexBuffer(IDirect3DVertexBuffer9* pVerts, int numTris, LPDIRECT3DTEXTURE9 pTex, float pos[3], float scale[3], float rot[3])
-{
-	D3DXMATRIX matWorld;
-	D3DXMATRIX matTrans, matRot, matScale;
-
-	D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
-	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
-	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
-	D3DXMatrixMultiply(&matWorld, &matScale, &matRot);
-	D3DXMatrixMultiply(&matWorld, &matWorld, &matTrans);
-
-	pD3DDevice->SetTransform(D3DTS_WORLD,&matWorld);
-
-	if (pTex)
-		pD3DDevice->SetTexture ( 0 , pTex );
-	pD3DDevice->SetStreamSource(0, pVerts, 0, sizeof(FlexVertex));
-	pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, numTris);
-}
-
-void FlexRenderer::PutPrimitive(FlexPrimitiveType eType, LPDIRECT3DTEXTURE9 pTex, float pos[3], float scale[3], float rot[3])
-{
-	switch (eType)
-	{
-	case kPrimitiveType_Cube:
-		{
-			D3DXMATRIX matWorld;
-			D3DXMATRIX matTrans, matRot, matScale;
-
-			D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
-			D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
-			D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
-			D3DXMatrixMultiply(&matWorld, &matScale, &matRot);
-			D3DXMatrixMultiply(&matWorld, &matWorld, &matTrans);
-
-			pD3DDevice->SetTransform(D3DTS_WORLD,&matWorld);
-			
-			pD3DDevice->SetStreamSource(0, g_pCubeVertex, 0, sizeof(FlexVertex));
-			if (pTex)
-				pD3DDevice->SetTexture ( 0 , pTex );
-			pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, 12);
-		}break;
-	}
-}
-
-
-
-void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, RECT*pDst, RECT*pSrc)
-{
-	const float pos[2] = {pDst->left, pDst->top};
-	const float scale[2] = {(pDst->right-pDst->left)/(pSrc->right-pSrc->left),(pDst->bottom-pDst->top)/(pSrc->bottom-pSrc->top)};
-
-
-	SetSpriteTransform(pos, scale);
-	pSprite->Draw(pTex,pSrc,NULL,NULL,0xFFFFFFFF);
-
-}
-
-
-void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, const float pos[2], const float scale[2], RECT* pSrc)
-{
-	const float identityPos[2] = {0,0};
-	const float identityScale[2] = {1,1};
-
-	if (!pos)
-		pos = identityPos;
-
-	if (!scale)
-		scale = identityScale;
-
-	SetSpriteTransform(pos, scale);
-	pSprite->Draw(pTex,pSrc,NULL,NULL,0xFFFFFFFF);
-
-}
-//void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, const float topleft[2], const float bottomright[2])
-//{
-//	//pSprite->Draw(pTex,NULL,NULL,&pos,0xFFFFFFFF);
-//
-//}
-//
-//void FlexRenderer::PutTexturedQuad2D(IDirect3DTexture9* pTex, RECT* screenArea)
-//{
-//
-//	//pSprite->Draw(pTex,NULL,NULL,&pos,0xFFFFFFFF);
-//}
-
-void FlexRenderer::PutTexturedQuad3D(IDirect3DTexture9* pTex, float topleft[3], float bottomright[3])
-{
-}
-*/
-	
 void FlexRenderer::StartNewRenderList()
 {
 	pFutureRenderList->bUsed = false;
@@ -439,7 +607,7 @@ void FlexRenderer::CommitRenderList()
 	}
 }
 
-void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
 
@@ -447,12 +615,43 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* p
 		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
 		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
 	pModel->ppVerts = ppVerts;
+	pModel->pIndices = pIndices;
 	pModel->pTex = pTex ? pTex->pD3DTex : NULL;
 	pModel->piNumTris = piNumTris;
+	pModel->piNumVerts = piNumVerts;
+	pModel->iVertStart = 0;
+	pModel->ePrimitiveType = D3DPT_TRIANGLELIST;
 
 	D3DXMATRIX matTrans, matRot, matScale;
 
-	D3DXMatrixRotationYawPitchRoll(&matRot,0.0f,0.0f,0.0f);
+	D3DXMatrixRotationYawPitchRoll(&matRot,rot[1],rot[0],rot[2]);
+	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
+	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
+	D3DXMatrixMultiply(&pModel->matWorld, &matScale, &matRot);
+	D3DXMatrixMultiply(&pModel->matWorld, &pModel->matWorld, &matTrans);
+}
+
+void FlexRenderer::Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+{
+	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
+	static int iNumTris = 2;
+	//static int iNumVerts = 4;
+
+	ModelCall* pModel = bTranslucent ? 
+		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
+		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
+
+	pModel->ppVerts = &pTex->pVerts;
+	pModel->pTex = pTex->hTex.pTex->pD3DTex;
+	pModel->piNumTris = &iNumTris;
+	//pModel->piNumVerts = &iNumVerts;
+
+	pModel->iVertStart = pTex->iVertIndexStart;
+	pModel->ePrimitiveType = D3DPT_TRIANGLESTRIP;
+
+	D3DXMATRIX matTrans, matRot, matScale;
+
+	D3DXMatrixRotationYawPitchRoll(&matRot,rot[1],rot[0],rot[2]);
 	D3DXMatrixTranslation(&matTrans, pos[0], pos[1], pos[2]);
 	D3DXMatrixScaling(&matScale, scale[0], scale[1], scale[2]);
 	D3DXMatrixMultiply(&pModel->matWorld, &matScale, &matRot);
@@ -669,7 +868,14 @@ void FlexRenderer::AddNinepatchToRenderList(GameTexture* pSet, int iIndex, RECT*
 
 void FlexRenderer::ProcessRenderLists()
 {
+	static IDirect3DTexture9* pWhite = NULL;
 
+	if (!pWhite)
+	{
+		GameTexture* pGameTex = GET_TEXTURE(L"white");
+		assert(pGameTex);	//there must be a "white" texture available
+		pWhite = pGameTex->pD3DTex;
+	}
 #ifdef FLEX_RENDERER_SINGLE_THREAD
 	if (pCurRenderList->bUsed && !pNextRenderList->bUsed)
 	{
@@ -710,33 +916,101 @@ void FlexRenderer::ProcessRenderLists()
 		ModelCall* pCall = &pCurRenderList->models[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		if (pCall->pTex)
-			pD3DDevice->SetTexture ( 0 , pCall->pTex );
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
+		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			pD3DDevice->SetIndices(pCall->pIndices);
+
+		D3DXMATRIXA16 matWorld, matProj, matView;
+		D3DXVECTOR3 camEye;
+		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+		pCamera->GetProjMatrix(&matProj);
+		pCamera->GetViewMatrix(&matView);
+		pCamera->GetCameraEye(&camEye);
+
+		pDefaultShader->SetMatrix("matWorld", &matWorld);
+		pDefaultShader->SetMatrix("matProj", &matProj);
+		pDefaultShader->SetMatrix("matView", &matView);
+		pDefaultShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+		pDefaultShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
+
+		pDefaultShader->CommitChanges();
+
+		unsigned passes = 0;
+		pDefaultShader->Begin(&passes,0);
+		for(unsigned j = 0; j < passes; j++)
+		{
+			pDefaultShader->BeginPass(j);
+
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
+			else
+				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+			pDefaultShader->EndPass();
+		}
+		pDefaultShader->End();
 	}
 	
-	pD3DDevice->SetRenderState ( D3DRS_ZWRITEENABLE, D3DZB_FALSE);
+	pDefaultShader->SetTechnique(translucent3DTech);
 
 	for (int i = 0; i < pCurRenderList->translucentModelsUsed; i++)
 	{
 		ModelCall* pCall = &pCurRenderList->translucentModels[i];
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-		if (pCall->pTex)
-			pD3DDevice->SetTexture ( 0 , pCall->pTex );
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), 0, sizeof(FlexVertex));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, (*pCall->piNumTris));
+		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			pD3DDevice->SetIndices(pCall->pIndices);
+
+		D3DXMATRIXA16 matWorld, matProj, matView;
+		D3DXVECTOR3 camEye;
+		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+		pCamera->GetProjMatrix(&matProj);
+		pCamera->GetViewMatrix(&matView);
+		pCamera->GetCameraEye(&camEye);
+
+		pDefaultShader->SetMatrix("matWorld", &matWorld);
+		pDefaultShader->SetMatrix("matProj", &matProj);
+		pDefaultShader->SetMatrix("matView", &matView);
+		pDefaultShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+		pDefaultShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
+
+		pDefaultShader->CommitChanges();
+
+		unsigned passes = 0;
+		pDefaultShader->Begin(&passes,0);
+		for(unsigned j = 0; j < passes; j++)
+		{
+			pDefaultShader->BeginPass(j);
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
+			else
+				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+			pDefaultShader->EndPass();
+		}
+		pDefaultShader->End();
 	}
 	
 	Begin2D();
+	
+	pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
 
 	for (int i = 0; i < pCurRenderList->spritesUsed; i++)
 	{
 		if (i == 0 || pCurRenderList->eaSpriteTextures[i] != pCurRenderList->eaSpriteTextures[i-1])
-			pD3DDevice->SetTexture ( 0 , pCurRenderList->eaSpriteTextures[i] );
-		pD3DDevice->SetStreamSource(0, pCurRenderList->pSpriteVerts, 0, sizeof(FlexVertex2D));
-		pD3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, i*4, 2);
+		{
+			pDefaultShader->SetTexture("shaderTexture", pCurRenderList->eaSpriteTextures[i] ? pCurRenderList->eaSpriteTextures[i] : pWhite);
+		}
+
+		unsigned passes = 0;
+		pDefaultShader->Begin(&passes,0);
+		for(unsigned j = 0; j < passes; j++)
+		{
+			pDefaultShader->BeginPass(j);
+
+			pD3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, i*4, 2);
+			pDefaultShader->EndPass();
+		}
+		pDefaultShader->End();
 	}
 	End2D();
 
@@ -775,14 +1049,16 @@ void FlexRenderer::Begin2D()
 {
 	assert(bActiveFrame);
 	bActive2D = true;
-	stateBlocks[kRendererMode_2D]->Apply();
+	pD3DDevice->SetVertexDeclaration(FlexVertex2DDecl);
+	pDefaultShader->SetTechnique(default2DTech);
 }
 
 void FlexRenderer::End2D()
 {
 	assert(bActive2D);
 	bActive2D = false;
-	stateBlocks[kRendererMode_Default3D]->Apply();
+	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
+	pDefaultShader->SetTechnique(default3DTech);
 }
 
 void FlexRenderer::GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2])
@@ -791,13 +1067,6 @@ void FlexRenderer::GetTextureDimensions(IDirect3DTexture9* pTex, float dimension
 	pTex->GetLevelDesc(0, &desc);
 	dimensions[0] = (float)desc.Width;
 	dimensions[1] = (float)desc.Height;
-}
-
-void FlexRenderer::SetCameraPosition(D3DXVECTOR3* pvPos)
-{
-	EnterCriticalSection(&_csCamera);
-	camera.vEye = (*pvPos);
-	LeaveCriticalSection(&_csCamera);
 }
 
 void FlexRenderer::QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts)
@@ -887,43 +1156,6 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 				else if (pString[i+1] == 'b')
 				{
 					i++;
-					//todo: bar support
-					/*
-					i++;
-					CAtlString floatval;
-					floatval.SetString(&pString[i], 5);
-					float val = _wtof(floatval);
-					i += 5;
-
-					i++;
-					DWORD frontColor = 0xff000000;
-					frontColor += charToHex(pString[i++]) << 20;
-					frontColor += charToHex(pString[i++]) << 16;
-					frontColor += charToHex(pString[i++]) << 12;
-					frontColor += charToHex(pString[i++]) << 8;
-					frontColor += charToHex(pString[i++]) << 4;
-					frontColor += charToHex(pString[i++]);
-
-					i++;
-					DWORD backColor = 0xff000000;
-					backColor += charToHex(pString[i++]) << 20;
-					backColor += charToHex(pString[i++]) << 16;
-					backColor += charToHex(pString[i++]) << 12;
-					backColor += charToHex(pString[i++]) << 8;
-					backColor += charToHex(pString[i++]) << 4;
-					backColor += charToHex(pString[i]);
-
-					if (wrapWidth > -1)
-					{
-						RECT barRect = {realX+iVisibleLetters*pFontTex->letterWidth, y + numNewlines*pFontTex->letterHeight, realX+wrapWidth*scale, y + numNewlines*letterHeight + (letterHeight*scale)};
-						DrawFilledRect(&barRect, backColor);
-						barRect.right = barRect.left + (barRect.right-barRect.left * val);
-						DrawFilledRect(&barRect, frontColor);
-					}
-					numNewlines++;
-					iVisibleLetters = 0;
-					bonusW = 0;
-					*/
 					continue;
 				}
 				else if (pString[i+1] == 'a')
@@ -982,6 +1214,126 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 	}
 }
 
+HRESULT FlexRenderer::CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle)
+{
+	return pD3DDevice->CreateVertexBuffer(Length, Usage, FVF, Pool, ppVertexBuffer, pHandle);
+}
+void FlexRenderer::RenderCubeAtPoint(D3DXVECTOR3 vPoint)
+{
+	float pos[3] = {vPoint.x - 0.5f, vPoint.y - 0.5f, -0.5f};
+	float scale[3] = {1,1,1};
+	float rot[3] = {0,0,0};
+	static int numCubeTris = 12;
+	static int numCubeVerts = 8;
+	AddModelToRenderList(&g_pCubeVertex, g_pCubeIndex, &numCubeTris, &numCubeVerts, NULL, pos, scale, rot, true);
+}
+
+void FlexCamera::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y, int iWidth, int iHeight)
+{
+	D3DXVECTOR3 vCamDir, vHoriz, vVert, vRayOrigin, vRayDir;
+	float vLength, hLength, newX, newY;
+
+	vCamDir = vAt - vEye;
+	D3DXVec3Normalize(&vCamDir, &vCamDir);
+
+	D3DXVec3Cross(&vHoriz, &vCamDir, &vUp);
+	D3DXVec3Normalize(&vHoriz, &vHoriz);
+
+	D3DXVec3Cross(&vVert, &vHoriz, &vCamDir);
+	D3DXVec3Normalize(&vVert, &vVert);
+
+	vLength = tanf( FOVY / 2.0f ) * cameraFrustum.GetNearPlaneDist();
+	hLength = vLength * ((float) iWidth/ (float) iHeight);
+
+	vVert *= vLength;
+	vHoriz *= hLength;
+
+	//translate mouse coords
+	newX = x - (iWidth / 2.0f);
+	newY = y - (iHeight / 2.0f);
+
+	//scale mouse coords
+	newY /= (iHeight / 2.0f);
+	newX /= (iWidth / 2.0f);
+
+	vRayOrigin = vEye + (vCamDir * cameraFrustum.GetNearPlaneDist()) + (vHoriz*newX*(-1)) + (vVert*newY*(-1));
+	vRayDir = vRayOrigin - vEye;
+
+	pOut[0] = vRayOrigin;
+	pOut[1] = vRayDir;
+}
+
+void FlexRenderer::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y)
+{
+	pCamera->CastRayThroughPixel(pOut, x, y, iScreenW, iScreenH);
+}
+
+void FlexRenderer::CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions)
+{
+	int iNumEntries = eaSize(&eaPortions);
+	int numVerts = iNumEntries*4;
+	IDirect3DVertexBuffer9* pNewBuf = NULL;
+	pD3DDevice->CreateVertexBuffer(numVerts*sizeof(FlexVertex), 0, 0, D3DPOOL_DEFAULT, &pNewBuf, NULL);
+	BYTE* pVerts;
+	
+	pNewBuf->Lock(0, 0, (void**)&pVerts, 0);
+	
+	for (int i = 0; i < iNumEntries; i++)
+	{
+		float minU = ((float)eaPortions[i]->rSrc->left)/pSrcTexture->width;
+		float maxU = ((float)eaPortions[i]->rSrc->right)/pSrcTexture->width;
+		float minV = ((float)eaPortions[i]->rSrc->top)/pSrcTexture->height;
+		float maxV = ((float)eaPortions[i]->rSrc->bottom)/pSrcTexture->height;
+		float XYRatio = ((float)(eaPortions[i]->rSrc->right-eaPortions[i]->rSrc->left))/(eaPortions[i]->rSrc->bottom-eaPortions[i]->rSrc->top);
+		eaPortions[i]->iVertIndexStart = i*4;
+		eaPortions[i]->pVerts = pNewBuf;
+
+		FlexVertex verts[4] = 
+		{
+			{-XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,minU,minV},
+			{XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,maxU,minV},
+			{-XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,minU,maxV},
+			{XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,maxU,maxV}
+		};
+		
+		memcpy(pVerts, verts, sizeof(verts));
+		pVerts += sizeof(verts);
+	}
+	pNewBuf->Unlock();
+
+	eaPush(&eaAtlasVertexBuffers, pNewBuf);
+}
+
+void FlexRenderer::CreateAllTextureAtlasBuffers()
+{
+	DefHash::iterator hashIter;
+	DefHash::iterator hashEnd = DEF_ITER_END(GameTexturePortion);
+	PointerPointerHash htTexturePointerToAtlasList;
+	PointerPointerHash::iterator atlasIter;
+
+	for(hashIter = DEF_ITER_BEGIN(GameTexturePortion); hashIter != hashEnd; ++hashIter) 
+	{
+		GameTexturePortion* pPortion = (GameTexturePortion*)hashIter->second;
+		GameTexturePortion** eaPortions = NULL;
+		if (!pPortion->hTex.pTex)
+			continue;
+		if (htTexturePointerToAtlasList.find(pPortion->hTex.pTex) != htTexturePointerToAtlasList.end())
+		{
+			eaPortions = (GameTexturePortion**)htTexturePointerToAtlasList[pPortion->hTex.pTex];
+		}	
+
+		eaPush(&eaPortions, pPortion);
+		htTexturePointerToAtlasList[pPortion->hTex.pTex] = eaPortions;
+		
+	}
+
+	for (atlasIter = htTexturePointerToAtlasList.begin(); atlasIter != htTexturePointerToAtlasList.end(); atlasIter++)
+	{
+		//for each referenced texture, iterate over all its portions and build a vertex buffer.
+		CreateTextureAtlasVertexBuffer((GameTexture*)atlasIter->first, (GameTexturePortion**)atlasIter->second);
+		eaDestroy(&atlasIter->second);
+	}
+}
 
 FlexRenderer g_Renderer;
 

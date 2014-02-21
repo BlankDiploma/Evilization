@@ -50,3 +50,5 @@ struct intHasher : public stdext::hash_compare <const int>
 typedef stdext::hash_map<int, const wchar_t*, intHasher> IntStringHash;
 
 typedef stdext::hash_map<const wchar_t*, int, stringHasher> StringIntHash;
+typedef stdext::hash_map<const wchar_t*, void*, stringHasher> StringPointerHash;
+typedef stdext::hash_map<void*, void*, pointerHasher> PointerPointerHash;

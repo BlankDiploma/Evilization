@@ -11,7 +11,8 @@ enum TileVisType {kVis_Shroud = 0, kVis_Fog, kVis_Clear};
 enum playerControlType {kPlayerControl_AI_Local = 0, kPlayerControl_AI_Network, kPlayerControl_Human_Local, kPlayerControl_Human_Network};
 enum mouseHandlerType {kGameplayMouse_Default, kGameplayMouse_UnitSelected, kGameplayMouse_CityView, kGameplayMouse_PlaceBuilding, kGameplayMouse_SelectAbilityTarget, kGameplayMouse_Disable};
 
-#define DRAG_THRESHOLD_MS 100
+#define DRAG_THRESHOLD_MS 133
+#define DRAG_THRESHOLD_PIXELS 3
 
 struct playerVisibility
 {
@@ -333,9 +334,25 @@ struct MouseHandlerState
 	}
 };
 
+
 class CGameState
 {
 private:
+
+	enum SplattableTexture {kTextureSplat_SelectedTile = 0, kTextureSplat_PathBlipSmall, kTextureSplat_PathBlipLarge, kTextureSplat_PathTarget, kTextureSplat_Count};
+	
+	enum SplattableTextureGeo {kTextureSplatGeo_Hexagon = 0, kTextureSplatGeo_Rectangle, kTextureSplatGeo_Count};
+	
+	struct
+	{
+		SplattableTextureGeo eGeo;
+		IDirect3DVertexBuffer9* pVertBuf;
+		IDirect3DIndexBuffer9* pIndBuf;
+		int iNumTris;
+		int iNumVerts;
+		GameTexture* pTex;
+	} pTextureSplatBuffers[kTextureSplat_Count];
+
 	CHexPlayer* pPlayers;
 	FLOATPOINT fpMapOffset;
 	POINT ptMousePos;
@@ -344,6 +361,7 @@ private:
 	int screenW;
 	int screenH;
 	bool bMouseOverGameplay;
+	DWORD ghettoAnimTick;
 	DWORD uiDragStart;
 
 	//mutable
@@ -369,6 +387,12 @@ private:
 	void DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	void DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam);
 	
+	IDirect3DVertexBuffer9* CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
+	IDirect3DIndexBuffer9* CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo);
+	void CreateSplatBuffers();
+	void RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale);
+	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );
+
 public:
 	CGameState();
 	void Update(DWORD tick);
@@ -380,12 +404,14 @@ public:
 	void KeyInput(int keyCode, bool bDown);
 	void NewGame();
 	void EndCurrentGame();
-	void StartNewGame();
+	void StartNewGame(hexMapGenerationDesc* pMapDesc, int iNumPlayers);
 	void Initialize(int screenW, int screenH);
 	void SwitchToState(GameState newState);
 	void CenterView(POINT pt);
 	POINT PixelToTilePt(int x, int y);
+	FLOATPOINT PixelToMapIntersect(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
+	void RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
 	{
@@ -465,6 +491,7 @@ public:
 	POINT GetViewCenter();
 	void ShowTechTreeUI();
 	CHexPlayer* GetCurrentPlayer();
+
 	CHexMap* GetCurrentMap()
 	{
 		return pCurrentMap;

@@ -4,6 +4,7 @@ hexUnitDef stickfigure
 	maxHealth 10
 	cost 50
 	meleeStr 1
+	attackRange 1
 	visRadius 2
 	displayName "Stick Figure"
 	hTex stickfigure
@@ -14,7 +15,8 @@ hexUnitDef barbarian
 	movement 3
 	maxHealth 20
 	cost 50
-	meleeStr 4
+	meleeStr 3
+	attackRange 1
 	visRadius 2
 	displayName "Barbarian"
 	hTex barbarian

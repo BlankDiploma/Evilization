@@ -22,8 +22,8 @@
 using namespace luabind;
 
 #define MAX_LOADSTRING 100
-#define GAME_WINDOW_WIDTH 1280
-#define GAME_WINDOW_HEIGHT 1024
+#define GAME_WINDOW_WIDTH 1920
+#define GAME_WINDOW_HEIGHT 1080
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -35,7 +35,7 @@ int count = 0;
 int mouseX;
 int mouseY;
 int numUpdatesInLastSecond = 0;
-
+DebugFlags g_DebugFlags = {0};
 
 MTRand randomFloats(GetTickCount());
 
@@ -401,6 +401,7 @@ void LoadGameData()
 	InitializeBiomeMap(_T("biomes.bmp"));
 //	StoreGameExprFuncs();
 	g_GameState.Initialize(g_screenWidth, g_screenHeight);
+	g_Renderer.CreateAllTextureAtlasBuffers();
 //	hexmap.Generate(128, 128, GetTickCount());
 
 }
@@ -545,7 +546,7 @@ void MinimapClick(lua_State *L)
 {
 	POINT pt = g_pCurContext->mousePt;
 	pt.x -= ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->left;
-	pt.y -= ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->top;
+	pt.y = ((UIInstance*)g_pCurContext->pUI)->GetScreenRect()->bottom-pt.y;
 	pt.x /= 2;
 	pt.y /= 2;
 	g_GameState.CenterView(pt);
@@ -1092,7 +1093,20 @@ void PopMouseHandler(lua_State *L)
 {
 	g_GameState.MouseHandlerPopState();
 }
-	
+
+void GenerateMapFromDesc(lua_State *L, const char* pchDescName, int numPlayers)
+{
+	TCHAR widebuf[32];
+	swprintf_s(widebuf, L"%S", pchDescName);
+	g_GameState.EndCurrentGame();
+	g_GameState.StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, widebuf), numPlayers);
+}
+
+void DisableMapXWrap(lua_State *L, int disable)
+{
+	g_DebugFlags.disableMapXWrap = disable;
+}
+
 void DoAllLuaBinds()
 {
 	luabind::module(g_LUA)
@@ -1150,6 +1164,8 @@ void DoAllLuaBinds()
 		luabind::def("City_GetProductionQueue", &GetProductionQueue),
 		luabind::def("City_GetCurrentProject", &GetCurrentProject),
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
+		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
+		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

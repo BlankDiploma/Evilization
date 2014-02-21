@@ -13,7 +13,13 @@
 //Renderer should support a table of IDirect3DStateBlock9 objects keyed by the XRendererMode enum.
 //See http://msdn.microsoft.com/en-us/library/windows/desktop/bb206121(v=vs.85).aspx for info
 #define MOUSELOOK_SENSITIVITY 0.001f
+#define MOUSEDRAG_SENSITIVITY 0.1f
+#define MOUSEZOOM_SENSITIVITY 2.5f
 #define MAX_CAM_VELOCITY 1.0f
+#define CAM_ANGLE 45.0f
+#define FOVY D3DX_PI/4.0f
+
+#define PI D3DX_PI
 
 enum GameTextureType {kTextureType_Invalid = 0, kTextureType_Default, kTextureType_Ninepatch, kTextureType_Font};
 
@@ -23,6 +29,8 @@ PARSE_STRUCT(GameTexturePortion)
 	TEXTURE_REF hTex;
 	RECT* rSrc;
 	POINT* offset;
+	PARSE_IGNORE IDirect3DVertexBuffer9* pVerts;
+	PARSE_IGNORE int iVertIndexStart;
 	GameTexturePortion()
 	{
 	}
@@ -112,20 +120,116 @@ enum FlexRendererMode
 	kRendererMode_Count
 };
 
-//struct representing the camera
-struct FlexCamera
+class FlexFrustum
 {
-	D3DXVECTOR3 vEye, vAt, vUp, vRight;
-	D3DXVECTOR3 vVelocity;
-	float fPitch, fYaw, fRoll;
+	//Near and far plane distances
+	float zn, zf;
+	//Width and height of near/far planes
+	float fHnear, fWnear, fHfar, fWfar;
+	//Eight points that define the corners of the view frustum
+	//These are the corners of the near/far planes in world space
+	D3DXVECTOR3 ntl, ntr, nbl, nbr, ftl, ftr, fbl, fbr;
+	//The camera's view ray
+	D3DXVECTOR3 camDir;
+public:
+	//only needs to be called when matProj changes
+	void CalcNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+
+
+	float GetNearPlaneDist();
+	float GetFarPlaneDist();
+	void GetNearTopLeft(D3DXVECTOR3* pOut)
+	{
+		pOut->x = ntl.x;
+		pOut->y = ntl.y;
+		pOut->z = ntl.z;
+	}
+	void GetFarTopLeft(D3DXVECTOR3* pOut)
+	{
+		pOut->x = ftl.x;
+		pOut->y = ftl.y;
+		pOut->z = ftl.z;
+	}
+	float GetNearPlaneWidth()
+	{
+		return fWnear;
+	}
+	float GetNearPlaneHeight()
+	{
+		return fHnear;
+	}
+	float GetFarPlaneWidth()
+	{
+		return fWfar;
+	}
+	float GetFarPlaneHeight()
+	{
+		return fHfar;
+	}
+	void CalcWorldSpacePlanes(D3DXVECTOR3 vEye, D3DXVECTOR3 vAt, D3DXVECTOR3 vUp);
+	int FrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
+
+};
+
+//struct representing the camera
+class FlexCamera
+{
+	D3DXMATRIX matView, matProj;
+	D3DXVECTOR3 vEye, vAt, vUp;
+	CRITICAL_SECTION _csCamera;
+	FlexFrustum cameraFrustum;	
+	float fCameraWrapBoundaries[3][2];	//[x y z][min max]
+	bool bCameraWrapsAlongAxis[3];	//[x y z]
+	
+	void BuildViewFrustum();
+
+public:
+	FlexCamera();
+	~FlexCamera();
+	void SetCameraEye(float x, float y, float z);
+	void SetCameraAt(float x, float y, float z);
+	void SetCameraUp(float x, float y, float z);
+	void SetCameraEye(D3DXVECTOR3 newEye);
+	void SetCameraAt(D3DXVECTOR3 newAt);
+	void SetCameraUp(D3DXVECTOR3 newUp);
+	void SetViewMatrix(D3DXMATRIX newMatView);
+	void SetProjMatrix(D3DXMATRIX newMatProj);
+	void BuildViewMatrix();
+	void BuildProjMatrix(int screenW, int screenH);
+	void GetCameraAt(D3DXVECTOR3* pOut);
+	void GetCameraEye(D3DXVECTOR3* pOut);
+	void GetCameraUp(D3DXVECTOR3* pOut);
+	void GetViewMatrix(D3DXMATRIX* pOut);
+	void GetProjMatrix(D3DXMATRIX* pOut);
+	void MoveCamera(float fHoriz, float fVert, int iZoom);
+	void SetCameraPosition(D3DXVECTOR3* pvPos);
+	void CalcFrustumNearFarPlaneDimensions(float fovy, float Aspect, float zn, float zf);
+	int CameraFrustumPlaneIntersection(D3DXVECTOR3 pOut[4], D3DXVECTOR3* pPoint, D3DXVECTOR3* pNorm);
+	void Rotate(float rot[3]);
+	void WorldSpaceToHomogenousScreen(D3DXVECTOR3* pWorld, D3DXVECTOR3* pOut);
+	void SetAxisWrapValues(int axis, float min, float max, bool bEnable)
+	{
+		fCameraWrapBoundaries[axis][0] = min;
+		fCameraWrapBoundaries[axis][1] = max;
+		bCameraWrapsAlongAxis[axis] = bEnable;
+	}
+	FlexFrustum* GetFrustum()
+	{
+		return &cameraFrustum;
+	}
+	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y, int iWidth, int iHeight);
 };
 
 struct ModelCall
 {
 	D3DXMATRIX matWorld;
 	LPDIRECT3DVERTEXBUFFER9* ppVerts;
+	IDirect3DIndexBuffer9* pIndices;
 	int* piNumTris;
+	int* piNumVerts;
+	int iVertStart;
 	LPDIRECT3DTEXTURE9 pTex;
+	D3DPRIMITIVETYPE ePrimitiveType;
 };
 
 #define RENDER_LIST_BUFFER_SIZE 4096
@@ -164,11 +268,16 @@ class FlexRenderer
 	IDirect3DDevice9* pD3DDevice;
 	IDirect3DStateBlock9* stateBlocks[kRendererMode_Count];
 	D3DVIEWPORT9 mainView;
-	D3DXMATRIX matView, matProj;
-	FlexCamera camera;
+	FlexCamera* pCamera;
+	ID3DXEffect* pDefaultShader;
+	LPDIRECT3DVERTEXDECLARATION9 FlexVertexDecl, FlexVertex2DDecl;
+	D3DXHANDLE default3DTech, default2DTech, wireframe3DTech, translucent3DTech;
+
+
 	int iScreenW;
 	int iScreenH;
 	float fAspect;
+
 	boolean bActiveFrame, bActive2D;
 	LPDIRECT3DVERTEXBUFFER9* eaVertsToDestroy;
 
@@ -177,20 +286,24 @@ class FlexRenderer
 	RenderList* pFutureRenderList;//Render list that may be overwritten entirely before it ever gets to display.
 
 	CRITICAL_SECTION _csNextRenderList;
-	CRITICAL_SECTION _csCamera;
 
 	D3DXMATRIX MakeProjectionMatrix(const float near_plane, 
                  const float far_plane,  
                  const float fov_horiz, 
                  const float fov_vert);
-	void SetCameraEye(float x, float y, float z);
-	void SetCameraAt(float x, float y, float z);
-	void SetCameraRight(float x, float y, float z);
-	void SetCameraUp(float x, float y, float z);
+	void UpdateCamera();
 	void BeginFrame();
 	void EndFrame();
 	void Begin2D();
 	void End2D();
+
+	IDirect3DVertexBuffer9* pCubeVertBuffer;
+	
+
+	void CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
+
+
+	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
 public:
 	FlexRenderer();
 	~FlexRenderer();
@@ -203,13 +316,17 @@ public:
 	void SetRenderMode(FlexRendererMode eMode);
 	void GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2]);
 
-	void DoMouselook(POINT delta);
-	void UpdateCamera();
-	void MoveCamera(float fForwards, float fStrafe);
-	void SetCameraPosition(D3DXVECTOR3* pvPos);
-	const FlexCamera* GetCamera()
+	FlexCamera* GetCamera()
 	{
-		return &camera;
+		return pCamera;
+	}
+	int GetScreenWidth()
+	{
+		return iScreenW;
+	}
+	int GetScreenHeight()
+	{
+		return iScreenH;
 	}
 	int GetScreenWidth()
 	{
@@ -220,9 +337,14 @@ public:
 		return iScreenH;
 	}
 
+	void PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2);
+	FLOATPOINT ScaleScreenCoords(int x, int y);
+	
+	void WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut);
 	void StartNewRenderList();
 	void CommitRenderList();
-	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, int* piNumTris, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
 	void AddSpriteToRenderList(GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);
@@ -232,9 +354,11 @@ public:
 	void AddSolidColorToRenderList(RECT* dst, DWORD color);
 	void AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB);
 	void ProcessRenderLists();
-
+	HRESULT CreateVertexBuffer(unsigned int Length, DWORD Usage, DWORD FVF, D3DPOOL Pool, IDirect3DVertexBuffer9** ppVertexBuffer, HANDLE* pHandle);
+	void RenderCubeAtPoint(D3DXVECTOR3 vPoint);
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
-
+	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
+	void CreateAllTextureAtlasBuffers();
 };
 
 extern FlexRenderer g_Renderer;

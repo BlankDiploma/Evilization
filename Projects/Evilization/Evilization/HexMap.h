@@ -7,10 +7,11 @@
 #include "structparse.h"
 #include "earray.h"
 #include "flexrenderer.h"
+#include "Evilization.h"
 
 #pragma once
 
-#define FOG_OF_WAR 1
+#define FOG_OF_WAR 0
 
 extern MTRand randomFloats;
 
@@ -19,6 +20,17 @@ class CHexPlayer;
 struct playerVisibility;
 struct laborSlotDef;
 struct hexTileDef;
+
+#define SQRT_2 (1.4142f)
+#define SQRT_3 (1.7321f)
+
+#define HEX_HALF_HEIGHT 2.0f
+#define HEX_HALF_WIDTH ((SQRT_3/2.0f) * HEX_HALF_HEIGHT)
+#define HEX_HEIGHT (HEX_HALF_HEIGHT*2)
+#define HEX_WIDTH (HEX_HALF_WIDTH*2)
+#define HEX_RING_THICKNESS (HEX_HALF_HEIGHT * 0.2f)
+#define HEX_RING_INNER_HALF_WIDTH ((SQRT_3/2.0f) * (HEX_HALF_HEIGHT - HEX_RING_THICKNESS))
+#define HEX_RING_INNER_HALF_HEIGHT (HEX_HALF_HEIGHT - HEX_RING_THICKNESS)
 
 #define NUM_TILE_DEFS 12
 
@@ -54,6 +66,15 @@ PARSE_STRUCT(hexTileDef)
 	laborSlotDef* slotDef;
 	DEF_REF(GameTexturePortion) hTex;
 };
+
+PARSE_STRUCT(hexMapGenerationDesc)
+{
+	int w;
+	int h;
+	float fMountainThreshold;
+	float fShallowWaterThreshold;
+	float fOceanThreshold;
+};
  
 struct hexTile
 {
@@ -82,6 +103,7 @@ struct tilePathfindCompare: binary_function <PATHFINDPOINT,PATHFINDPOINT,bool>
 
 typedef bool (*finishedFunc)(POINT pt, void* pData);
 
+
 class CHexMap
 {
 public:
@@ -97,6 +119,8 @@ public:
 			delete [] pTiles;
 		if (pCachedPath)
 			delete pCachedPath;
+		for (int i = 0; i < iNumChunksWide*iNumChunksHigh; i++)
+			ppVertBuffers[i]->Release();
 	}
 	int GetWidth()
 	{
@@ -109,10 +133,11 @@ public:
 	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
 	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
-	void Generate(int w, int h, int seed);
+	void Generate(hexMapGenerationDesc* pDesc, int seed);
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
 	void GetTileDescription( hexTile* pTile, TCHAR* pchDescOut );
 	void RenderTile(POINT tilePt, hexTile* pTile, DWORD color = 0xFFFFFFFF, float scale = 1.0);
+	void RenderTerrain();
 	inline hexTile* GetTile(int x, int y);
 	inline hexTile* GetTile(POINT pt);
 	POINT GetRandomStartingPos();
@@ -126,13 +151,22 @@ public:
 	bool MoveUnit( CHexUnit* pUnit, POINT pt);
 	int GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut );
 	int HexPathfindTile(CHexUnit* pUnit, POINT a, POINT b, HEXPATH** pPathOut);
-	void GetMatchingOnscreenTiles(RECT* mapViewport, FLOATPOINT fpMapOffset, void*** peaListOut, findTileFunc pFunc, void* pData);
+	void GetMatchingOnscreenTiles(void*** peaListOut, findTileFunc pFunc, void* pData);
 	HEXPATH* pCachedPath;
 	CHexBuilding* CreateBuilding(hexBuildingDef* pDef, CHexPlayer* pOwner, POINT loc);
 	CHexUnit* CreateUnit(hexUnitDef* pDef, CHexPlayer* pOwner, POINT loc);
 	void RenderBuildingOnTile(hexBuildingDef* pDef, POINT pt, DWORD color, FLOATPOINT fpMapOffset);
 	bool BuildingCanBeBuiltOnTile(hexBuildingDef* pDef, POINT tilePt);
+	void GetChunkspaceCullRect(RECT* pOut);
+	void GetTilespaceCullRect(RECT* pOut);
+	void GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4]);
+	bool IsUnitInTiles(CHexUnit* pUnit, POINT* pTilePts, int numTiles); 
+
 private:
+
+	IDirect3DVertexBuffer9** ppVertBuffers;
+	IDirect3DIndexBuffer9* pIndexBuffer;
+	int numTris;
 
 	POINT screenOffset;
 	hexTile* pTiles;
@@ -148,6 +182,13 @@ private:
 	int* pPathMap;
 	int w;
 	int h;
+	int iNumChunksWide;
+	int iNumChunksHigh;
+
+	void CreateAllTerrainVertexBuffers();
+	IDirect3DVertexBuffer9* CreateTerrainVertexBufferChunk(int x, int y);
+	IDirect3DIndexBuffer9* CreateTerrainIndexBufferChunk();
+	IDirect3DVertexBuffer9* CreateSplatVertexBuffer(int x, int y);
 	void IndexToPixel(int index);
 	void XYToIndex(int x, int y);
 	void PathBetweenTiles(int a, int b);

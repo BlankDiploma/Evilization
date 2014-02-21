@@ -53,6 +53,7 @@ struct HEXPATH
 	//pPoints may be larger than size;
 	int size;
 	int start;
+	POINT ptOrigin;
 };
 
 PARSE_STRUCT(hexAbilityDef)
@@ -72,6 +73,7 @@ PARSE_STRUCT(hexUnitDef)
 	int numAbilities;
 	int cost;
 	int meleeStr;
+	int attackRange;
 	int visRadius;
 	hexAbilityDef** pAbilities;
 	DEF_REF(GameTexturePortion) hTex;
@@ -236,6 +238,11 @@ public:
 		{
 			pOut->SetInt(pDef->meleeStr);
 		}
+	}
+
+	int GetAttackRange()
+	{
+		return pDef->attackRange;
 	}
 };
 class CHexBuilding

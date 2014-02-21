@@ -5,8 +5,8 @@
 #include "techtree.h"
 #include "texturelibrary.h"
 #include "flexDebugConsole.h"
-int g_HexSize;
 
+int g_HexSize;
 
 CGameState::CGameState()
 {
@@ -46,6 +46,7 @@ void CGameState::Initialize(int screenW, int screenH)
 	minimapTexture.width = 256;
 	minimapTexture.height = 256;
 	g_Renderer.GetD3DDevice()->CreateTexture(256, 256, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &minimapTexture.pD3DTex, NULL);
+	CreateSplatBuffers();
 }
 
 void CGameState::Update(DWORD tick)
@@ -70,9 +71,9 @@ void CGameState::Update(DWORD tick)
 			ptMousePos = ptMouse;
 			if (uiDragStart > 0 && (GetTickCount() - uiDragStart > DRAG_THRESHOLD_MS))
 			{
-				fpMapOffset.x += (ptMousePosLastFrame.x - ptMousePos.x);
-				fpMapOffset.y += (ptMousePosLastFrame.y - ptMousePos.y);
+				g_Renderer.GetCamera()->MoveCamera((float)(ptMousePos.x - ptMousePosLastFrame.x), (float)(ptMousePos.y - ptMousePosLastFrame.y ), 0);
 			}
+			POINT mouseDeltas = {ptMouse.x - ptMousePosLastFrame.x, ptMouse.y - ptMousePosLastFrame.y};
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;
@@ -87,6 +88,7 @@ void CGameState::Update(DWORD tick)
 	{
 		g_Console.Update(tick/1000.0f);
 	}
+	ghettoAnimTick += tick;
 }
 
 static POINT points[32];
@@ -118,7 +120,7 @@ void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam,
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -139,15 +141,38 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 		}break;
 	case WM_RBUTTONUP:
 		{
+			//check if there is unit on tile, if not, move, if so, compare owner IDs. If different, issue attack
+			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
 			HEXPATH* pPath = NULL;
-			pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
-			if (pPath)
-				IssueOrder(kOrder_Move, pPath);
+			CHexUnit* pUnit = pTile->pUnit;
+			int numTiles;
+			POINT* pTilePts;
+			if (pUnit)
+			{
+				if(pUnit->GetOwnerID() != curSelUnit->GetOwnerID())
+				{
+					//check if the target is in range
+					int unitRange = pUnit->GetAttackRange();
+					numTiles = 1 + ((unitRange*6 + 6)/2 * unitRange);
+					pTilePts = (POINT*) malloc(sizeof(POINT)*numTiles);
+					pCurrentMap->GetTilesInRadius(curSelUnit->GetLoc(), unitRange, pTilePts);
+					if (pCurrentMap->IsUnitInTiles(pUnit, pTilePts, numTiles))
+					{
+						IssueOrder(kOrder_Melee, pPath);
+					}
+				}
+			}
+			else
+			{
+				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
+				if (pPath)
+					IssueOrder(kOrder_Move, pPath);
+			}
 		}break;
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -167,7 +192,7 @@ void CGameState::DoGameplayMouseInput_CityView(UINT msg, POINT pt, WPARAM wParam
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -202,7 +227,7 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 	case WM_MOUSEWHEEL:
 		{
 			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
 		}break;
 	}
 }
@@ -237,51 +262,6 @@ void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPA
 			DoGameplayMouseInput_SelectAbilityTarget(msg, pt, wParam, lParam, pCurHandler->pMouseHandlerParam);
 		}break;
 	}
-	//old handler
-	/*
-	switch (msg)
-	{
-	case WM_LBUTTONUP:
-		{
-			SelectUnitOnTile(PixelToTilePt(pt.x, pt.y));
-			//uncomment for path demo
-//			points[num++] = PixelToTilePt(pt.x, pt.y);
-		}break;
-	case WM_RBUTTONUP:
-		{
-			if (curSelUnit)
-			{
-				HEXPATH* pPath = NULL;
-				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
-				if (pPath)
-					IssueOrder(kOrder_Move, pPath);
-			}
-			else if (curSelCity)
-			{
-				hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-				curSelCity->StartLaborOnTile(pTile);
-			}
-		}break;
-	case WM_MOUSEWHEEL:
-		{
-			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
-			AdjustMapZoom(rot);
-		}break;
-		//uncomment to make l/r buttons place units/buildings
-		
-	case WM_LBUTTONUP:
-		{
-			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-			pTile->pUnit = new hexUnit;
-		}break;
-	case WM_RBUTTONUP:
-		{
-			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
-			pTile->pBuilding = new hexBuilding;
-		}break;
-		
-	}
-*/
 }
 
 void CGameState::MouseHandlerAdditionalRendering()
@@ -294,17 +274,20 @@ void CGameState::MouseHandlerAdditionalRendering()
 		}break;
 	case kGameplayMouse_UnitSelected:
 		{
-			hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
-			if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
-				pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pTopOrder->pPath, 0x55);
-
-			HEXPATH* pPath = NULL;
-			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
+			if (!uiDragStart)
 			{
-				int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
-				if (iPathLength > 0)
+				hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
+				if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
+					RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
+
+				HEXPATH* pPath = NULL;
+				if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 				{
-					pCurrentMap->RenderPath(&mapViewport, fpMapOffset, curSelUnit, pPath, 0xff);
+					int iPathLength = pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(ptMousePos.x, ptMousePos.y),&pPath);
+					if (iPathLength > 0)
+					{
+						RenderPath(curSelUnit, pPath, 0xff);
+					}
 				}
 			}
 		}break;
@@ -313,15 +296,18 @@ void CGameState::MouseHandlerAdditionalRendering()
 		}break;
 	case kGameplayMouse_PlaceBuilding:
 		{
-			cityProject* pProj = (cityProject*)pCurHandler->pMouseHandlerParam;
-			hexBuildingDef* pDef = (hexBuildingDef*)pProj->pDef;
-			DWORD color = 0xaaffffff;
-			
-			if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y)))
+			if (!uiDragStart)
 			{
-				color = 0xaaff0000;
+				cityProject* pProj = (cityProject*)pCurHandler->pMouseHandlerParam;
+				hexBuildingDef* pDef = (hexBuildingDef*)pProj->pDef;
+				DWORD color = 0xaaffffff;
+			
+				if (pProj->eType == kProject_Building && !pCurrentMap->BuildingCanBeBuiltOnTile((hexBuildingDef*)pProj->pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y)))
+				{
+					color = 0xaaff0000;
+				}
+				pCurrentMap->RenderBuildingOnTile(pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y), color, fpMapOffset);
 			}
-			pCurrentMap->RenderBuildingOnTile(pDef, PixelToTilePt(ptMousePos.x, ptMousePos.y), color, fpMapOffset);
 		}break;
 	case kGameplayMouse_SelectAbilityTarget:
 		{
@@ -343,7 +329,8 @@ void CGameState::Render()
 			if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
 			{
 				MouseHandlerAdditionalRendering();
-				pCurrentMap->RenderInterface(&mapViewport, fpMapOffset, PixelToTilePt(ptMousePos.x, ptMousePos.y));
+				POINT mouseoverTile = PixelToTilePt(ptMousePos.x, ptMousePos.y);
+				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, kTextureSplat_SelectedTile, 0, 1.0f);
 			}
 
 			UI.Render();
@@ -383,12 +370,12 @@ inline void findLabor(hexTile* pTile, void* pOwner, void*** peaOut)
 
 void CGameState::GetOnscreenCityList(hexTile*** peaTilesOut, bool bOwned)
 {
-	pCurrentMap->GetMatchingOnscreenTiles(&mapViewport, fpMapOffset, (void***)peaTilesOut, findCity, bOwned ? &iCurPlayer : NULL);
+	pCurrentMap->GetMatchingOnscreenTiles((void***)peaTilesOut, findCity, bOwned ? &iCurPlayer : NULL);
 }
 
 void CGameState::GetOnscreenLaborList(laborSlot*** peaLaborOut, CHexCity* pCity)
 {
-	pCurrentMap->GetMatchingOnscreenTiles(&mapViewport, fpMapOffset, (void***)peaLaborOut, findLabor, pCity);
+	pCurrentMap->GetMatchingOnscreenTiles((void***)peaLaborOut, findLabor, pCity);
 }
 
 void CGameState::RenderMainMenu()
@@ -422,8 +409,8 @@ void CGameState::SwitchToState(GameState newState)
 
 void CGameState::CenterView(POINT pt)
 {
-	fpMapOffset.x = (pt.x*HEX_SIZE - mapViewport.right/2.0f);
-	fpMapOffset.y = (pt.y*HEX_SIZE*0.75f - mapViewport.bottom/2.0f);
+	D3DXVECTOR3 pos(pt.x * HEX_WIDTH, pt.y * HEX_HEIGHT * 3.0f / 4.0f - 30, -30);
+	g_Renderer.GetCamera()->SetCameraPosition(&pos);
 }
 
 POINT CGameState::GetViewCenter()
@@ -448,7 +435,7 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 					OffsetRect(&button, 0, -20);
 					if (PtInRect(&button, pt))
 					{
-						StartNewGame();
+						StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, L"Default"), 4);
 					}
 					OffsetRect(&button, 0, 40);
 					if (PtInRect(&button, pt))
@@ -477,40 +464,74 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 
 POINT CGameState::TilePtToScreenPt(int x, int y)
 {
-	return TileToScreen(x, y, fpMapOffset);
+	D3DXVECTOR3 world((float)(x*HEX_WIDTH + HEX_HALF_WIDTH), (float)(y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT), 0.0f);
+	if (y&1)
+		world[0] += HEX_HALF_WIDTH;
+	POINT screen;
+	g_Renderer.WorldSpaceToScreen(&world, &screen);
+	return screen;
 }
 
 POINT CGameState::PixelToTilePt(int x, int y)
 {
-	POINT box;
-	bool bNegative = x+fpMapOffset.x < 0;
-	box.y = (LONG)(y+fpMapOffset.y)/(HEX_SIZE*3/4 + 1);
-	box.x = (LONG)((x+fpMapOffset.x)/(HEX_SIZE) - ((box.y % 2) ? 0.5 : 0));
-	y = (int)(y+fpMapOffset.y) % (HEX_SIZE*3/4 + 1);
-	x = ((int)(x+fpMapOffset.x - ((box.y % 2) ? HEX_SIZE/2 : 0)) % HEX_SIZE);
+	POINT box = {0,0};
+	FLOATPOINT mapIntersect = {0,0};
+	float tempX, tempY;
+
+	mapIntersect = PixelToMapIntersect(x, y);
+
+	bool bNegative = mapIntersect.x < 0;
+	box.y = (LONG) (mapIntersect.y / (HEX_HEIGHT*3/4));
+	box.x = (LONG)(mapIntersect.x /(HEX_WIDTH) - ((box.y % 2) ? 0.5 : 0));
+	tempY = (mapIntersect.y);
+	tempY -= ((int)(tempY/(HEX_HEIGHT*3/4)))*(HEX_HEIGHT*3/4);
+	tempX = mapIntersect.x - ((box.y % 2) ? HEX_WIDTH/2 : 0);
+	tempX -= ((int)((tempX/HEX_WIDTH)))*HEX_WIDTH;
 	if (bNegative)
 	{
 		box.x -= 1;
-		x+= HEX_SIZE;
+		tempX+= HEX_WIDTH;
 	}
-	if (y < HEX_SIZE/4)
+	if (tempY < HEX_HEIGHT/4)
 	{
-		if (y < -0.5*x + (HEX_SIZE/4-1))
+		if (tempY < -tempX/SQRT_3 + (HEX_HEIGHT*1/4))
 		{
-			//upper left
+			//lower left
 			box.y--;
 			if (box.y % 2)
 				box.x--;
 		}
-		else if (y < 0.5*x + -(HEX_SIZE/4+1))
+		else if (tempY < tempX/SQRT_3 - (HEX_HEIGHT*1/4))
 		{
-			//upper right
+			//lower right
 			box.y--;
 			if (!(box.y % 2))
 				box.x++;
-		}
+		}	
 	}
+
 	return box;
+}
+
+FLOATPOINT CGameState::PixelToMapIntersect(int x, int y)
+{
+	FLOATPOINT retCoords = {0,0};
+	D3DXVECTOR3 vMapIntersect, vMapPoint, vMapNormal;
+	D3DXVECTOR3 vRayOriginDir[2], vRayPoints[2];
+
+	g_Renderer.CastRayThroughPixel(vRayOriginDir, x, y);
+
+	vRayPoints[0] = vRayOriginDir[0];
+	vRayPoints[1] = vRayOriginDir[0] + (2*vRayOriginDir[1]);
+
+	vMapPoint = D3DXVECTOR3(0,0,0);
+	vMapNormal = D3DXVECTOR3(0,0,-1);
+	g_Renderer.PlaneIntersectRay(&vMapIntersect, &vMapPoint, &vMapNormal, &vRayPoints[0], &vRayPoints[1]);
+
+	retCoords.x = vMapIntersect.x;
+	retCoords.y = vMapIntersect.y;
+
+	return retCoords;
 }
 
 void CGameState::KeyInput(int keyCode, bool bDown)
@@ -519,24 +540,36 @@ void CGameState::KeyInput(int keyCode, bool bDown)
 
 void CGameState::EndCurrentGame()
 {
-	delete pCurrentMap;
+	if (pCurrentMap)
+		delete pCurrentMap;
 	pCurrentMap = NULL;
+	curSelCity = NULL;
+	curSelUnit = NULL;
+	
+	for (int i = 0; i < eaSize(&eaMouseStates); i++)
+	{
+		delete eaMouseStates[i];
+	}
+	eaClear(&eaMouseStates);
 	SwitchToState(kGameState_MainMenu);
 }
 
 
-void CGameState::StartNewGame()
+void CGameState::StartNewGame(hexMapGenerationDesc* pMapDesc, int iNumPlayers)
 {
 	assert(!pCurrentMap);
 
 	if (!pCurrentMap)
 		pCurrentMap = new CHexMap;
-	pCurrentMap->Generate(128,128, GetTickCount());
+	int mapWidth = 128;
+	int mapHeight = 128;
+	pCurrentMap->Generate(pMapDesc, GetTickCount());
+	g_Renderer.GetCamera()->SetAxisWrapValues(0, 0, mapWidth*HEX_WIDTH, true);
 
 	SwitchToState(kGameState_Gameplay);
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("gameplay"));
-	iNumPlayers = 4;
+	this->iNumPlayers = iNumPlayers;
 	pPlayers = new CHexPlayer[iNumPlayers];
 	for (int i = 0; i < iNumPlayers; i++)
 	{
@@ -618,6 +651,9 @@ void CGameState::SelectNextUnit( CHexPlayer* pPlayer )
 
 void CGameState::RenderMinimap(RECT* uiRect)
 {
+	if (pCurrentMap->GetHeight() != 128 || pCurrentMap->GetWidth() != 128)
+		return;
+
 	pCurrentMap->UpdateMinimapTexture(&minimapTexture, &mapViewport, fpMapOffset, FOG_OF_WAR ? pPlayers[iCurPlayer].GetVisibility() : NULL);
 
 	g_Renderer.AddSolidColorToRenderList(uiRect, 0xff111111);
@@ -697,6 +733,222 @@ void CGameState::AdjustMapZoom( int rot )
 CHexPlayer* CGameState::GetCurrentPlayer()
 {
 	return &pPlayers[iCurPlayer];
+}
+
+
+IDirect3DVertexBuffer9* CGameState::CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo)
+{
+	void* vb_vertices;
+	GameTexture* pSourceTexture = pTex->hTex.pTex;
+	IDirect3DVertexBuffer9* pSplatBuffer = NULL;
+	
+	switch(eGeo)
+	{
+	case kTextureSplatGeo_Hexagon:
+		{
+			float fXMin, fXHalf, fXMax;
+			float fYMin, fYOneQuarter, fYThreeQuarters, fYMax;
+
+			//calculate helpful coordinates
+			fXMin = ((float)pTex->rSrc->left)/pSourceTexture->width;
+			fXMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
+			fXHalf = (fXMin+fXMax)/2;
+
+			fYMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
+			fYMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
+			fYOneQuarter = (fYMin*3+fYMax)/4;
+			fYThreeQuarters = (fYMin+fYMax*3)/4;
+
+			FlexVertex hexVerts[] = {
+				{0.0f,				HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMin},     //0
+				{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYOneQuarter},//1
+				{-HEX_HALF_WIDTH,	HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYOneQuarter},//2
+				{-HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF,	fXMin, fYThreeQuarters},//3
+				{HEX_HALF_WIDTH,	-HEX_HALF_HEIGHT/2.0f,	-0.011f, 0xFFFFFFFF, fXMax, fYThreeQuarters},//4
+				{0.0f,				-HEX_HALF_HEIGHT,		-0.011f, 0xFFFFFFFF,	fXHalf, fYMax},//5
+			};
+
+			g_Renderer.CreateVertexBuffer(sizeof(hexVerts), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+
+			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
+
+			memcpy(vb_vertices, hexVerts, sizeof(hexVerts));
+
+			pSplatBuffer->Unlock();
+		}break;
+	case kTextureSplatGeo_Rectangle:
+		{
+			const float fScalar = 0.033f;
+			float fUMin, fUMax, fHalfWidth;
+			float fVMin, fVMax, fHalfHeight;
+			fUMin = ((float)pTex->rSrc->left)/pSourceTexture->width;
+			fUMax = ((float)pTex->rSrc->right)/pSourceTexture->width;
+			fHalfWidth = (float)(pTex->rSrc->right-pTex->rSrc->left) * fScalar * 0.5f;
+
+			fVMin = ((float)pTex->rSrc->top)/pSourceTexture->height;
+			fVMax = ((float)pTex->rSrc->bottom)/pSourceTexture->height;
+			fHalfHeight = (float)(pTex->rSrc->bottom-pTex->rSrc->top) * fScalar * 0.5f;
+
+			FlexVertex quadVerts[] = {
+				{-fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMin},//0
+				{fHalfWidth,	+fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMin},//1
+				{-fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMin, fVMax},//2
+				{fHalfWidth,	-fHalfHeight,	-0.01f, 0xFF000000,	fUMax, fVMax},//3
+			};
+
+			g_Renderer.CreateVertexBuffer(sizeof(quadVerts), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pSplatBuffer, NULL);
+
+			pSplatBuffer->Lock(0, 0, &vb_vertices, 0);
+
+			memcpy(vb_vertices, quadVerts, sizeof(quadVerts));
+
+			pSplatBuffer->Unlock();
+		}break;
+	}
+
+
+	return pSplatBuffer;
+}
+
+IDirect3DIndexBuffer9* CGameState::CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo)
+{
+	void* pData;
+	IDirect3DIndexBuffer9* pSplatIndBuffer = NULL;
+	
+	switch(eGeo)
+	{
+	case kTextureSplatGeo_Hexagon:
+		{
+			int hexInds[] = {0,1,2, 2,1,3,
+							 3,1,4, 4,5,3};
+
+			g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(hexInds), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pSplatIndBuffer, NULL);
+
+			pSplatIndBuffer->Lock(0, 0, &pData, 0);
+
+			memcpy(pData, hexInds, sizeof(hexInds));
+
+			pSplatIndBuffer->Unlock();
+		}break;
+	case kTextureSplatGeo_Rectangle:
+		{
+
+			int quadInds[] = {0,1,2, 2,1,3};
+
+			g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(quadInds), D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pSplatIndBuffer, NULL);
+
+			pSplatIndBuffer->Lock(0, 0, &pData, 0);
+
+			memcpy(pData, quadInds, sizeof(quadInds));
+
+			pSplatIndBuffer->Unlock();
+		}break;
+	}
+
+
+	return pSplatIndBuffer;
+}
+
+void CGameState::CreateSplatBuffers()
+{
+	GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Hexagon);
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Hexagon);
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].iNumTris = 4;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].iNumVerts = 6;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].eGeo = kTextureSplatGeo_Hexagon;
+	pTextureSplatBuffers[kTextureSplat_SelectedTile].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"path");
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].iNumVerts = 4;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathBlipSmall].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathblip");
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].iNumVerts = 4;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathBlipLarge].pTex = pPortion->hTex.pTex;
+	
+	pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathend");
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pVertBuf = CreateSplatVertBufferForTexture(pPortion, kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pIndBuf = CreateSplatIndexBufferForTexture(kTextureSplatGeo_Rectangle);
+	pTextureSplatBuffers[kTextureSplat_PathTarget].iNumTris = 2;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].iNumVerts = 4;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].eGeo = kTextureSplatGeo_Rectangle;
+	pTextureSplatBuffers[kTextureSplat_PathTarget].pTex = pPortion->hTex.pTex;
+}
+
+void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale)
+{
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, 0.0f};
+	float vRot[3] = {0.0f, 0.0f, rot};
+	float vScale[3] = {scale, scale, 1.0f};
+	if (y & 1)
+		vPos[0] += HEX_HALF_WIDTH;
+	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pVertBuf, pTextureSplatBuffers[eType].pIndBuf, &pTextureSplatBuffers[eType].iNumTris, &pTextureSplatBuffers[eType].iNumVerts, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, true);
+}
+
+void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
+{
+	float f45DegreeAnglePosCorrection = (float)(scale/(2*SQRT_2));
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT + f45DegreeAnglePosCorrection, -f45DegreeAnglePosCorrection};
+	float vRot[3] = {D3DXToRadian(-45.0f), 0.0f, rot};
+	float vScale[3] = {scale, scale, 1.0f};
+	static int numTris = 2;
+
+	if (y & 1)
+		vPos[0] += HEX_HALF_WIDTH;
+
+	g_Renderer.Add3DTexturePortionToRenderList(pPortion, vPos, vScale, vRot, true);
+}
+
+void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
+{
+	if (!pPath)
+		 return;
+	SplattableTexture eSplat;
+	//i starts at 1, don't render first tile of the path
+	int iMovement = pUnit->GetMovRemaining();
+	int iTurn = 0;
+	float fRot = 0.0f;
+	for (int i = pPath->start; i < pPath->size; i++)
+	{
+		iMovement -= pCurrentMap->GetTile(pPath->pPoints[i])->pDef->iMoveCost;
+		bool bShowTurnCount = false;
+		if (i == pPath->size-1)
+		{
+			eSplat = kTextureSplat_PathTarget;
+			bShowTurnCount = true;
+			fRot = (ghettoAnimTick % 9000)/9000.0f * PI * 2.0f;
+			iTurn++;
+		}
+		else if (iMovement <= 0)
+		{
+			eSplat = kTextureSplat_PathBlipLarge;
+			bShowTurnCount = true;
+			iMovement = pUnit->GetDef()->movement;
+			iTurn++;
+		}
+		else
+		{
+			eSplat = kTextureSplat_PathBlipSmall;
+		}
+		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, fRot, 1.0f);
+		if (bShowTurnCount)
+		{
+			TCHAR buf[4];
+			POINT screenSpace = TilePtToScreenPt(pPath->pPoints[i].x, pPath->pPoints[i].y);
+			screenSpace.y -= 5;	//adjust slightly to make it look right
+			wsprintf(buf, _T("%i"), iTurn);
+			g_Renderer.AddStringToRenderList(pFont, buf, (float)screenSpace.x, (float)screenSpace.y, (alpha << 24) | (iTurn > 1 ? 0xff0000 : 0xff00), true, false, true);
+		}
+	}
 }
 
 int CHexPlayer::GetTechProgress( LPCTSTR name )
