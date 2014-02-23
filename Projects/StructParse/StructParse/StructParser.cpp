@@ -401,7 +401,6 @@ bool ParseFile(FILE* input, const TCHAR* pchOutputDir, const TCHAR* pchFilename,
 	return bRet;
 }
 
-
 int _tmain(int argc, _TCHAR* argv[])
 {
 	WIN32_FIND_DATA f;
@@ -415,11 +414,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	timestampFilename += L"\\autogen.timestamp";
 	WIN32_FILE_ATTRIBUTE_DATA dat;
 	bool bWroteAnything = false;
+	bool bErrored = false;
 
+	printf("y helo thar");
 	GetFileAttributesEx(timestampFilename.c_str(), GetFileExInfoStandard, &dat);
-	
-	FILE* timestampFile = _wfopen(timestampFilename.c_str(), L"w");
-	fclose(timestampFile);
 
 	for (int i = 1; i < argc; i++)
 	{
@@ -477,7 +475,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	if (filesToProcess.empty())
+	{
+		printf("WARNING: Structparse found no files to process.");
 		return 0;
+	}
 	
 	while (!filesToProcess.empty())
 	{
@@ -486,12 +487,22 @@ int _tmain(int argc, _TCHAR* argv[])
 		path = filesToProcess.back();
 		filesToProcess.pop_back();
 		FILE* input = _wfopen(path.c_str(), L"r");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		bWroteAnything |= ParseFile(input, autogenFilename.c_str(), path.c_str(), true);
 		fclose(input);
 	}
 
 	if (!bWroteAnything)
+	{
+		printf("WARNING: Structparse processed files but didn't output anything.");
 		return 0;
+	}
 	
 	while (!filesToProcessReadOnly.empty())
 	{
@@ -500,6 +511,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		path = filesToProcessReadOnly.back();
 		filesToProcessReadOnly.pop_back();
 		FILE* input = _wfopen(path.c_str(), L"r");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		ParseFile(input, autogenFilename.c_str(), path.c_str(), false);
 		fclose(input);
 	}
@@ -508,12 +526,26 @@ int _tmain(int argc, _TCHAR* argv[])
 		wstring autogenFilename = argv[1];
 		autogenFilename += L"\\Autogen\\ParseTableDict.h";
 		FILE* input = _wfopen(autogenFilename.c_str(), L"w");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		fputs("#include \"stdafx.h\"\n\nvoid PopulateParseTableDict(ParseTableNameHash* phtNames);\nvoid PopulatePolyTableNameHash(PolyTableNameHash* phtPolyNames);\nvoid PopulateObjSizeHash(ObjSizeHash* phtObjSize);\n", input);
 		fclose(input);
 
 		autogenFilename = argv[1];
 		autogenFilename += L"\\Autogen\\ParseTableDict.cpp";
 		input = _wfopen(autogenFilename.c_str(), L"w");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		fputs("#include \"stdafx.h\"\n\n#include \"ParseTableDict.h\"\n", input);
 		fputws(ParseTableHashIncludeBuf.c_str(), input);
 
@@ -536,6 +568,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		wstring autogenFilename = argv[1];
 		autogenFilename += L"\\Autogen\\AutoEnums.h";
 		FILE* input = _wfopen(autogenFilename.c_str(), L"w");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		fputs("#include \"stdafx.h\"\n#include \"strhashmap.h\"\n\n\nvoid PopulateAutoEnumTables();\n", input);
 		fputs(EnumHashIncludeBuf.c_str(), input);
 		fclose(input);
@@ -543,6 +582,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		autogenFilename = argv[1];
 		autogenFilename += L"\\Autogen\\AutoEnums.cpp";
 		input = _wfopen(autogenFilename.c_str(), L"w");
+
+		if (!input)
+		{
+			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			return ERROR_INVALID_DATA;
+		}
+
 		fputs("#include \"stdafx.h\"\n\n#include \"AutoEnums.h\"\n", input);
 
 		fputs("\n\nvoid PopulateAutoEnumTables()\n{\n", input);
@@ -553,6 +599,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		fclose(input);
 	}
+	
+	
+	FILE* timestampFile = _wfopen(timestampFilename.c_str(), L"w");
+
+	if (!timestampFile)
+	{
+		printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", timestampFilename.c_str());
+		return ERROR_INVALID_DATA;
+	}
+
+	fclose(timestampFile);
+
 	return 0;
 }
 

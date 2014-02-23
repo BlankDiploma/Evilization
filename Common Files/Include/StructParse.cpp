@@ -394,6 +394,12 @@ bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntr
 		pEntry->eFlags = kStructFlag_AutoSelfName;
 		pEntry->name = "name";
 	}
+	else if (_stricmp(line, "const TCHAR* filename;") == 0)
+	{
+		pEntry->eType = kStruct_String;
+		pEntry->eFlags = kStructFlag_AutoFileName;
+		pEntry->name = "name";
+	}
 	else
 	{
 		tok = strtok_s(line, "	 ", &pchNextTok);

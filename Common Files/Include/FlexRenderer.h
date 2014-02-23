@@ -328,14 +328,6 @@ public:
 	{
 		return iScreenH;
 	}
-	int GetScreenWidth()
-	{
-		return iScreenW;
-	}
-	int GetScreenHeight()
-	{
-		return iScreenH;
-	}
 
 	void PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2);
 	FLOATPOINT ScaleScreenCoords(int x, int y);

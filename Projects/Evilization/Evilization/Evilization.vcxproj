@@ -119,6 +119,7 @@
     <ClCompile Include="..\..\..\Common Files\Include\DefLibrary.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\EArray.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\FlexDebugConsole.cpp" />
+    <ClCompile Include="..\..\..\Common Files\Include\FlexErrorWindow.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\FlexLua.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\FlexRenderer.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\mtrand.cpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="..\..\..\Common Files\Include\DefLibrary.h" />
     <ClInclude Include="..\..\..\Common Files\Include\EArray.h" />
     <ClInclude Include="..\..\..\Common Files\Include\FlexDebugConsole.h" />
+    <ClInclude Include="..\..\..\Common Files\Include\FlexErrorWindow.h" />
     <ClInclude Include="..\..\..\Common Files\Include\FlexLua.h" />
     <ClInclude Include="..\..\..\Common Files\Include\FlexRenderer.h" />
     <ClInclude Include="..\..\..\Common Files\Include\mtrand.h" />

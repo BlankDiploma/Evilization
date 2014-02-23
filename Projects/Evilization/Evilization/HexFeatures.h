@@ -108,6 +108,7 @@ PARSE_STRUCT(hexBuildingDef)
 	int maxHealth;
 	int visRadius;
 	const TCHAR* name;
+	const TCHAR* filename;
 	const TCHAR* displayName;
 	FLAGS buildingFlags eFlags;
 	

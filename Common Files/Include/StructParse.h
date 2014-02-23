@@ -42,7 +42,7 @@ struct GameTexture;
 enum StructParseEntryType {kStruct_Invalid = -1, kStruct_Int = 0, kStruct_Float, kStruct_String, kStruct_SubStruct, kStruct_DefRef, kStruct_Enum, kStruct_TextureRef, kStruct_LuaScript, kStruct_Boolean, kStruct_NinepatchRef, kStruct_Color};
 const int StructParseEntryTypeSize[] = {sizeof(int), sizeof(float), sizeof(TCHAR*), sizeof(void*), sizeof(TCHAR*) + sizeof(void*), sizeof(int), sizeof(TCHAR*) + sizeof(void*), sizeof(char*) + sizeof(void*) + sizeof(int), sizeof(bool), sizeof(TCHAR*) + sizeof(void*), sizeof(unsigned long)};
 
-enum StructParseEntryFlags {kStructFlag_None = 0, kStructFlag_EArray = 0x1, kStructFlag_Inline = 0x2, kStructFlag_FlagBitfield = 0x4, kStructFlag_AutoSelfName = 0x8};
+enum StructParseEntryFlags {kStructFlag_None = 0, kStructFlag_EArray = 0x1, kStructFlag_Inline = 0x2, kStructFlag_FlagBitfield = 0x4, kStructFlag_AutoSelfName = 0x8, kStructFlag_AutoFileName = 0x10};
 
 struct StructParseEntry;
 

@@ -72,7 +72,7 @@ size_t DefLibrary::ObjectSizeInBytes(ParseTable* table)
 	return 0;
 }
 
-void DoNewObjectPolish(ParseTable* pTable, void* pObj, const TCHAR* pchName)
+void DoNewObjectPolish(ParseTable* pTable, void* pObj, const TCHAR* pchName, const TCHAR* pchFilename)
 {
 	int iTableLength = ParseTableLength(*pTable);
 	for(int i = 0; i < iTableLength; i++)
@@ -81,6 +81,11 @@ void DoNewObjectPolish(ParseTable* pTable, void* pObj, const TCHAR* pchName)
 		{
 			void* pOffset = ((char*)pObj) + (*pTable)[i].offset;
 			(*(TCHAR**)pOffset) = _wcsdup(pchName);
+		}
+		else if ((*pTable)[i].eFlags & kStructFlag_AutoFileName)
+		{
+			void* pOffset = ((char*)pObj) + (*pTable)[i].offset;
+			(*(TCHAR**)pOffset) = _wcsdup(pchFilename);
 		}
 	}
 }
@@ -268,7 +273,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 							}
 							pchPolyName++;
 						}
-						DoNewObjectPolish(pCurTable, sObjStack.top(), widebuf);
+						DoNewObjectPolish(pCurTable, sObjStack.top(), widebuf, pchFilename);
 						free(pchObjParseTableName);
 					}
 
