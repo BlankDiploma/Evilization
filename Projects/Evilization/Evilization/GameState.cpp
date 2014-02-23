@@ -94,10 +94,10 @@ void CGameState::Update(DWORD tick)
 static POINT points[32];
 static int num = 0;
 
-void CGameState::IssueOrder(unitOrderType eType, HEXPATH* pPath)
+void CGameState::IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
 {
 	if (curSelUnit)
-		curSelUnit->OverwriteQueuedOrders(eType, pPath);
+		curSelUnit->OverwriteQueuedOrders(eType, pPath, targetPt);
 }
 
 void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
@@ -145,28 +145,25 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 			hexTile* pTile = pCurrentMap->GetTile(PixelToTilePt(pt.x, pt.y));
 			HEXPATH* pPath = NULL;
 			CHexUnit* pUnit = pTile->pUnit;
-			int numTiles;
-			POINT* pTilePts;
+			POINT targetPt;
+			targetPt.x = 0;
+			targetPt.y = 0;
 			if (pUnit)
 			{
 				if(pUnit->GetOwnerID() != curSelUnit->GetOwnerID())
 				{
 					//check if the target is in range
 					int unitRange = pUnit->GetAttackRange();
-					numTiles = 1 + ((unitRange*6 + 6)/2 * unitRange);
-					pTilePts = (POINT*) malloc(sizeof(POINT)*numTiles);
-					pCurrentMap->GetTilesInRadius(curSelUnit->GetLoc(), unitRange, pTilePts);
-					if (pCurrentMap->IsUnitInTiles(pUnit, pTilePts, numTiles))
-					{
-						IssueOrder(kOrder_Melee, pPath);
-					}
+					int dist = pCurrentMap->GetDistanceBetweenTiles(curSelUnit->GetLoc(), pUnit->GetLoc());
+					if (dist <= unitRange)
+						IssueOrder(kOrder_Melee, pPath, pUnit->GetLoc());
 				}
 			}
 			else
 			{
 				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
 				if (pPath)
-					IssueOrder(kOrder_Move, pPath);
+					IssueOrder(kOrder_Move, pPath, targetPt);
 			}
 		}break;
 	case WM_MOUSEWHEEL:
@@ -279,6 +276,13 @@ void CGameState::MouseHandlerAdditionalRendering()
 				hexUnitOrder* pTopOrder = curSelUnit->GetTopQueuedOrder();
 				if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
 					RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
+
+				//if (pTopOrder && (pTopOrder->eType == kOrder_Melee))
+				//{
+
+				//	RenderTextureSplat(pTopOrder->targetPt.x, pTopOrder->targetPt.x, kTextureSplat_SelectedTile, 0, 1.0f);
+			//	}
+
 
 				HEXPATH* pPath = NULL;
 				if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
@@ -435,7 +439,7 @@ void CGameState::MouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
 					OffsetRect(&button, 0, -20);
 					if (PtInRect(&button, pt))
 					{
-						StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, L"Default"), 4);
+						StartNewGame(GET_DEF_FROM_STRING(hexMapGenerationDesc, L"TestCombat"), 2);
 					}
 					OffsetRect(&button, 0, 40);
 					if (PtInRect(&button, pt))

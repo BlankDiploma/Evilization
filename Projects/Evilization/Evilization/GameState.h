@@ -308,6 +308,17 @@ public:
 			}
 		}
 	}
+	void RemoveOwnership(CHexUnit* pUnit)
+	{
+		for (int i = 0; i < eaSize(&eaUnits); i++)
+		{
+			if (pUnit == eaUnits[i])
+			{
+				eaRemove(&eaUnits, i);
+				return;
+			}
+		}
+	}
 	int GetTechProgress( LPCTSTR name );
 	int AddResearch( int res );
 	bool StartResearch( LPCTSTR name );
@@ -477,7 +488,7 @@ public:
 	void StartPlayerTurn(int idx);
 	void EndCurrentTurn();
 	void ExecuteQueuedActions();
-	void IssueOrder(unitOrderType eType, HEXPATH* pPath);
+	void IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt);
 	void RenderSelectedUnit(POINT screenPt, float scale = 1.0);
 	CHexUnit* GetSelectedUnit();
 	POINT TilePtToScreenPt(int x, int y);

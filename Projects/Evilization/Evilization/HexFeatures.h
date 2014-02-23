@@ -69,6 +69,7 @@ PARSE_STRUCT(hexUnitDef)
 {
 	int movement;
 	int maxHealth;
+	int defense;
 	int TypeFlags;
 	int numAbilities;
 	int cost;
@@ -124,6 +125,7 @@ struct hexUnitOrder
 {
 	unitOrderType eType;
 	HEXPATH* pPath;
+	POINT targetPt;
 	hexUnitOrder()
 	{
 		pPath = NULL;
@@ -146,6 +148,7 @@ private:
 	int ownerID;
 	int movRemaining;
 	int* abilityCooldowns;
+	bool bIsDead;
 	hexUnitOrder** eaOrders;
 	POINT loc;
 public:
@@ -157,6 +160,7 @@ public:
 		movRemaining = 0;
 		abilityCooldowns = NULL;
 		eaOrders = NULL;
+		bIsDead = false;
 	}
 	CHexUnit(hexUnitDef* def, CHexPlayer* pOwner);
 
@@ -164,7 +168,7 @@ public:
 	{
 		return false;
 	}
-	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath)
+	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
 	{
 		for (int i = 0; i < eaSize(&eaOrders); i++)
 		{
@@ -175,13 +179,15 @@ public:
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 	}
-	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath)
+	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
 	{
 		eaPush(&eaOrders, new hexUnitOrder);
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 
 	}
 	hexUnitOrder* GetTopQueuedOrder()
@@ -244,6 +250,17 @@ public:
 	{
 		return pDef->attackRange;
 	}
+
+	int GetDefense()
+	{
+		return pDef->defense;
+	}
+
+	int GetStrength()
+	{
+		return pDef->meleeStr;
+	}
+	bool TakeDamage(int attackerStr);
 };
 class CHexBuilding
 {

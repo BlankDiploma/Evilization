@@ -554,7 +554,10 @@ void MinimapClick(lua_State *L)
 
 void SelectedUnitIssueOrder(lua_State *L, int orderType)
 {
-	g_GameState.IssueOrder((unitOrderType)orderType, NULL);
+	POINT targetPt;
+	targetPt.x = 0;
+	targetPt.y = 0;
+	g_GameState.IssueOrder((unitOrderType)orderType, NULL, targetPt);
 }
 
 void RenderSelectedUnit(lua_State *L)

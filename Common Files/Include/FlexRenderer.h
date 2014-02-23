@@ -29,6 +29,7 @@ PARSE_STRUCT(GameTexturePortion)
 	TEXTURE_REF hTex;
 	RECT* rSrc;
 	POINT* offset;
+	COLOR_ARGB color;
 	PARSE_IGNORE IDirect3DVertexBuffer9* pVerts;
 	PARSE_IGNORE int iVertIndexStart;
 	GameTexturePortion()
@@ -319,14 +320,6 @@ public:
 	FlexCamera* GetCamera()
 	{
 		return pCamera;
-	}
-	int GetScreenWidth()
-	{
-		return iScreenW;
-	}
-	int GetScreenHeight()
-	{
-		return iScreenH;
 	}
 	int GetScreenWidth()
 	{

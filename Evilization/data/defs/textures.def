@@ -25,6 +25,13 @@ GameTexturePortion selectedtile
 	rSrc 0 0 128 128
 	offset 0 0
 }
+
+GameTexturePortion attacktile
+{
+	hTex interface
+	rSrc 0 0 128 128
+	offset 0 0
+}
  
 GameTexturePortion terrain_shallow
 {

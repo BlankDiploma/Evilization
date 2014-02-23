@@ -893,6 +893,16 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 		{
 			//last path to that unit
 			//move path at end of turn
+			hexTile* pTarTile = GetTile(pOrder->targetPt);
+			CHexUnit* pTarUnit = pTarTile->pUnit;
+			if (pTarUnit->TakeDamage(pUnit->GetStrength()))
+			{
+				CHexPlayer* pTargetOwner = g_GameState.GetPlayerByID(pTarUnit->GetOwnerID());
+				pTargetOwner->RemoveOwnership(pTarUnit);
+				delete pTarTile->pUnit;
+				pTarTile->pUnit = NULL;
+			}
+			return true;
 		}break;
 	}
 	return false;
@@ -915,6 +925,8 @@ bool CHexMap::MoveUnit( CHexUnit* pUnit, POINT pt )
 	}
 	return false;
 }
+
+//bool CHexMap::UnitAttack(
 
 int CHexMap::GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut )
 {
@@ -997,6 +1009,27 @@ bool CHexMap::BuildingCanBeBuiltOnTile(hexBuildingDef* pBuildingDef, POINT tileP
 		return true;
 
 	return false;
+}
+
+int CHexMap::GetDistanceBetweenTiles(POINT ptA, POINT ptB)
+{
+	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
+		return 0;
+
+	int dist;
+	int xDist = abs(ptB.x - ptA.x);
+	int yDist = abs(ptB.y - ptA.y);
+	int xThreshold = yDist/2;
+
+	if(ptB.x < ptA.x && ((ptB.y-ptA.y)%2))
+		xThreshold++;
+
+	if(xDist > xThreshold)
+		dist = yDist + xDist - xThreshold;
+	else
+		dist = max(xDist,yDist);
+
+	return dist;
 }
 
 #include "Autogen\HexMap_h_ast.cpp"

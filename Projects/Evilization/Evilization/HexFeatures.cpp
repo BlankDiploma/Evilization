@@ -250,6 +250,7 @@ CHexUnit::CHexUnit(hexUnitDef* def, CHexPlayer* pOwner)
 	movRemaining = def->movement;
 	abilityCooldowns = new int[def->numAbilities];
 	eaOrders = NULL;
+	bIsDead = false;
 	if (pOwner)
 		pOwner->TakeOwnership(this);
 }
@@ -266,6 +267,24 @@ void CHexUnit::PopQueuedOrder()
 		delete eaOrders[eaSize(&eaOrders)-1];
 		eaRemove(&eaOrders, eaSize(&eaOrders)-1);
 	}
+}
+
+bool CHexUnit::TakeDamage(int attackerStr)
+{
+	int damageDealt;
+	//int def = pDef->defense;
+	damageDealt = attackerStr; //- pDef->defense;
+
+	if (damageDealt < 0)
+		damageDealt = 0;
+
+	health -= damageDealt;
+	if (health <= 0)
+	{
+		bIsDead = true;
+	}
+
+	return bIsDead;
 }
 
 CHexBuilding::CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner, bool bTakeOwnership)
