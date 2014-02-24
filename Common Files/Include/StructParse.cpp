@@ -5,11 +5,20 @@
 #include "assert.h"
 #include "windows.h"
 #include "StructParseEnum.h"
+#include "FlexErrorWindow.h"
 
 int ParseTableLength(ParseTable pTable)
 {
 	int i = 0;
-	while ((pTable++)->pchName)i++;
+	while ((pTable++)->pchName)
+	{
+		i++;
+		if (i > 256)
+		{
+			Errorf("A parse table doesn't appear to have a null terminator.");
+			return 0;
+		}
+	}
 	return i;
 }
 
@@ -36,6 +45,7 @@ StructParseEntry* ParseTableFind(ParseTable pTable, const TCHAR* pchName)
 			return pTable + i;
 		}
 	}
+	Errorf("Parse table '%s' doesn't exist!", pchName);
 	return NULL;
 }
 /*

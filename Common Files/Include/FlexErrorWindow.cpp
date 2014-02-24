@@ -1,10 +1,15 @@
 #include "stdafx.h"
-#include "windows.h"
 #include "strhashmap.h"
-#include "resource.h"
 #include "FlexErrorWindow.h"
-#include "Commctrl.h"
 #include "EArray.h"
+#include "windows.h"
+#include <stdio.h>
+
+#ifndef FLEX_ERROR_USE_STDERR
+
+#include "resource.h"
+#include "Commctrl.h"
+
 static HWND hErrorDlg = 0;
 
 ErrorHash stErrorTextToTracker;
@@ -189,3 +194,16 @@ void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...)
 	else
 		SendMessage(hErrorDlg, WM_USER, (WPARAM)&tracker, tracker.Count);
 }
+
+#else
+
+
+void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...)
+{
+	va_list args;
+	va_start(args, pchFilename);
+	vwprintf(pchErrorFmt, args);
+	va_end(args);
+}
+
+#endif

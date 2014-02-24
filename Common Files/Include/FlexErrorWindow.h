@@ -1,7 +1,10 @@
 #include "stdafx.h"
-#include "windows.h"
 #include "strhashmap.h"
+
+#ifndef FLEX_ERROR_USE_STDERR
+
 #include "resource.h"
+#include "windows.h"
 
 struct ErrorTracker;
 typedef stdext::hash_map<const wchar_t*, ErrorTracker, stringHasher> ErrorHash;
@@ -23,6 +26,8 @@ struct ErrorTracker
 	}
 	int id;
 };
+
+#endif
 
 void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...);
 #define Errorf(text, ...) ErrorInternalf(_T(text), NULL, __VA_ARGS__)
