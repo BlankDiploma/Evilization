@@ -260,7 +260,11 @@ public:
 	{
 		return pDef->meleeStr;
 	}
-	bool TakeDamage(int attackerStr);
+	int TakeDamage(int attackerStr);
+	bool IsDead()
+	{
+		return bIsDead;
+	}
 };
 class CHexBuilding
 {

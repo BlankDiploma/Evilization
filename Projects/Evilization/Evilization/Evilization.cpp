@@ -1110,6 +1110,79 @@ void DisableMapXWrap(lua_State *L, int disable)
 	g_DebugFlags.disableMapXWrap = disable;
 }
 
+int distCalc(POINT ptA, POINT ptB)
+{
+	int x1, x2, y1, y2, z1, z2, q1, q2, r1, r2, dist;
+
+	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
+		return 0;
+
+	q1 = ptA.x;
+	q2 = ptB.x;
+	r1 = ptA.y;
+	r2 = ptB.y;
+
+	if (abs(q2 - q1) > 128/2)
+	{
+		if(q2>q1)
+			q2 -= 128;
+		else
+			q1 -= 128;
+	}
+
+	x1 = q1 - (r1 - (r1&1))/2;
+	x2 = q2 - (r2 - (r2&1))/2;
+	z1 = r1;
+	z2 = r2;
+	y1 = -x1 - z1;
+	y2 = -x2 - z2;
+
+	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
+
+	return dist;
+}
+
+
+void DistCalcUnitTest(lua_State *L)
+{
+	POINT points[] =	{{0,0},{1,0},	//1
+						{0,0},{2,0},	//2
+						{0,0},{127,0},	//1
+						{0,1},{1,0},	//1
+						{0,1},{2,0},	//2
+						{0,1},{127,0},	//2
+						{1,1},{2,2},	//1
+						{1,1},{1,0},	//1
+						{1,1},{3,2},	//2
+						{3,4},{0,2},	//4
+						{3,4},{7,6},	//5
+						{4,3},{127,0},	//7
+						{3,2},{127,2},	//4
+						{1,1},{0,3},	//2
+						{1,1},{0,4},	//3
+						{1,1},{127,5},	//4
+						{2,0},{127,3},	//4
+						{3,3},{127,1},	//5
+						{3,2},{127,1},	//4
+						{3,2},{0,1},	//3
+						{3,3},{0,1}		//4
+						};
+	int answers[] = {1,2,1,1,2,2,1,1,2,4,5,7,4,2,3,4,4,5,4,3,4};
+	TCHAR buf[64] = {0};
+	int i;
+	for (i = 0; i < (sizeof(answers)/sizeof(int)); i++)
+	{
+		int ans = distCalc(points[i*2], points[i*2+1]);
+		if (ans != answers[i])
+		{
+			wsprintf(buf, L"(%d,%d)->(%d,%d) = %d FAIL, should be %d", points[i*2].x, points[i*2].y, points[i*2+1].x, points[i*2+1].y, ans, answers[i]);
+			g_Console.AddConsoleString(buf);
+		}
+	}
+	wsprintf(buf, L"%d calculations performed.", i);
+	g_Console.AddConsoleString(buf);
+}
+
 void DoAllLuaBinds()
 {
 	luabind::module(g_LUA)
@@ -1169,6 +1242,7 @@ void DoAllLuaBinds()
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
+		luabind::def("Debug_DistCalcUnitTest", &DistCalcUnitTest),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

@@ -895,12 +895,11 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 			//move path at end of turn
 			hexTile* pTarTile = GetTile(pOrder->targetPt);
 			CHexUnit* pTarUnit = pTarTile->pUnit;
-			if (pTarUnit->TakeDamage(pUnit->GetStrength()))
+			int damageTaken = pTarUnit->TakeDamage(pUnit->GetStrength());
+			g_GameState.RenderDamageText(damageTaken, pTarUnit->GetLoc());
+			if (pTarUnit->IsDead())
 			{
-				CHexPlayer* pTargetOwner = g_GameState.GetPlayerByID(pTarUnit->GetOwnerID());
-				pTargetOwner->RemoveOwnership(pTarUnit);
-				delete pTarTile->pUnit;
-				pTarTile->pUnit = NULL;
+				DeleteUnit(pTarUnit);
 			}
 			return true;
 		}break;
@@ -925,8 +924,6 @@ bool CHexMap::MoveUnit( CHexUnit* pUnit, POINT pt )
 	}
 	return false;
 }
-
-//bool CHexMap::UnitAttack(
 
 int CHexMap::GetTilesInRadius( POINT pt, int rad, POINT* ptTilesOut )
 {
@@ -1013,23 +1010,48 @@ bool CHexMap::BuildingCanBeBuiltOnTile(hexBuildingDef* pBuildingDef, POINT tileP
 
 int CHexMap::GetDistanceBetweenTiles(POINT ptA, POINT ptB)
 {
+	int x1, x2, y1, y2, z1, z2, q1, q2, r1, r2, dist;
+
 	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
 		return 0;
 
-	int dist;
-	int xDist = abs(ptB.x - ptA.x);
-	int yDist = abs(ptB.y - ptA.y);
-	int xThreshold = yDist/2;
+	q1 = ptA.x;
+	q2 = ptB.x;
+	r1 = ptA.y;
+	r2 = ptB.y;
 
-	if(ptB.x < ptA.x && ((ptB.y-ptA.y)%2))
-		xThreshold++;
+	if (abs(q2 - q1) > w/2)
+	{
+		if(q2>q1)
+			q2 -= w;
+		else
+			q1 -= w;
+	}
 
-	if(xDist > xThreshold)
-		dist = yDist + xDist - xThreshold;
-	else
-		dist = max(xDist,yDist);
+	x1 = q1 - (r1 - (r1&1))/2;
+	x2 = q2 - (r2 - (r2&1))/2;
+	z1 = r1;
+	z2 = r2;
+	y1 = -x1 - z1;
+	y2 = -x2 - z2;
+
+	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
 
 	return dist;
+}
+
+void CHexMap::DeleteUnit(CHexUnit* pUnit)
+{
+	CHexPlayer* pOwner = g_GameState.GetPlayerByID(pUnit->GetOwnerID());
+	hexTile* pTile = GetTile(pUnit->GetLoc());
+	
+	CHexUnit* curSelected = g_GameState.GetSelectedUnit();
+	if (curSelected == pUnit)
+		curSelected = NULL;
+
+	pOwner->RemoveOwnership(pUnit);
+	delete pTile->pUnit;
+	pTile->pUnit = NULL;
 }
 
 #include "Autogen\HexMap_h_ast.cpp"

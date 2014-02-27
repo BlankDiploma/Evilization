@@ -4,6 +4,7 @@
 #include "uilib.h"
 #include "techtree.h"
 #include "strhashmap.h"
+#include "FlexParticleSystem.h"
 
 #pragma once
 
@@ -401,7 +402,7 @@ private:
 	IDirect3DVertexBuffer9* CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
 	IDirect3DIndexBuffer9* CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo);
 	void CreateSplatBuffers();
-	void RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale);
+	void RenderTextureSplat(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );
 
 public:
@@ -423,6 +424,7 @@ public:
 	FLOATPOINT PixelToMapIntersect(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
 	void RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
+	void RenderDamageText(int damage, POINT tarPt);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
 	{

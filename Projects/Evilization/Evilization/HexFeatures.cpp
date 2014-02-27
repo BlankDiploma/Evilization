@@ -269,7 +269,7 @@ void CHexUnit::PopQueuedOrder()
 	}
 }
 
-bool CHexUnit::TakeDamage(int attackerStr)
+int CHexUnit::TakeDamage(int attackerStr)
 {
 	int damageDealt;
 	//int def = pDef->defense;
@@ -284,7 +284,7 @@ bool CHexUnit::TakeDamage(int attackerStr)
 		bIsDead = true;
 	}
 
-	return bIsDead;
+	return damageDealt;
 }
 
 CHexBuilding::CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner, bool bTakeOwnership)

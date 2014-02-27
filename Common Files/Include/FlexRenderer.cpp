@@ -1205,7 +1205,10 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 			{
 			
 				if (bShadow)
-					AddSpriteToRenderList(pFontTex, wrappedX+1, wrappedY+1, &renderSrc, 0xFF000000);
+				{
+					DWORD shadowColor = savedColor & 0xFF000000;
+					AddSpriteToRenderList(pFontTex, wrappedX+1, wrappedY+1, &renderSrc, shadowColor);
+				}
 				AddSpriteToRenderList(pFontTex, wrappedX, wrappedY, &renderSrc, savedColor);
 				iVisibleLetters++;
 			}
@@ -1288,12 +1291,16 @@ void FlexRenderer::CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, Game
 		eaPortions[i]->iVertIndexStart = i*4;
 		eaPortions[i]->pVerts = pNewBuf;
 
+		COLOR_ARGB color;
+		color = 0xFFFFFFFF;
+
+
 		FlexVertex verts[4] = 
 		{
-			{-XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,minU,minV},
-			{XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,maxU,minV},
-			{-XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,minU,maxV},
-			{XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,maxU,maxV}
+			{-XYRatio*0.5f,	0.5f,	0.0f,	color,minU,minV},
+			{XYRatio*0.5f,	0.5f,	0.0f,	color,maxU,minV},
+			{-XYRatio*0.5f,	-0.5f,	0.0f,	color,minU,maxV},
+			{XYRatio*0.5f,	-0.5f,	0.0f,	color,maxU,maxV}
 		};
 		
 		memcpy(pVerts, verts, sizeof(verts));

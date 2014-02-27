@@ -46,7 +46,7 @@ void CGameState::Initialize(int screenW, int screenH)
 	minimapTexture.width = 256;
 	minimapTexture.height = 256;
 	g_Renderer.GetD3DDevice()->CreateTexture(256, 256, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &minimapTexture.pD3DTex, NULL);
-	CreateSplatBuffers();
+	//CreateSplatBuffers();
 }
 
 void CGameState::Update(DWORD tick)
@@ -82,6 +82,7 @@ void CGameState::Update(DWORD tick)
 			{
 				bMouseOverGameplay = false;
 			}
+			g_ParticleSystem.UpdateParticles(tick);
 		}break;
 	}
 	if (g_Console.IsEnabled())
@@ -277,11 +278,12 @@ void CGameState::MouseHandlerAdditionalRendering()
 				if (pTopOrder && (pTopOrder->eType == kOrder_Move || pTopOrder->eType == kOrder_AutoExplore))
 					RenderPath( curSelUnit, pTopOrder->pPath, 0x55);
 
-				//if (pTopOrder && (pTopOrder->eType == kOrder_Melee))
-				//{
-
-				//	RenderTextureSplat(pTopOrder->targetPt.x, pTopOrder->targetPt.x, kTextureSplat_SelectedTile, 0, 1.0f);
-			//	}
+				if (pTopOrder && (pTopOrder->eType == kOrder_Melee))
+				{
+					GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+					float fScalar = 4.0f;
+					RenderTextureSplat(pTopOrder->targetPt.x, pTopOrder->targetPt.y, pPortion, 0, fScalar);
+				}
 
 
 				HEXPATH* pPath = NULL;
@@ -334,10 +336,13 @@ void CGameState::Render()
 			{
 				MouseHandlerAdditionalRendering();
 				POINT mouseoverTile = PixelToTilePt(ptMousePos.x, ptMousePos.y);
-				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, kTextureSplat_SelectedTile, 0, 1.0f);
+				GameTexturePortion* pSplatTexture;
+				pSplatTexture = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, pSplatTexture, 0, 4.0f);
 			}
 
 			UI.Render();
+			g_ParticleSystem.RenderParticles();
 		}break;
 	}
 	if (g_Console.IsEnabled())
@@ -888,14 +893,14 @@ void CGameState::CreateSplatBuffers()
 	pTextureSplatBuffers[kTextureSplat_PathTarget].pTex = pPortion->hTex.pTex;
 }
 
-void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale)
+void CGameState::RenderTextureSplat(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
 {
-	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, 0.0f};
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, -0.011f};
 	float vRot[3] = {0.0f, 0.0f, rot};
 	float vScale[3] = {scale, scale, 1.0f};
 	if (y & 1)
 		vPos[0] += HEX_HALF_WIDTH;
-	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pVertBuf, pTextureSplatBuffers[eType].pIndBuf, &pTextureSplatBuffers[eType].iNumTris, &pTextureSplatBuffers[eType].iNumVerts, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, true);
+	g_Renderer.Add3DTexturePortionToRenderList(pPortion, vPos, vScale, vRot, true);
 }
 
 void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
@@ -916,34 +921,38 @@ void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )
 {
 	if (!pPath)
 		 return;
-	SplattableTexture eSplat;
+	GameTexturePortion* pPortion;
 	//i starts at 1, don't render first tile of the path
 	int iMovement = pUnit->GetMovRemaining();
 	int iTurn = 0;
 	float fRot = 0.0f;
+	float fScalar;
 	for (int i = pPath->start; i < pPath->size; i++)
 	{
 		iMovement -= pCurrentMap->GetTile(pPath->pPoints[i])->pDef->iMoveCost;
 		bool bShowTurnCount = false;
 		if (i == pPath->size-1)
 		{
-			eSplat = kTextureSplat_PathTarget;
+			pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathend");;
+			fScalar = 3.0f;
 			bShowTurnCount = true;
 			fRot = (ghettoAnimTick % 9000)/9000.0f * PI * 2.0f;
 			iTurn++;
 		}
 		else if (iMovement <= 0)
 		{
-			eSplat = kTextureSplat_PathBlipLarge;
+			pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"pathblip");
+			fScalar = 2.0f;
 			bShowTurnCount = true;
 			iMovement = pUnit->GetDef()->movement;
 			iTurn++;
 		}
 		else
 		{
-			eSplat = kTextureSplat_PathBlipSmall;
+			pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"path");
+			fScalar = 1.0f;
 		}
-		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, eSplat, fRot, 1.0f);
+		RenderTextureSplat(pPath->pPoints[i].x, pPath->pPoints[i].y, pPortion, fRot, fScalar);
 		if (bShowTurnCount)
 		{
 			TCHAR buf[4];
@@ -1068,6 +1077,24 @@ void CHexPlayer::UpdateCachedIncomeValues()
 techTreeNodeDef* CHexPlayer::GetCurrentTech()
 {
 	return pCurResearch;
+}
+
+void CGameState::RenderDamageText(int damage, POINT tarPt)
+{
+	GameTexture* pFontTex = GET_TEXTURE(_T("courier_new"));
+	D3DXCOLOR color = D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f);
+	DWORD lifetime = 1500;
+	D3DXVECTOR3 vUp;
+	g_Renderer.GetCamera()->GetCameraUp(&vUp);
+	float fSpeedScale = 0.0025f;
+	D3DXVECTOR3 vel = vUp * fSpeedScale;
+
+	D3DXVECTOR3 pos((float)(tarPt.x*HEX_WIDTH + HEX_HALF_WIDTH*1.5), (float)(tarPt.y*HEX_HEIGHT*3/4 + HEX_HEIGHT*1.5), -0.1f);
+	if (tarPt.y&1)
+		pos[0] += HEX_HALF_WIDTH;
+	TCHAR text[64];
+	wsprintf(text, L"%d", damage*-1);
+	g_ParticleSystem.AddParticle(pFontTex, text, pos, color, lifetime, vel);
 }
 
 CGameState g_GameState;
