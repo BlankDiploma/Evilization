@@ -9,6 +9,7 @@
 #include "HexFeatures.h"
 #include "GameState.h"
 #include "flexrenderer.h"
+#include "flexErrorWindow.h"
 
 inline int nextPowerOfTwo(int v)
 {
@@ -133,7 +134,7 @@ void CHexMap::Generate(hexMapGenerationDesc* pDesc, int seed)
 			pTiles[i + j*w].slot.loc.x = i;
 			pTiles[i + j*w].slot.loc.y = j;
 		}
-		
+	
 	pStickFigure = GET_DEF_FROM_STRING(GameTexturePortion, _T("stickfigure"));
 	pHouse = GET_DEF_FROM_STRING(GameTexturePortion, _T("house"));
 	pSelectedTile = GET_DEF_FROM_STRING(GameTexturePortion, _T("selectedtile"));
@@ -826,7 +827,6 @@ void CHexMap::PlacePlayerStart( CHexPlayer* pPlayer )
 	POINT pt = GetRandomStartingPos();
 	CHexBuilding* pBuilding = CreateBuilding(GET_DEF_FROM_STRING(hexBuildingDef, L"house"), pPlayer, pt);
 	((CHexCity*)pBuilding)->AdjustPop(2);
-
 	for (int i = 0; i < 6; i++)
 	{
 		POINT adjPt = GetTileInDirection(pt, (int)i);
@@ -851,7 +851,9 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 
 			pOrder->pPath->start++;
 			if (pOrder->pPath->start < pOrder->pPath->size)
+			{
 				return false;
+			}
 			return true;
 		}break;
 	case kOrder_AutoExplore:

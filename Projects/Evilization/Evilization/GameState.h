@@ -361,7 +361,7 @@ private:
 		IDirect3DIndexBuffer9* pIndBuf;
 		int iNumTris;
 		int iNumVerts;
-		GameTexture* pTex;
+		const GameTexture* pTex;
 	} pTextureSplatBuffers[kTextureSplat_Count];
 
 	CHexPlayer* pPlayers;

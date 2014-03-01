@@ -4,6 +4,7 @@
 #include "EArray.h"
 #include "FlexRenderer.h"
 #include "FlexLua.h"
+#include "FlexErrorWindow.h"
 
 UIInstance::UIInstance()
 {
@@ -52,13 +53,34 @@ void UIInstance::UpdateLayout()
 {
 	LuaContext context;
 	UILayoutDef* pLayoutDef = ((UILayoutDef*)pDef);
+
+	if (eaSize(&pLayoutDef->eaChildren) == 0)
+	{
+		ErrorAutoStructf("UILayoutDef %s does not have any children. What's the fucking point?", pLayoutDef, pLayoutDef->name);
+		return;
+	}
+	
+	if (!pLayoutDef->listFunc.func)
+	{
+		ErrorAutoStructf("UILayoutDef %s does not have a listFunc. What's the fucking point?", pLayoutDef, pLayoutDef->name);
+		return;
+	}
+
 	void** eaObjects = NULL;
 	context.pUI = this;
-	FlexLua_ExecuteScript_EArrayReturn(&((UILayoutDef*)pDef)->listFunc, &eaObjects, &context);
-	int listSize = eaSize(&eaObjects);
 	int idx = 0;
 	int idy = 0;
 	UIBoxDef* pChildDef = GET_REF(UIBoxDef, pDef->eaChildren[0]->hBox);
+	
+	if (pChildDef->width == 0 && pChildDef->fWidthPct == 0)
+	{
+		ErrorAutoStructf("First child of UILayoutDef %s does not have a width.", pLayoutDef, pLayoutDef->name);
+		return;
+	}
+
+	FlexLua_ExecuteScript_EArrayReturn(&pLayoutDef->listFunc, &eaObjects, &context);
+	int listSize = eaSize(&eaObjects);
+
 	int numperrow = (int)(pChildDef->fWidthPct > 0 ? (1/pChildDef->fWidthPct) : GetWidth()/pChildDef->width);
 
 	while (eaSize(&eaChildren) != listSize)
@@ -87,7 +109,7 @@ void UIInstance::UpdateLayout()
 
 			if (pLayoutDef->eLayoutType == kLayout_LUA) 
 			{
-				pt = FlexLua_ExecuteScript_PointReturn(&((UILayoutDef*)pDef)->pointFunc, &context);
+				pt = FlexLua_ExecuteScript_PointReturn(&pLayoutDef->pointFunc, &context);
 				//pt = temp.GetPoint();
 			}
 			else if (pLayoutDef->eLayoutType == kLayout_Grid)

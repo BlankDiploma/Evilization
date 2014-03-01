@@ -1,0 +1,16 @@
+Barbarian (5 str)
+Skulker (2 str, high vis, may kidnap)
+Caravan (Transports plundered goods back to town)
+
+Walls (Reduce/prevent enemy movement across boundary)
+Slave quarters (+3 pop/ea within borders?)
+Torture Chamber (staffed by slaves, produces SCI)
+Mineshaft (+5 materials from tile)
+Workshop (allows 3 additional builders)
+Watchtower (Claim additional terrain?)
+Vault (reduces corruption?)
+
+
+
+
+Population comes from kidnapping

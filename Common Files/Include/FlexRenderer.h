@@ -224,7 +224,7 @@ public:
 struct ModelCall
 {
 	D3DXMATRIX matWorld;
-	LPDIRECT3DVERTEXBUFFER9* ppVerts;
+	const LPDIRECT3DVERTEXBUFFER9* ppVerts;
 	IDirect3DIndexBuffer9* pIndices;
 	int* piNumTris;
 	int* piNumVerts;
@@ -301,7 +301,7 @@ class FlexRenderer
 	IDirect3DVertexBuffer9* pCubeVertBuffer;
 	
 
-	void CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
+	void CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
 
 
 	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
@@ -336,14 +336,14 @@ public:
 	void WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut);
 	void StartNewRenderList();
 	void CommitRenderList();
-	void Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
-	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
-	void AddSpriteToRenderList(GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
-	void AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
-	void AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);
-	void AddSpriteToRenderList(GameTexturePortion* pTex, POINT topleft, DWORD color = 0xffffffff, float fZoom = 1.0f);
-	void AddNinepatchToRenderList(GameTexture* pSet, int iIndex, RECT* pDst, float fBarPct);
-	void AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale = 1.0f);
+	void Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void AddSpriteToRenderList(const GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
+	void AddSpriteToRenderList(const GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
+	void AddSpriteToRenderList(const GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);
+	void AddSpriteToRenderList(const GameTexturePortion* pTex, POINT topleft, DWORD color = 0xffffffff, float fZoom = 1.0f);
+	void AddNinepatchToRenderList(const GameTexture* pSet, int iIndex, RECT* pDst, float fBarPct);
+	void AddStringToRenderList(const GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale = 1.0f);
 	void AddSolidColorToRenderList(RECT* dst, DWORD color);
 	void AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB);
 	void ProcessRenderLists();

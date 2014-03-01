@@ -162,3 +162,4 @@ Autogen/
 Evilization/Debug/Evilization.exe
 Projects/StructParse/Debug/StructParse.exe
 Projects/Evilization/Debug/Evilization.exe
+*.wwdb

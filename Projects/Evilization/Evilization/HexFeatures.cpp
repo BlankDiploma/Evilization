@@ -3,6 +3,7 @@
 #include "GameState.h"
 #include "HexMap.h"
 #include "StringTag.h"
+#include "flexerrorwindow.h"
 
 int CHexCity::CountAvailableLabor()
 {
@@ -476,6 +477,10 @@ void CHexCity::RefreshAvailableProjectList()
 			pProj->loc.x = pProj->loc.y = -1;
 			pProj->progress = 0;
 			i++;
+		}
+		else
+		{
+			Errorf("Unknown build permission %s.", iter->first);
 		}
 
 		iter++;

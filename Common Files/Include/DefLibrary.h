@@ -14,11 +14,11 @@ struct IDirect3DTexture9;
 struct LuaScript;
 
 
-typedef stdext::hash_map<const wchar_t*, void*, stringHasher> DefHash;
+typedef stdext::hash_map<const wchar_t*, const void*, stringHasher> DefHash;
 
 struct DefStorage
 {
-	StructParseEntry* pParseTable;
+	const ParseTable* pParseTable;
 	DefHash htDefs;
 };
 
@@ -26,22 +26,26 @@ typedef stdext::hash_map<const wchar_t*, DefStorage*, stringHasher> DefTypeHash;
 
 struct PendingRef
 {
-	void** pReference;
+	const void** pReference;
 	TCHAR* pchName;
-	StructParseEntry* pParseTable;
+	const ParseTable* pParseTable;
+	const TCHAR* pParentObjName;
+	const TCHAR* pParentObjType;
 };
 
 struct PendingTexture
 {
 	void** pReference;
 	TCHAR* pchName;
+	const TCHAR* pParentObjName;
+	const TCHAR* pParentObjType;
 };
 
-typedef stdext::hash_map<void*, DefStorage*, pointerHasher> ParseTableHash;
+typedef stdext::hash_map<const ParseTable*, DefStorage*, pointerHasher> ParseTableHash;
 
-typedef stdext::hash_map<TCHAR*, ParseTable*, stringHasher> ParseTableNameHash;
-typedef stdext::hash_map<TCHAR*, const TCHAR*(*)[], stringHasher> PolyTableNameHash;
-typedef stdext::hash_map<ParseTable*, size_t, pointerHasher> ObjSizeHash;
+typedef stdext::hash_map<const TCHAR*, const ParseTable*, stringHasher> ParseTableNameHash;
+typedef stdext::hash_map<const TCHAR*, const TCHAR*(*)[], stringHasher> PolyTableNameHash;
+typedef stdext::hash_map<const ParseTable*, size_t, pointerHasher> ObjSizeHash;
 
 class DefLibrary
 {
@@ -53,22 +57,22 @@ class DefLibrary
 	vector<PendingRef*> vPendingRefs;
 	vector<PendingTexture*> vPendingTextures;
 	vector<LuaScript*> vPendingScripts;
-	size_t ObjectSizeInBytes(ParseTable* table);
+	size_t ObjectSizeInBytes(const ParseTable* table);
 
 
 
 public:
-	void* GetDef(const TCHAR* pchType, const TCHAR* pchDef);
-	void* GetDefUsingParseTable(void* pParseTable, const TCHAR* pchDef);
+	const void* GetDef(const TCHAR* pchType, const TCHAR* pchDef);
+	const void* GetDefUsingParseTable(const ParseTable* pParseTable, const TCHAR* pchDef);
 	bool LoadDefs(const TCHAR* pchDir, const TCHAR* pchFilename);
 	bool LoadDefsFromFileInternal(const TCHAR* pchFilename);
 	DefLibrary(void);
 	~DefLibrary(void);
 	bool SaveDefs(const TCHAR* pchStructName, const TCHAR* pchFilename);
-	bool WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, void* pCurObject, StructParseEntry* pEntry, int iIndent);
-	void AddPendingDefRef(void* pObj, StructParseEntry* pParseTableEntry);
-	void AddPendingTextureRef(void* pObj, StructParseEntry* pParseTableEntry);
-	void AddUncompiledLuaScript(void* pObj, StructParseEntry* pParseTableEntry);
+	bool WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, const void* pCurObject, const ParseTable* pEntry, int iIndent);
+	void AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType);
+	void AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType);
+	void AddUncompiledLuaScript(void* pObj, const StructParseEntry* pParseTableEntry);
 	void ResolvePendingRefs();
 	void ResolvePendingTextures();
 	void CompileScripts();

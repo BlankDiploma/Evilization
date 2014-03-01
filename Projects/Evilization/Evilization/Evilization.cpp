@@ -1110,6 +1110,93 @@ void DisableMapXWrap(lua_State *L, int disable)
 	g_DebugFlags.disableMapXWrap = disable;
 }
 
+int distCalc(POINT a, POINT b)
+{
+	//swap if necessary
+	if (a.y > b.y)
+	{
+		POINT temp = a;
+		a = b;
+		b = temp;
+	}
+	int y = b.y-a.y;
+	int halfY = y;
+	int x = b.x - a.x;
+	if (x > 128/2)
+		x = x-128;
+	else if (x < -128/2)
+		x = x+128;
+
+	//early out if horizontal line, this is required
+	if (a.y == b.y)
+		return x < 0 ? -x : x;
+
+	//if a is on an odd y-coordinate and halfY is odd, round up the division. Only if positive-x direction.
+	if (a.y & 1 && halfY & 1 && x > 0)
+		halfY++;
+	if (x < 0)
+	{
+		x = -x;
+		if (!(a.y & 1))
+			x--;
+	}
+	
+	halfY /= 2;
+	if (x < halfY)
+		return y;
+	
+	return y + (x-halfY);
+}
+
+void TestDistCalc(lua_State *L, int ax, int ay, int bx, int by)
+{
+	POINT a = {ax, ay};
+	POINT b = {bx, by};
+	TCHAR buf[5] = {0};
+	wsprintf(buf, L"%d", distCalc(a, b));
+	g_Console.AddConsoleString(buf);
+}
+
+void DistCalcUnitTest(lua_State *L)
+{
+	POINT points[] =	{{0,0},{1,0},	//1
+						{0,0},{2,0},	//2
+						{0,0},{127,0},	//1
+						{0,1},{1,0},	//1
+						{0,1},{2,0},	//2
+						{0,1},{127,0},	//2
+						{1,1},{2,2},	//1
+						{1,1},{1,0},	//1
+						{1,1},{3,2},	//2
+						{3,4},{0,2},	//4
+						{3,4},{7,6},	//5
+						{4,3},{127,0},	//7
+						{3,2},{127,2},	//4
+						{1,1},{0,3},	//2
+						{1,1},{0,4},	//3
+						{1,1},{127,5},	//4
+						{2,0},{127,3},	//4
+						{3,3},{127,1},	//5
+						{3,2},{127,1},	//4
+						{3,2},{0,1},	//3
+						{3,3},{0,1}		//4
+						};
+	int answers[] = {1,2,1,1,2,2,1,1,2,4,5,7,4,2,3,4,4,5,4,3,4};
+	TCHAR buf[64] = {0};
+	int i;
+	for (i = 0; i < (sizeof(answers)/sizeof(int)); i++)
+	{
+		int ans = distCalc(points[i*2], points[i*2+1]);
+		if (ans != answers[i])
+		{
+			wsprintf(buf, L"(%d,%d)->(%d,%d) = %d FAIL, should be %d", points[i*2].x, points[i*2].y, points[i*2+1].x, points[i*2+1].y, ans, answers[i]);
+			g_Console.AddConsoleString(buf);
+		}
+	}
+	wsprintf(buf, L"%d calculations performed.", i);
+	g_Console.AddConsoleString(buf);
+}
+
 void DoAllLuaBinds()
 {
 	luabind::module(g_LUA)
@@ -1169,6 +1256,8 @@ void DoAllLuaBinds()
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
+		luabind::def("Dist", &TestDistCalc),
+		luabind::def("DistUnitTest", &DistCalcUnitTest),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

@@ -607,7 +607,7 @@ void FlexRenderer::CommitRenderList()
 	}
 }
 
-void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
 
@@ -631,7 +631,7 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirec
 	D3DXMatrixMultiply(&pModel->matWorld, &pModel->matWorld, &matTrans);
 }
 
-void FlexRenderer::Add3DTexturePortionToRenderList(GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
 {
 	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
 	static int iNumTris = 2;
@@ -696,7 +696,7 @@ void FlexRenderer::AddGradientToRenderList(RECT* dst, DWORD colorA, DWORD colorB
 	eaPush(&pFutureRenderList->eaSpriteTextures, NULL);
 }
 
-void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, RECT* dst, RECT* pSrc, DWORD color)
+void FlexRenderer::AddSpriteToRenderList(const GameTexture* pTex, RECT* dst, RECT* pSrc, DWORD color)
 {
 	assert(pFutureRenderList->spritesUsed < RENDER_LIST_BUFFER_SIZE);
 	float width = (float)pTex->width;
@@ -732,7 +732,7 @@ void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, RECT* dst, RECT* pSr
 	eaPush(&pFutureRenderList->eaSpriteTextures, pTex->pD3DTex);
 }
 
-void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color)
+void FlexRenderer::AddSpriteToRenderList(const GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color)
 {
 	RECT rDst = {topleft.x, 
 		topleft.y, 
@@ -741,9 +741,9 @@ void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, POINT topleft, RECT*
 	AddSpriteToRenderList(pTex, &rDst, pSrc, color);
 }
 
-void FlexRenderer::AddSpriteToRenderList(GameTexturePortion* pPortion, POINT dst, DWORD color, float fZoom)
+void FlexRenderer::AddSpriteToRenderList(const GameTexturePortion* pPortion, POINT dst, DWORD color, float fZoom)
 {
-	GameTexture* pSrcTex = pPortion->hTex.pTex;
+	const GameTexture* pSrcTex = pPortion->hTex.pTex;
 	RECT rDst = {(LONG)(dst.x - pPortion->offset->x * fZoom),
 		(LONG)(dst.y - pPortion->offset->y * fZoom),
 		(LONG)(dst.x + ((pPortion->rSrc->right-pPortion->rSrc->left) - pPortion->offset->x) * fZoom),
@@ -751,7 +751,7 @@ void FlexRenderer::AddSpriteToRenderList(GameTexturePortion* pPortion, POINT dst
 	AddSpriteToRenderList(pSrcTex, &rDst, pPortion->rSrc, color);
 }
 
-void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color)
+void FlexRenderer::AddSpriteToRenderList(const GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color)
 {
 	RECT rDst = {x, 
 		y, 
@@ -760,7 +760,7 @@ void FlexRenderer::AddSpriteToRenderList(GameTexture* pTex, int x, int y, RECT* 
 	AddSpriteToRenderList(pTex, &rDst, pSrc, color);
 }
 
-void FlexRenderer::AddNinepatchToRenderList(GameTexture* pSet, int iIndex, RECT* pDst, float fBarPct)
+void FlexRenderer::AddNinepatchToRenderList(const GameTexture* pSet, int iIndex, RECT* pDst, float fBarPct)
 {
 	RECT temp;
 	RECT renderRect;
@@ -1074,7 +1074,7 @@ void FlexRenderer::QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVert
 	eaPush(&eaVertsToDestroy, pVerts);
 }
 
-void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale)
+void FlexRenderer::AddStringToRenderList(const GameTexture* pFontTex, const TCHAR* pString, float x, float y, D3DXCOLOR color, bool centered, int wrapWidth, bool bShadow, float fIconScale)
 {
 	if (!pFontTex || pFontTex->eType != kTextureType_Font)
 		return;
@@ -1114,7 +1114,7 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 					iter2++;
 				}
 				buf[i] = '\0';
-				GameTexturePortion* pTex = GET_DEF_FROM_STRING(GameTexturePortion, buf);
+				const GameTexturePortion* pTex = GET_DEF_FROM_STRING(GameTexturePortion, buf);
 				texturewidths += pTex->rSrc->right - pTex->rSrc->left;
 				temp -= (iter2-iter)+1;
 				iter = iter2;
@@ -1131,7 +1131,7 @@ void FlexRenderer::AddStringToRenderList(GameTexture* pFontTex, const TCHAR* pSt
 	{
 		for (unsigned int i = 0; i < wcslen(pString); i++)
 		{
-			GameTexturePortion* pTex = NULL;
+			const GameTexturePortion* pTex = NULL;
 			if (pString[i] == '|')
 			{
 				if (pString[i+1] == 'c')
@@ -1268,7 +1268,7 @@ void FlexRenderer::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y)
 	pCamera->CastRayThroughPixel(pOut, x, y, iScreenW, iScreenH);
 }
 
-void FlexRenderer::CreateTextureAtlasVertexBuffer(GameTexture* pSrcTexture, GameTexturePortion** eaPortions)
+void FlexRenderer::CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture, GameTexturePortion** eaPortions)
 {
 	int iNumEntries = eaSize(&eaPortions);
 	int numVerts = iNumEntries*4;

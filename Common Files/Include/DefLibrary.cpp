@@ -13,6 +13,7 @@
 #include "Autogen/AutoEnums.h"
 #include <luabind/luabind.hpp>
 #include "structparseluabind.h"
+#include "FlexErrorWindow.h"
 
 using namespace std;
 
@@ -59,7 +60,7 @@ DefHash::iterator DefLibrary::GetDefIteratorEnd(const TCHAR* pchType)
 	return pStorage->htDefs.end();
 }
 
-size_t DefLibrary::ObjectSizeInBytes(ParseTable* table)
+size_t DefLibrary::ObjectSizeInBytes(const ParseTable* table)
 {
 	ObjSizeHash::iterator hashIter;
 
@@ -72,15 +73,20 @@ size_t DefLibrary::ObjectSizeInBytes(ParseTable* table)
 	return 0;
 }
 
-void DoNewObjectPolish(ParseTable* pTable, void* pObj, const TCHAR* pchName)
+void DoNewObjectPolish(const ParseTable* pTable, void* pObj, const TCHAR* pchName, const TCHAR* pchFilename)
 {
-	int iTableLength = ParseTableLength(*pTable);
+	int iTableLength = ParseTableLength(pTable);
 	for(int i = 0; i < iTableLength; i++)
 	{
-		if ((*pTable)[i].eFlags & kStructFlag_AutoSelfName)
+		if (pTable->pEntries[i].eFlags & kStructFlag_AutoSelfName)
 		{
-			void* pOffset = ((char*)pObj) + (*pTable)[i].offset;
-			(*(TCHAR**)pOffset) = _wcsdup(pchName);
+			void* pOffset = ((char*)pObj) + pTable->pEntries[i].offset;
+			(*(const TCHAR**)pOffset) = pchName;
+		}
+		else if (pTable->pEntries[i].eFlags & kStructFlag_AutoFileName)
+		{
+			void* pOffset = ((char*)pObj) + pTable->pEntries[i].offset;
+			(*(TCHAR**)pOffset) = _wcsdup(pchFilename);
 		}
 	}
 }
@@ -92,13 +98,22 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 	{
 		FILE* input = NULL;
 		_wfopen_s(&input, pchFilename, L"r");
+		
+		if (!input)
+		{
+			ErrorFilenamef("Failed to open def file %s for parsing.", pchFilename, pchFilename);
+			return false;
+		}
+
 		char* buf = new char[INPUT_BUFFER_LEN+1];
 		TCHAR widebuf[512];
 		const char* pchToken = NULL;
-		TCHAR* pchObjParseTableName = NULL;
 		DefStorage* pStorage;
-		stack<ParseTable*> sParseTableStack;
+
+		stack<const ParseTable*> sParseTableStack;
 		stack<void*> sObjStack;
+		stack<TCHAR*> sObjNameStack;
+
 		int iCurObjSize;
 		int iStructParam = 0;
 		DefTypeHash::iterator hashIter;
@@ -108,7 +123,16 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 		bool bExpectOpeningBrace = false;
 
 		int numRead = fread(buf, sizeof(char), INPUT_BUFFER_LEN, input);
-		assert(numRead);
+		
+		if (numRead == INPUT_BUFFER_LEN)
+		{
+			ErrorFilenamef("Def file %s exceeds 5mb in size.", pchFilename, pchFilename);
+			
+			delete [] buf;
+			fclose(input);
+			return false;
+		}
+
 		buf[numRead] = '\0';
 		RemoveComments(buf);
 
@@ -131,6 +155,14 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 				}
 				else if (pchToken[0] == '{')
 				{
+					if (!bExpectOpeningBrace || sParseTableStack.empty())
+					{
+						ErrorFilenamef("Unexpected opening brace in def file %s.", pchFilename, pchFilename);
+						
+						delete [] buf;
+						fclose(input);
+						return false;
+					}
 					pchToken = strtok_s(NULL, " 	", &pchNextToken);
 					bExpectOpeningBrace = false;
 					continue;
@@ -139,13 +171,24 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 				{
 					sParseTableStack.pop();
 					sObjStack.pop();
+					sObjNameStack.pop();
 					bExpectOpeningBrace = false;
 					continue;
 				}
 				else if (pchToken[0] == L'}')
 				{
+					
+					if (sParseTableStack.empty())
+					{
+						ErrorFilenamef("Unexpected closing brace in def file %s.", pchFilename, pchFilename);
+						
+						delete [] buf;
+						fclose(input);
+						return false;
+					}
 					sParseTableStack.pop();
 					sObjStack.pop();
+					sObjNameStack.pop();
 					//finished parsing an object.
 					pchToken = strtok_s(NULL, " 	", &pchNextToken);
 					bExpectOpeningBrace = false;
@@ -157,10 +200,8 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 				//if we encounter the name of a parse table, push it onto the stack and go to the next token.
 				if (hashIterParseName != htNameToParseTableHash.end())
 				{
-					ParseTable* pTable = hashIterParseName->second ? hashIterParseName->second : NULL;
+					const ParseTable* pTable = hashIterParseName->second ? hashIterParseName->second : NULL;
 					sParseTableStack.push(pTable);
-
-					pchObjParseTableName = _wcsdup(widebuf);
 
 					hashIter = htDefTypesToDefs.find(widebuf);
 					if(hashIter != htDefTypesToDefs.end())
@@ -170,7 +211,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 					else
 					{
 						pStorage = new DefStorage;
-						pStorage->pParseTable = *pTable;
+						pStorage->pParseTable = pTable;
 						htDefTypesToDefs[_wcsdup(widebuf)] = pStorage;
 					}
 		
@@ -182,9 +223,13 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 					pchToken = strtok_s(NULL, " 	", &pchNextToken);
 					swprintf_s(widebuf, L"%S", pchToken);
 				}
-				ParseTable* pCurTable = sParseTableStack.top();
-				StructParseEntry* pEntry = ParseTableFind(*pCurTable, widebuf);
-
+				if (sParseTableStack.empty())
+				{
+					ErrorFilenamef("Unexpected token %s found outside of any struct in def file %s.", pchFilename, widebuf, pchFilename);
+					continue;
+				}
+				const ParseTable* pCurTable = sParseTableStack.top();
+				const StructParseEntry* pEntry = ParseTableFind(pCurTable, widebuf);
 				if (sObjStack.empty() || pEntry && pEntry->eType == kStruct_SubStruct)
 				{
 					//first line of an object - parse name and structparams
@@ -201,7 +246,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 						hashIterParseName = htNameToParseTableHash.find(polynameBuf);
 						if (hashIterParseName != htNameToParseTableHash.end())
 						{
-							ParseTable* pTable = hashIterParseName->second;
+							const ParseTable* pTable = hashIterParseName->second;
 							//we have a parsetable name, check if it's a valid polytype of our base
 							hashIterPolyName = htNameToPolyTableHash.find(polynameBuf);
 							if(hashIterPolyName != htNameToPolyTableHash.end())
@@ -225,7 +270,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 							}
 						}
 						else
-							sParseTableStack.push((ParseTable*)pEntry->pSubTable);
+							sParseTableStack.push((const ParseTable*)pEntry->pSubTable);
 						pCurTable = sParseTableStack.top();
 					}
 
@@ -233,6 +278,7 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 					int iNextInlineParam = 0;
 					void* pObj = operator new (iCurObjSize);
 					memset(pObj, 0, iCurObjSize);
+					TCHAR* pchObjName = _wcsdup(widebuf);
 
 					//Add pObj to parent
 					if (!sObjStack.empty())
@@ -248,59 +294,67 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 					}
 
 					sObjStack.push(pObj);
+					sObjNameStack.push(pchObjName);
 
 					if (sObjStack.size() == 1)
 					{
 						const TCHAR* (*polynames)[] = NULL;
-						hashIterPolyName = htNameToPolyTableHash.find(pchObjParseTableName);
+						hashIterPolyName = htNameToPolyTableHash.find(pCurTable->pchName);
 						if(hashIterPolyName != htNameToPolyTableHash.end())
 						{
 							polynames = hashIterPolyName->second;
 						}
 						const TCHAR** pchPolyName = (*polynames);
+						/**
+							Here's where new objects get added and initialized. Stop forgetting, fuckface.
+						**/
 						while((*pchPolyName))
 						{
 							hashIter = htDefTypesToDefs.find(*pchPolyName);
 							if(hashIter != htDefTypesToDefs.end())
 							{
 								DefStorage* pPolyStorage = hashIter->second;
-								pPolyStorage->htDefs[_wcsdup(widebuf)] = sObjStack.top();
+								pPolyStorage->htDefs[pchObjName] = sObjStack.top();
 							}
 							pchPolyName++;
 						}
-						DoNewObjectPolish(pCurTable, sObjStack.top(), widebuf);
-						free(pchObjParseTableName);
+						DoNewObjectPolish(pCurTable, sObjStack.top(), pchObjName, pchFilename);
 					}
 
 					while (pchStructParam && pchStructParam[0])
 					{
 						int i;
 						bool bFound = false;
-						int iTableLength = ParseTableLength(*pCurTable);
+						int iTableLength = ParseTableLength(pCurTable);
 						for(i = iNextInlineParam; i < iTableLength; i++)
 						{
-							if ((*pCurTable)[i].eFlags & kStructFlag_Inline)
+							if (pCurTable->pEntries[i].eFlags & kStructFlag_Inline)
 							{
 								iNextInlineParam = i+1;
 								bFound = true;
 								break;
 							}
 						}
-						assert(bFound);//too many structparams
-						ReadParseTableValue(sObjStack.top(), (*pCurTable) + i, pchStructParam);
+						if (!bFound)
+						{
+							ErrorFilenamef("Unknown structparam %s in parse table %s", pchFilename, pchStructParam, pCurTable->pchName);
+							continue;
+						}
+						ReadParseTableValue(sObjStack.top(), &pCurTable->pEntries[i], pchStructParam, pchFilename);
 						
-						if (((*pCurTable)+i)->eType == kStruct_DefRef)
-							AddPendingDefRef(sObjStack.top(), (*pCurTable)+i);
-						else if (((*pCurTable)+i)->eType == kStruct_TextureRef)
-							AddPendingTextureRef(sObjStack.top(), (*pCurTable)+i);
-						else if (pEntry->eType == kStruct_NinepatchRef)
-							AddPendingTextureRef(sObjStack.top(), (*pCurTable)+i);
-						else if (pEntry->eType == kStruct_LuaScript)
-							AddUncompiledLuaScript(sObjStack.top(), pEntry);
+						if (pCurTable->pEntries[i].eType == kStruct_DefRef)
+							AddPendingDefRef(sObjStack.top(), &pCurTable->pEntries[i], pchObjName, pCurTable->pchName);
+						else if (pCurTable->pEntries[i].eType == kStruct_TextureRef)
+							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName);
+						else if (pCurTable->pEntries[i].eType == kStruct_NinepatchRef)
+							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName);
+						else if (pCurTable->pEntries[i].eType == kStruct_LuaScript)
+							AddUncompiledLuaScript(sObjStack.top(), &pCurTable->pEntries[i]);
 						
 						iStructParam++;
 						pchStructParam = strtok_s(NULL, " 	", &pchNextToken);
 					}
+
 					bExpectOpeningBrace = true;
 
 					//go to next token
@@ -308,15 +362,21 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 				}
 				else
 				{
+					if (!pEntry)
+					{
+						ErrorFilenamef("Unknown token %s in parse table %s", pchFilename, widebuf, pCurTable->pchName);
+						continue;
+					}
+
 					//hand the whole rest of the line off to be parsed, this should always consume all remaining tokens
-					ReadParseTableValue(sObjStack.top(), pEntry, pchNextToken);
+					ReadParseTableValue(sObjStack.top(), pEntry, pchNextToken, pchFilename);
 					
 					if (pEntry->eType == kStruct_DefRef)
-						AddPendingDefRef(sObjStack.top(), pEntry);
+						AddPendingDefRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
 					else if (pEntry->eType == kStruct_TextureRef)
-						AddPendingTextureRef(sObjStack.top(), pEntry);
+						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
 					else if (pEntry->eType == kStruct_NinepatchRef)
-						AddPendingTextureRef(sObjStack.top(), pEntry);
+						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
 					else if (pEntry->eType == kStruct_LuaScript)
 						AddUncompiledLuaScript(sObjStack.top(), pEntry);
 					pchToken = NULL;
@@ -336,11 +396,12 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 	return false;
 }
 
-bool DefLibrary::WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, void* pCurObject, StructParseEntry* pEntry, int iIndent)
+bool DefLibrary::WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, const void* pCurObject, const ParseTable* pTable, int iIndent)
 {
 	bool bLastWasInline = true;
 	TCHAR indentBuffer[16];
 	int i;
+	const StructParseEntry* pEntry = pTable->pEntries;
 	for (i = 0; i < iIndent; i++) 
 		indentBuffer[i] = '	';
 	indentBuffer[i] = '\0';
@@ -400,7 +461,7 @@ bool DefLibrary::WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, v
 			case kStruct_SubStruct:
 				{
 					pAdjustedOffset = ADJUST_OFFSET(pOffset, intptr_t);
-					WriteDefToFileInternal(file, pEntry->pchName, *(int**)(pAdjustedOffset), (StructParseEntry*)pEntry->pSubTable, iIndent+1);
+					WriteDefToFileInternal(file, pEntry->pchName, *(int**)(pAdjustedOffset), (const ParseTable*)pEntry->pSubTable, iIndent+1);
 					//unimplemented
 				}break;
 			case kStruct_DefRef:
@@ -487,7 +548,7 @@ bool DefLibrary::LoadDefs(const TCHAR* pchDir, const TCHAR* pchFilename)
 	return true;
 }
 
-void* DefLibrary::GetDef(const TCHAR* pchType, const TCHAR* pchDef)
+const void* DefLibrary::GetDef(const TCHAR* pchType, const TCHAR* pchDef)
 {
 	
 	DefTypeHash::iterator hashIter;
@@ -511,11 +572,12 @@ void* DefLibrary::GetDef(const TCHAR* pchType, const TCHAR* pchDef)
 			return defHashIter->second;
 		}
 	}
+
 	return NULL;
 }
 
 
-void* DefLibrary::GetDefUsingParseTable(void* pParseTable, const TCHAR* pchDef)
+const void* DefLibrary::GetDefUsingParseTable(const ParseTable* pParseTable, const TCHAR* pchDef)
 {
 	ParseTableHash::iterator hashIter;
 	DefHash::iterator defHashIter;
@@ -542,24 +604,28 @@ DefLibrary::~DefLibrary(void)
 {
 }
 
-void DefLibrary::AddPendingDefRef(void* pObj, StructParseEntry* pParseTableEntry)
+void DefLibrary::AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType)
 {
 	PendingRef* pPending = new PendingRef;
 	pPending->pchName = *(TCHAR**)((char*)pObj + pParseTableEntry->offset);
-	pPending->pParseTable = (StructParseEntry*)pParseTableEntry->pSubTable;
-	pPending->pReference = (void**)((char*)pObj + pParseTableEntry->offset + sizeof(TCHAR*));
+	pPending->pParseTable = (const ParseTable*)pParseTableEntry->pSubTable;
+	pPending->pReference = (const void**)((char*)pObj + pParseTableEntry->offset + sizeof(TCHAR*));
+	pPending->pParentObjName = pchObjName;
+	pPending->pParentObjType = pchObjType;
 	vPendingRefs.push_back(pPending);
 }
 
-void DefLibrary::AddPendingTextureRef(void* pObj, StructParseEntry* pParseTableEntry)
+void DefLibrary::AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType)
 {
 	PendingTexture* pPending = new PendingTexture;
 	pPending->pchName = *(TCHAR**)((char*)pObj + pParseTableEntry->offset);
 	pPending->pReference = (void**)((char*)pObj + pParseTableEntry->offset + sizeof(TCHAR*));
+	pPending->pParentObjName = pchObjName;
+	pPending->pParentObjType = pchObjType;
 	vPendingTextures.push_back(pPending);
 }
 
-void DefLibrary::AddUncompiledLuaScript(void* pObj, StructParseEntry* pParseTableEntry)
+void DefLibrary::AddUncompiledLuaScript(void* pObj, const StructParseEntry* pParseTableEntry)
 {
 //	PendingScript* pScript = new PendingScript;
 //	pScript->pPlaintext = (char**)((char*)pObj + pParseTableEntry->offset);
@@ -575,7 +641,12 @@ void DefLibrary::ResolvePendingRefs()
 	while (!vPendingRefs.empty())
 	{
 		PendingRef* pPending = vPendingRefs.back();
-		(*pPending->pReference) = GetDefUsingParseTable(pPending->pParseTable, pPending->pchName);
+		const void* pDef = GetDefUsingParseTable(pPending->pParseTable, pPending->pchName);
+		if (!pDef)
+		{
+			Errorf("Bad ref to %s \"%s\" found while loading %s \"%s\".", pPending->pParseTable->pchName, pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
+		}
+		(*pPending->pReference) = pDef;
 		delete pPending;
 		vPendingRefs.pop_back();
 	}
@@ -587,7 +658,12 @@ void DefLibrary::ResolvePendingTextures()
 	while (!vPendingTextures.empty())
 	{
 		PendingTexture* pPending = vPendingTextures.back();
-		(*pPending->pReference) = g_TextureLibrary.GetTexture(pPending->pchName);
+		GameTexture* pTex = g_TextureLibrary.GetTexture(pPending->pchName);
+		if (!pTex)
+		{
+			Errorf("Bad ref to texture \"%s\" found while loading %s \"%s\".", pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
+		}
+		(*pPending->pReference) = pTex;
 		delete pPending;
 		vPendingTextures.pop_back();
 	}
@@ -599,22 +675,20 @@ void DefLibrary::CompileScripts()
 	while (!vPendingScripts.empty())
 	{
 		LuaScript* pPending = vPendingScripts.back();
-		int itop;
-//		lua_writer_data data;
-//		(*pPending->pBytecode) = NULL;
-//		(*pPending->piSize) = 0;
-//		data.buf = pPending->pBytecode;
-//		data.len = pPending->piSize;
-		itop = lua_gettop(g_LUA);
-		luaL_loadbuffer(g_LUA, pPending->pchPlaintext, strlen(pPending->pchPlaintext), NULL);
-		itop = lua_gettop(g_LUA);
+		int error = luaL_loadbuffer(g_LUA, pPending->pchPlaintext, strlen(pPending->pchPlaintext), NULL);
+		if (error)
+		{
+			const char* error = lua_tostring(g_LUA, -1);
+			Errorf("Lua compile error: %S", error);
+			lua_pop(g_LUA, 1);  /* pop error message from the stack */
+		  
+			pPending->func = NULL;
+			vPendingScripts.pop_back();
+			continue;
+		}
 		luabind::object* TheChunk = new luabind::object(luabind::from_stack(g_LUA, -1));
-		itop = lua_gettop(g_LUA);
-		luabind::type(*TheChunk);
 		pPending->func = TheChunk;
-//		lua_dump(g_LUA, tactics_lua_writer, &data);
 		lua_pop(g_LUA, 1);
-		itop = lua_gettop(g_LUA);
 
 //		delete pPending;
 		vPendingScripts.pop_back();
@@ -638,6 +712,7 @@ int DefLibrary::GetNumDefs(const TCHAR* pchType)
 	{
 		return pStorage->htDefs.size();
 	}
+	Errorf("Unrecognized type \"%s\" passed to GetNumDefs()", pchType);
 	return NULL;
 }
 

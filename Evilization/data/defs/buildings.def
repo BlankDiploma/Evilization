@@ -93,7 +93,7 @@ hexBuildingDef watchtower
 	eFlags BuildOnLand
 }
 
-hexBuildingDef Workshop
+hexBuildingDef workshop
 {
 	cost 50
 	eType Upgrade
