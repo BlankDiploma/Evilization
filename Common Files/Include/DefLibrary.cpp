@@ -573,8 +573,6 @@ const void* DefLibrary::GetDef(const TCHAR* pchType, const TCHAR* pchDef)
 		}
 	}
 
-	Errorf("Unknown def %s of type %s", pchDef, pchType);
-
 	return NULL;
 }
 
