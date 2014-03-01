@@ -8,6 +8,7 @@ using namespace std;
 struct IDirect3DTexture9;
 struct ninepatchSet;
 struct GameTexture;
+struct ParseTable;
 
 #pragma once
 
@@ -20,15 +21,15 @@ struct GameTexture;
 
 #define COLOR_ARGB unsigned long
 
-#define PARSE_CLASS(a) ParseTable parse_##a; class a
-#define PARSE_STRUCT(a) ParseTable parse_##a; struct a
+#define PARSE_CLASS(a) extern const ParseTable parse_##a; class a
+#define PARSE_STRUCT(a) extern const ParseTable parse_##a; struct a
 #define AUTO_ENUM(a) enum a
  
 #define TYPENAME(a) _T(#a)
 
-#define DEF_REF(a) struct {const TCHAR* pchName; void* pObj;}
-#define TEXTURE_REF struct {const TCHAR* pchName; GameTexture* pTex;}
-#define NINEPATCH_REF struct {const TCHAR* pchName; ninepatchSet* pSet;}
+#define DEF_REF(a) struct {const TCHAR* pchName; const void* pObj;}
+#define TEXTURE_REF struct {const TCHAR* pchName; const GameTexture* pTex;}
+#define NINEPATCH_REF struct {const TCHAR* pchName; const ninepatchSet* pSet;}
 
 #define PARSE(s, m, b, c, d, e) {_T(b), c, parse_##d, e, offsetof(s, m)}
 #define PARSE_END {NULL, kStruct_Int, NULL, 0, 0}
@@ -46,7 +47,12 @@ enum StructParseEntryFlags {kStructFlag_None = 0, kStructFlag_EArray = 0x1, kStr
 
 struct StructParseEntry;
 
-typedef StructParseEntry ParseTable[];
+struct ParseTable
+{
+	const TCHAR* pchName;
+	int iLength;
+	const StructParseEntry* pEntries;
+};
 
 typedef unsigned int U32;
 typedef int S32;
@@ -56,7 +62,7 @@ struct StructParseEntry
 {
 	const TCHAR* pchName;
 	const StructParseEntryType eType;
-	void* pSubTable;
+	const void* pSubTable;
 	const U32 eFlags;
 	const U32 offset;
 };
@@ -69,10 +75,10 @@ struct StructParseEntry_ForOutput
 	U32 eFlags;
 };
 
-int ParseTableLength(ParseTable pTable);
-int ParseTableSizeInBytes(ParseTable pTable);
-StructParseEntry* ParseTableFind(ParseTable pTable, const TCHAR* pchName);
-bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char* pchTokens);
+int ParseTableLength(const ParseTable* pTable);
+int ParseTableSizeInBytes(const ParseTable* pTable);
+const StructParseEntry* ParseTableFind(const ParseTable* pTable, const TCHAR* pchName);
+bool ReadParseTableValue(void* pCurObject, const StructParseEntry* pEntry, const char* pchTokens, const TCHAR* pchFilename);
 bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntries);
 
 #define INPUT_BUFFER_LEN (1024*1024*5)  //5mb ought to be enough for anybody
@@ -168,5 +174,5 @@ inline char* GetNextTrimmedLine(char** buffer)
 
 //parse tables for windows structs
 
-extern StructParseEntry parse_RECT[];
-extern StructParseEntry parse_POINT[];
+extern const ParseTable parse_RECT;
+extern const ParseTable parse_POINT;

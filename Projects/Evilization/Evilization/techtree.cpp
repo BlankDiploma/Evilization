@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "techtree.h"
 #include "deflibrary.h"
-
+#include "flexerrorwindow.h"
 
 techTreeDef* g_pGoodTechTree;
 techTreeDef* g_pEvilTechTree;
@@ -11,6 +11,11 @@ __forceinline bool NodeStartsNewEra(techTreeNodeDef* pNode)
 	for (int i = 0; i < eaSize(&pNode->eaRequiredNames); i++)
 	{
 		techTreeNodeDef* pReq = GET_DEF_FROM_STRING(techTreeNodeDef, pNode->eaRequiredNames[i]);
+		if (!pReq)
+		{
+			ErrorAutoStructf("Techtreenodedef %s refers to unknown requirement %s.", pNode, pNode->name, pNode->eaRequiredNames[i]);
+			return false;
+		}
 		if (GET_REF(techEraDef, pReq->hEraDef)->index >= GET_REF(techEraDef, pNode->hEraDef)->index)
 			return false;
 	}
@@ -67,6 +72,11 @@ bool NodeReadyForPlacement(techTreeNodeDef* pNode)
 	for (int j = 0; j < eaSize(&pNode->eaRequiredNames); j++)
 	{
 		techTreeNodeDef* pReq = GET_DEF_FROM_STRING(techTreeNodeDef, pNode->eaRequiredNames[j]);
+		if (!pReq)
+		{
+			ErrorAutoStructf("Techtreenodedef %s refers to unknown requirement %s.", pNode, pNode->name, pNode->eaRequiredNames[j]);
+			return false;
+		}
 		if (pReq->layoutPt.x == -1)
 			return false;
 	}
@@ -138,11 +148,14 @@ void AssignGridPositions(techTreeDef* pTree)
 		}
 		iCurGridX++;
 
+		int prevent_hang = 0;
+
 		//place all middle nodes
 		while (eaSize(peaNodes) > 0)
 		{
 			for (int iNode = 0; iNode < eaSize(peaNodes); iNode++)
 			{
+				prevent_hang++;
 				//place everything that can go in this column
 				if (NodeReadyForPlacement((*peaNodes)[iNode]))
 				{
@@ -160,6 +173,11 @@ void AssignGridPositions(techTreeDef* pTree)
 					iNode--;
 				}
 				iMaxEraX = max(iMaxEraX, iCurGridX);
+			}
+			if (prevent_hang > 1000)
+			{
+				ErrorAutoStructf("Some nodes in tech tree %s could not be placed.", pTree, pTree->name);
+				break;
 			}
 		}
 		iCurGridX = iMaxEraX+1;

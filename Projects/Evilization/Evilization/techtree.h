@@ -32,6 +32,7 @@ PARSE_STRUCT(techTreeNodeDef)
 	PARSE_IGNORE POINT layoutPt;
 
 	const TCHAR* name;
+	const TCHAR* filename;
 };
 
 PARSE_STRUCT(techTreeDef)
@@ -39,6 +40,8 @@ PARSE_STRUCT(techTreeDef)
 	const TCHAR** eaNames;
 	techTreeNodeDef** eaNodes;
 	const TCHAR** eaDefaultGrants;
+	const TCHAR* name;
+	const TCHAR* filename;
 };
 
 void AssignGridPositions(techTreeDef* pTree);

@@ -61,6 +61,8 @@ PARSE_STRUCT(UIBoxDef)
 	UIInlineChildDef** eaInlineChildren;
 	UIBoxType eType;
 	LuaScript dragFunc;
+	const TCHAR* name;
+	const TCHAR* filename;
 };
 
 PARSE_STRUCT(UILayoutDef) : public UIBoxDef

@@ -128,7 +128,7 @@ ParsedEnum* ParseEnum(char* line, char** buf)
 
 void WriteParseTableToFiles(ParsedStruct* pStruct, FILE* pOutputCpp, FILE* pOutputH)
 {
-	fprintf(pOutputCpp, "StructParseEntry parse_%s[] = {\n", pStruct->name.c_str());
+	fprintf(pOutputCpp, "const StructParseEntry parse_entries_%s[] = {\n", pStruct->name.c_str());
 	for (int i = 0; i < eaSize(&pStruct->pParseTable); i++)
 	{
 		StructParseEntry_ForOutput* pEntry = pStruct->pParseTable[i];
@@ -137,12 +137,13 @@ void WriteParseTableToFiles(ParsedStruct* pStruct, FILE* pOutputCpp, FILE* pOutp
 			if(pEntry->eType == kStruct_Enum)
 				fprintf(pOutputCpp, "{_T(\"%s\"), (StructParseEntryType)%d, &ht%s, %d, offsetof(%s, %s)},\n", pEntry->name.c_str(), pEntry->eType, pEntry->subtableName.c_str(), pEntry->eFlags, pStruct->name.c_str(), pEntry->name.c_str());
 			else
-				fprintf(pOutputCpp, "{_T(\"%s\"), (StructParseEntryType)%d, parse_%s, %d, offsetof(%s, %s)},\n", pEntry->name.c_str(), pEntry->eType, pEntry->subtableName.c_str(), pEntry->eFlags, pStruct->name.c_str(), pEntry->name.c_str());
+				fprintf(pOutputCpp, "{_T(\"%s\"), (StructParseEntryType)%d, &parse_%s, %d, offsetof(%s, %s)},\n", pEntry->name.c_str(), pEntry->eType, pEntry->subtableName.c_str(), pEntry->eFlags, pStruct->name.c_str(), pEntry->name.c_str());
 		}
 		else
 			fprintf(pOutputCpp, "{_T(\"%s\"), (StructParseEntryType)%d, NULL, %d, offsetof(%s, %s)},\n", pEntry->name.c_str(), pEntry->eType, pEntry->eFlags, pStruct->name.c_str(), pEntry->name.c_str());
 	}
-	fprintf(pOutputCpp, "{NULL, kStruct_Int, NULL, 0, 0}\n};\n");
+	fprintf(pOutputCpp, "{NULL, kStruct_Int, NULL, 0, 0}};\n");
+	fprintf(pOutputCpp, "const ParseTable parse_%s = {L\"%s\", %d, parse_entries_%s};\n\n", pStruct->name.c_str(), pStruct->name.c_str(), eaSize(&pStruct->pParseTable), pStruct->name.c_str());
 	fprintf(pOutputCpp, "const TCHAR* polyNames_%s[] = {L\"%s\"", pStruct->name.c_str(), pStruct->name.c_str());
 	for (int i = 0; i < eaSize(&pStruct->eaPolyNames); i++)
 	{
@@ -151,7 +152,7 @@ void WriteParseTableToFiles(ParsedStruct* pStruct, FILE* pOutputCpp, FILE* pOutp
 	}
 	fprintf(pOutputCpp, ", NULL};\n\n");
 	
-	fprintf(pOutputH, "extern StructParseEntry parse_%s[];\n", pStruct->name.c_str());
+	fprintf(pOutputH, "extern const ParseTable parse_%s;\n", pStruct->name.c_str());
 	fprintf(pOutputH, "extern const TCHAR* polyNames_%s[];\n", pStruct->name.c_str());
 }
 

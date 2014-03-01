@@ -7,45 +7,34 @@
 #include "StructParseEnum.h"
 #include "FlexErrorWindow.h"
 
-int ParseTableLength(ParseTable pTable)
+int ParseTableLength(const ParseTable* pTable)
 {
-	int i = 0;
-	while ((pTable++)->pchName)
-	{
-		i++;
-		if (i > 256)
-		{
-			Errorf("A parse table doesn't appear to have a null terminator.");
-			return 0;
-		}
-	}
-	return i;
+	return pTable->iLength;
 }
 
-int ParseTableSizeInBytes(ParseTable pTable)
+int ParseTableSizeInBytes(const ParseTable* pTable)
 {
 	int size = 0;
 	int iTableLength = ParseTableLength(pTable);
 	for (int i = 0; i < iTableLength; i++)
 	{
-		if (pTable[i].pchName)
-			size += StructParseEntryTypeSize[pTable[i].eType];
+		if (pTable->pEntries[i].pchName)
+			size += StructParseEntryTypeSize[pTable->pEntries[i].eType];
 
 	}
 	return size;
 }
 
-StructParseEntry* ParseTableFind(ParseTable pTable, const TCHAR* pchName)
+const StructParseEntry* ParseTableFind(const ParseTable* pTable, const TCHAR* pchName)
 {
 	int iSize = ParseTableLength(pTable);
 	for (int i = 0; i < iSize; i++)
 	{
-		if (_wcsicmp(pTable[i].pchName, pchName) == 0)
+		if (_wcsicmp(pTable->pEntries[i].pchName, pchName) == 0)
 		{
-			return pTable + i;
+			return &pTable->pEntries[i];
 		}
 	}
-	Errorf("Parse table '%s' doesn't exist!", pchName);
 	return NULL;
 }
 /*
@@ -197,7 +186,111 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const TCHAR
 }
 */
 
-bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char* pchTokens)
+bool VerifyStructParseToken(const StructParseEntry* pEntry, const TCHAR* pchTokens, const TCHAR* pchFilename)
+{
+	//TODO: Add additional validation/errors.
+	//trim leading whitespace
+	while (IS_WHITESPACE(pchTokens[0]))
+	{
+		pchTokens++;
+	}
+	switch (pEntry->eType)
+	{
+	case kStruct_Int:
+		{
+			for (const TCHAR* iter = pchTokens; *iter && !IS_WHITESPACE(*iter); iter++)
+			{
+				if ((*iter < '0' || *iter > '9') && !(iter == pchTokens && *iter == '-'))
+				{
+					ErrorFilenamef("Expected integer value, found %s.", pchFilename, pchTokens);
+					return false;
+				}
+			}
+		}break;
+	case kStruct_Enum:
+		{
+			if (!AutoEnumStringToInt((StringIntHash*)pEntry->pSubTable, pchTokens, NULL))
+			{
+				ErrorFilenamef("Expected enum value, found %s.", pchFilename, pchTokens);
+				return false;
+			}
+		}break;
+	case kStruct_Boolean:
+		{
+			if (_wcsnicmp(pchTokens, L"true", 4) != 0 && _wtoi(pchTokens) == 0 &&
+				_wcsnicmp(pchTokens, L"false", 5) != 0 && pchTokens[0] != '0')
+			{
+				ErrorFilenamef("Expected boolean value, found %s.", pchFilename, pchTokens);
+				return false;
+			}
+		}break;
+	case kStruct_Float:
+		{
+			bool bFoundPeriod = false;
+			for (const TCHAR* iter = pchTokens; *iter && !IS_WHITESPACE(*iter); iter++)
+			{
+				if ((*iter < '0' || *iter > '9') && !(iter == pchTokens && *iter == '-'))
+				{
+					if (*iter == '.' && !bFoundPeriod)
+					{
+						bFoundPeriod = true;
+						continue;
+					}
+					ErrorFilenamef("Expected float value, found %s.", pchFilename, pchTokens);
+					return false;
+				}
+			}
+		}break;
+	case kStruct_Color:
+		{
+			for (const TCHAR* iter = pchTokens; *iter && !IS_WHITESPACE(*iter); iter++)
+			{
+				if (*iter < '0' || *iter > '9')
+				{
+					ErrorFilenamef("Expected integer between 0 and 255, found %s.", pchFilename, pchTokens);
+					return false;
+				}
+			}
+			if (_wtoi(pchTokens) > 255)
+			{
+				ErrorFilenamef("Expected integer between 0 and 255, found %s.", pchFilename, pchTokens);
+				return false;
+			}
+		}break;
+	case kStruct_NinepatchRef:
+	case kStruct_TextureRef:
+	case kStruct_DefRef:
+	case kStruct_String:
+		{
+			int iQuotes = 0;
+			for (const TCHAR* iter = pchTokens; *iter && *iter != '\n'; iter++)
+			{
+				if (*iter == '\"')
+					iQuotes++;
+			}
+			if (iQuotes & 1)
+			{
+				ErrorFilenamef("Double quotes must be matching, found %s.", pchFilename, pchTokens);
+				return false;
+			}
+		}break;
+	case kStruct_LuaScript:
+		{
+			if (pchTokens[0] == '<' && pchTokens[1] == '&')
+			{
+				const TCHAR* endquote = wcsstr(pchTokens, L"&>");
+				if (!endquote)
+				{
+					ErrorFilenamef("<& &> Super-quotes must be matching, found %s.", pchFilename, pchTokens);
+					return false;
+				} 
+			}
+		}break;
+	}
+	return true;
+}
+
+bool ReadParseTableValue(void* pCurObject, const StructParseEntry* pEntry, const char* pchTokens, const TCHAR* pchFilename)
 {
 	void* pOffset = ((char*)pCurObject) + pEntry->offset;
 	void* pAdjustedOffset;
@@ -208,11 +301,20 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 	int iArraySize = 1;
 	int iCur = 0;
 	
+	if (strlen(pchTokens) >= 511)
+	{
+		Errorf("Failed to parse struct member %s: Static buffer size exceeded.", pEntry->pchName);
+		return false;
+	}
+
+
 	//trim leading whitespace
 	while (IS_WHITESPACE(pchTokens[0]))
 	{
 		pchTokens++;
 	}
+
+	
 
 	if (pEntry->eFlags & kStructFlag_EArray)
 	{
@@ -257,6 +359,11 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 
 	while (pchTokens)
 	{
+		swprintf_s(widebuf, L"%S", pchTokens);
+
+		if (!VerifyStructParseToken(pEntry, widebuf, pchFilename))
+			return false;
+
 		switch (pEntry->eType)
 		{
 		case kStruct_Int:
@@ -267,8 +374,9 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 		case kStruct_Enum:
 			{
 				pAdjustedOffset = ADJUST_OFFSET(pOffset, int);
-				swprintf_s(widebuf, L"%S", pchTokens);
-				*(int*)pAdjustedOffset |= AutoEnumStringToInt((StringIntHash*)pEntry->pSubTable, widebuf);
+				int val = 0;
+				if (AutoEnumStringToInt((StringIntHash*)pEntry->pSubTable, widebuf, &val))
+					*(int*)pAdjustedOffset |= val;
 			}break;
 		case kStruct_Boolean:
 			{
@@ -303,13 +411,11 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 					int iLen = strlen(pchTokens)-2;
 					char temp = pchTokens[iLen+1];
 					(*(TCHAR**)pAdjustedOffset) = (TCHAR*)malloc(sizeof(TCHAR) * (iLen+1));
-					swprintf_s(widebuf, L"%S", pchTokens+1);
-					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf, iLen);
+					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf+1, iLen);
 					(*(TCHAR**)pAdjustedOffset)[iLen] = '\0';
 				}
 				else
 				{
-					swprintf_s(widebuf, L"%S", pchTokens);
 					(*(TCHAR**)pAdjustedOffset) = _wcsdup(widebuf);
 				}
 			}break;
@@ -322,8 +428,7 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 					int iLen = strlen(pchTokens)-2;
 					char temp = pchTokens[iLen+1];
 					(*(TCHAR**)pAdjustedOffset) = (TCHAR*)malloc(sizeof(TCHAR) * (iLen+1));
-					swprintf_s(widebuf, L"%S", pchTokens+1);
-					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf, iLen);
+					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf+1, iLen);
 					(*(TCHAR**)pAdjustedOffset)[iLen] = '\0';
 				}
 				else
@@ -342,13 +447,11 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 					int iLen = strlen(pchTokens)-2;
 					char temp = pchTokens[iLen+1];
 					(*(TCHAR**)pAdjustedOffset) = (TCHAR*)malloc(sizeof(TCHAR) * (iLen+1));
-					swprintf_s(widebuf, L"%S", pchTokens+1);
-					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf, iLen);
+					wcsncpy_s((*(TCHAR**)pAdjustedOffset), iLen+1, widebuf+1, iLen);
 					(*(TCHAR**)pAdjustedOffset)[iLen] = '\0';
 				}
 				else
 				{
-					swprintf_s(widebuf, L"%S", pchTokens);
 					(*(TCHAR**)pAdjustedOffset) = _wcsdup(widebuf);
 				}
 			}break;
@@ -368,7 +471,7 @@ bool ReadParseTableValue(void* pCurObject, StructParseEntry* pEntry, const char*
 					int iLen = strlen(pchTokens);
 					TCHAR* pDynBuf = new TCHAR[iLen+1];
 					swprintf_s(pDynBuf, iLen+1, L"%S", pchTokens);
-					(*(TCHAR**)pAdjustedOffset) = _wcsdup(widebuf);
+					(*(TCHAR**)pAdjustedOffset) = _wcsdup(pDynBuf);
 					delete [] pDynBuf;
 				}
 			}break;
@@ -523,16 +626,20 @@ bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntr
 
 //parse tables for windows structs
 
-StructParseEntry parse_RECT[] = {
+static const StructParseEntry parse_entries_RECT[] = {
 {_T("left"), kStruct_Int, NULL, 2, offsetof(RECT, left)},
 {_T("top"), kStruct_Int, NULL, 2, offsetof(RECT, top)},
 {_T("right"), kStruct_Int, NULL, 2, offsetof(RECT, right)},
 {_T("bottom"), kStruct_Int, NULL, 2, offsetof(RECT, bottom)},
 {NULL, kStruct_Int, NULL, 0, 0}
 };
+const ParseTable parse_RECT = {L"RECT", 4, parse_entries_RECT};
 
-StructParseEntry parse_POINT[] = {
-{_T("x"), kStruct_Int, NULL, 2, offsetof(POINT, x)},
-{_T("y"), kStruct_Int, NULL, 2, offsetof(POINT, y)},
+static const StructParseEntry parse_entries_POINT[] = {
+{_T("left"), kStruct_Int, NULL, 2, offsetof(RECT, left)},
+{_T("top"), kStruct_Int, NULL, 2, offsetof(RECT, top)},
+{_T("right"), kStruct_Int, NULL, 2, offsetof(RECT, right)},
+{_T("bottom"), kStruct_Int, NULL, 2, offsetof(RECT, bottom)},
 {NULL, kStruct_Int, NULL, 0, 0}
 };
+const ParseTable parse_POINT = {L"POINT", 2, parse_entries_POINT};

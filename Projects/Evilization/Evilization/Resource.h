@@ -19,6 +19,8 @@
 #define IDOPENFILE                      1002
 #define IDC_EDIT1                       1003
 #define IDC_DETAILS                     1003
+#define IDOPENFILE2                     1004
+#define IDASSERT                        1004
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

@@ -739,7 +739,7 @@ CHexPlayer* CGameState::GetCurrentPlayer()
 IDirect3DVertexBuffer9* CGameState::CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo)
 {
 	void* vb_vertices;
-	GameTexture* pSourceTexture = pTex->hTex.pTex;
+	const GameTexture* pSourceTexture = pTex->hTex.pTex;
 	IDirect3DVertexBuffer9* pSplatBuffer = NULL;
 	
 	switch(eGeo)

@@ -265,7 +265,7 @@ UIButtonDef EndTurnButton
 
 UIButtonDef TechInfo
 {
-	fWidthPct 0.1f
+	fWidthPct 0.1
 	Height 96
 	eType Button
 	

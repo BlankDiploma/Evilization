@@ -29,7 +29,7 @@ struct pointerHasher : public stdext::hash_compare <const void*>
 	{
 		return (size_t)s >> 2;
 	}
-	bool operator()(void* s1, void* s2) const
+	bool operator()(const void* s1, const void* s2) const
 	{
 		return s1 < s2;
 	}
@@ -51,4 +51,4 @@ typedef stdext::hash_map<int, const wchar_t*, intHasher> IntStringHash;
 
 typedef stdext::hash_map<const wchar_t*, int, stringHasher> StringIntHash;
 typedef stdext::hash_map<const wchar_t*, void*, stringHasher> StringPointerHash;
-typedef stdext::hash_map<void*, void*, pointerHasher> PointerPointerHash;
+typedef stdext::hash_map<const void*, void*, pointerHasher> PointerPointerHash;
