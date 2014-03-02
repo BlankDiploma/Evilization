@@ -121,6 +121,8 @@ enum FlexRendererMode
 	kRendererMode_Count
 };
 
+
+
 class FlexFrustum
 {
 	//Near and far plane distances
@@ -297,6 +299,7 @@ class FlexRenderer
 	void EndFrame();
 	void Begin2D();
 	void End2D();
+	void AddParticlesToRenderList();
 
 	IDirect3DVertexBuffer9* pCubeVertBuffer;
 	

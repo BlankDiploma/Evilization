@@ -1110,51 +1110,36 @@ void DisableMapXWrap(lua_State *L, int disable)
 	g_DebugFlags.disableMapXWrap = disable;
 }
 
-int distCalc(POINT a, POINT b)
+int distCalc(POINT ptA, POINT ptB)
 {
-	//swap if necessary
-	if (a.y > b.y)
+	int x1, x2, y1, y2, z1, z2, q1, q2, r1, r2, dist;
+
+	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
+		return 0;
+
+	q1 = ptA.x;
+	q2 = ptB.x;
+	r1 = ptA.y;
+	r2 = ptB.y;
+
+	if (abs(q2 - q1) > 128/2)
 	{
-		POINT temp = a;
-		a = b;
-		b = temp;
+		if(q2>q1)
+			q2 -= 128;
+		else
+			q1 -= 128;
 	}
-	int y = b.y-a.y;
-	int halfY = y;
-	int x = b.x - a.x;
-	if (x > 128/2)
-		x = x-128;
-	else if (x < -128/2)
-		x = x+128;
 
-	//early out if horizontal line, this is required
-	if (a.y == b.y)
-		return x < 0 ? -x : x;
+	x1 = q1 - (r1 - (r1&1))/2;
+	x2 = q2 - (r2 - (r2&1))/2;
+	z1 = r1;
+	z2 = r2;
+	y1 = -x1 - z1;
+	y2 = -x2 - z2;
 
-	//if a is on an odd y-coordinate and halfY is odd, round up the division. Only if positive-x direction.
-	if (a.y & 1 && halfY & 1 && x > 0)
-		halfY++;
-	if (x < 0)
-	{
-		x = -x;
-		if (!(a.y & 1))
-			x--;
-	}
-	
-	halfY /= 2;
-	if (x < halfY)
-		return y;
-	
-	return y + (x-halfY);
-}
+	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
 
-void TestDistCalc(lua_State *L, int ax, int ay, int bx, int by)
-{
-	POINT a = {ax, ay};
-	POINT b = {bx, by};
-	TCHAR buf[5] = {0};
-	wsprintf(buf, L"%d", distCalc(a, b));
-	g_Console.AddConsoleString(buf);
+	return dist;
 }
 
 void DistCalcUnitTest(lua_State *L)
@@ -1256,8 +1241,7 @@ void DoAllLuaBinds()
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
-		luabind::def("Dist", &TestDistCalc),
-		luabind::def("DistUnitTest", &DistCalcUnitTest),
+		luabind::def("Debug_DistCalcUnitTest", &DistCalcUnitTest),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")

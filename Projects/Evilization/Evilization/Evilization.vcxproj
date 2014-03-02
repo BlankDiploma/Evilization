@@ -128,7 +128,9 @@
     <ClCompile Include="..\..\..\Common Files\Include\StructParseEnum.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\TextureLibrary.cpp" />
     <ClCompile Include="..\..\..\Common Files\Include\UIlib.cpp" />
+    <ClCompile Include="Abilities.cpp" />
     <ClCompile Include="Evilization.cpp" />
+    <ClCompile Include="FlexParticleSystem.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="HexFeatures.cpp" />
     <ClCompile Include="HexMap.cpp" />
@@ -155,7 +157,9 @@
     <ClInclude Include="..\..\..\Common Files\Include\TextureLibrary.h" />
     <ClInclude Include="..\..\..\Common Files\Include\UILib.h" />
     <ClInclude Include="Evilization.h" />
+    <ClInclude Include="FlexParticleSystem.h" />
     <ClInclude Include="GameState.h" />
+    <ClInclude Include="Abilities.h" />
     <ClInclude Include="HexFeatures.h" />
     <ClInclude Include="HexMap.h" />
     <ClInclude Include="Resource.h" />

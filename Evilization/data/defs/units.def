@@ -5,7 +5,7 @@ hexUnitDef stickfigure
 	defense 0
 	cost 50
 	meleeStr 50
-	attackRange 1
+	attackRange 3
 	visRadius 2
 	displayName "Stick Figure"
 	hTex stickfigure

@@ -69,7 +69,14 @@
     <ClCompile Include="..\..\..\Common Files\Include\FlexDebugConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+<<<<<<< HEAD
     <ClCompile Include="..\..\..\Common Files\Include\FlexErrorWindow.cpp">
+=======
+    <ClCompile Include="FlexParticleSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Abilities.cpp">
+>>>>>>> c24b355b01fc3c64fa01b5312943ccfbb4974e45
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,7 +147,14 @@
     <ClInclude Include="..\..\..\Common Files\Include\FlexDebugConsole.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\..\..\Common Files\Include\FlexErrorWindow.h">
+=======
+    <ClInclude Include="FlexParticleSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Abilities.h">
+>>>>>>> c24b355b01fc3c64fa01b5312943ccfbb4974e45
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
