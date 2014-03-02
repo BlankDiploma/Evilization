@@ -8,7 +8,7 @@ GameTexturePortion house
 GameTexturePortion terrain_tundra
 {
 	hTex terrain
-	rSrc 128 288 256 416
+	rSrc 128 256 256 384
 	offset 0 0
 }
  
@@ -64,14 +64,14 @@ GameTexturePortion terrain_grass
 GameTexturePortion terrain_ocean
 {
 	hTex terrain
-	rSrc 256 288 384 416
+	rSrc 256 256 384 384
 	offset 0 0
 }
  
 GameTexturePortion terrain_taiga
 {
 	hTex terrain
-	rSrc 134 128 268 288
+	rSrc 128 128 256 256
 	offset 4 32
 }
  
@@ -120,7 +120,7 @@ GameTexturePortion pathend
 GameTexturePortion terrain_swamp
 {
 	hTex terrain
-	rSrc 268 128 396 256
+	rSrc 256 128 384 256
 	offset 0 0
 }
  
@@ -148,21 +148,21 @@ GameTexturePortion terrain_desert
 GameTexturePortion terrain_forest
 {
 	hTex terrain
-	rSrc 0 128 134 288
+	rSrc 0 128 128 256
 	offset 4 32
 }
  
 GameTexturePortion terrain_jungle
 {
 	hTex terrain
-	rSrc 0 288 128 416
+	rSrc 0 256 128 384
 	offset 0 0
 }
  
 GameTexturePortion terrain_mountain
 {
 	hTex terrain
-	rSrc 384 310 512 512
+	rSrc 384 128 512 256
 	offset 0 74
 }
  

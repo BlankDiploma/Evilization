@@ -176,12 +176,12 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 	IDirect3DVertexBuffer9* pNewBuffer;
 	
 	FlexVertex hexVerts[] = {
-		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0, 0},//0
-		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},//1
-		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0},//2
-		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},//3
-		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0},//4
-		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0, 0},//5
+		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0.5f, 0},//0
+		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 1.0f, 0.25f},//1
+		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0.25f},//2
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0.75f},//3
+		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 1.0f, 0.75f},//4
+		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0.5f, 1.0f},//5
 	};
 
 	g_Renderer.CreateVertexBuffer(sizeof(hexVerts)*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
@@ -203,6 +203,14 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
 			currTile = pTiles[iActualTileX + iActualTileY*w];
 
+			const GameTexturePortion* pTileTex = GET_REF(GameTexturePortion, currTile.pDef->hTex);
+			const GameTexture* pSrcTex = pTileTex->hTex.pTex;
+
+			float fMinU = (pTileTex->rSrc->left+1.0f)/pSrcTex->width;
+			float fMaxU = (pTileTex->rSrc->right-1.0f)/pSrcTex->width;
+			float fMinV = (pTileTex->rSrc->top+1.0f)/pSrcTex->height;
+			float fMaxV = (pTileTex->rSrc->bottom-1.0f)/pSrcTex->height;
+
 			for (int k = 0; k < 6; k++)
 			{
 				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
@@ -212,7 +220,11 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 				pIter->z = hexVerts[k].z;
 				pIter->u = hexVerts[k].u;
 				pIter->v = hexVerts[k].v;
-				pIter->diffuse = currTile.pDef->color;
+				pIter->u *= fMaxU-fMinU;
+				pIter->u += fMinU;
+				pIter->v *= fMaxV-fMinV;
+				pIter->v += fMinV;
+				pIter->diffuse = 0xffffffff;
 				pIter++;
 			}
 		}
@@ -360,6 +372,7 @@ void CHexMap::RenderTerrain()
 	float rot[3] = {0.0f, 0.0f, 0.0f};
 	RECT chunks;
 	GetChunkspaceCullRect(&chunks);
+	const GameTexture* pTerrainTex = GET_TEXTURE(L"terrain");
 
 	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
 	static int iNumVerts = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*6;
@@ -379,7 +392,7 @@ void CHexMap::RenderTerrain()
 				continue;
 			pos[0] = ((int)i) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
 			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
-			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTris, &iNumVerts, NULL, pos, scl, rot, false);
+			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTris, &iNumVerts, pTerrainTex, pos, scl, rot, false);
 		}
 	}
 }
