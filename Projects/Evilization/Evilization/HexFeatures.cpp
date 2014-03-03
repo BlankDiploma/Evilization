@@ -248,9 +248,15 @@ CHexUnit::CHexUnit(hexUnitDef* def, CHexPlayer* pOwner)
 	pDef = def;
 	ownerID = -1;
 	health = def->maxHealth;
+	mana = def->maxMana;
 	movRemaining = def->movement;
-	abilityCooldowns = new int[def->numAbilities];
 	eaOrders = NULL;
+	for (int i = 0; i < eaSize(&def->eaAbilityRefs); i++)
+	{
+		UnitAbility* pAbility = new UnitAbility;
+		pAbility->pDef = (UnitAbilityDef*) def->eaAbilityRefs[i]->hAbility.pObj;
+		pAbility->cooldown = pAbility->pDef->cooldown;
+	}
 	bIsDead = false;
 	if (pOwner)
 		pOwner->TakeOwnership(this);

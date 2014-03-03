@@ -716,6 +716,13 @@ void CGameState::ShowTechTreeUI()
 	UI.AddWindowByName(_T("TechTree"));
 }
 
+void CGameState::ShowAbilityUI()
+{
+	//g_GameState.MouseHandlerPushState(kGameplayMouse_Disable, NULL);
+	//UI.Reset(screenW, screenH);
+	UI.AddWindowByName(_T("AbilityList"));
+}
+
 void CGameState::AdjustMapZoom( int rot )
 {
 	POINT pt = GetViewCenter();

@@ -611,6 +611,11 @@ void ShowTechTreeUI(lua_State *L)
 	g_GameState.ShowTechTreeUI();
 }
 
+void ShowAbilityUI(lua_State *L)
+{
+	g_GameState.ShowAbilityUI();
+}
+
 hexTile* GetLayoutVarAsTile(lua_State *L)
 {
 	return (hexTile*)g_pCurContext->pUI->GetLayoutVar();
@@ -639,6 +644,11 @@ techTreeNodeDef* GetLayoutVarAsTechNodeDef(lua_State *L)
 cityProject* GetLayoutVarAsCityProject(lua_State *L)
 {
 	return (cityProject*)g_pCurContext->pUI->GetLayoutVar();
+}
+
+UnitAbilityRef* GetLayoutVarAsAbilityRef(lua_State *L)
+{
+	return (UnitAbilityRef*)g_pCurContext->pUI->GetLayoutVar();
 }
 
 CHexCity* GetSelectedCity(lua_State *L)
@@ -939,6 +949,34 @@ luabind::object GetNotifications(lua_State *L)
 	return ret;
 }
 
+luabind::object GetAbilityList(lua_State *L)
+{
+	CHexUnit* pUnit = g_GameState.GetSelectedUnit();
+	UnitAbilityRef** eaAbilityList = NULL;
+	UnitAbilityRef** eaAbilities = NULL;
+	if (pUnit)
+		eaAbilities = pUnit->GetAbilityList();
+	eaCopy(&eaAbilityList, &eaAbilities);
+	lua_pushlightuserdata(L, eaAbilityList);
+	luabind::object ret(luabind::from_stack(L, -1));
+	lua_pop(L,1);		
+	return ret;
+}
+
+//luabind::object GetAbilityList(lua_State *L)
+//{
+//	CHexUnit* pUnit = g_GameState.GetSelectedUnit();
+//	UnitAbility** eaAbilityList = NULL;
+//	UnitAbility** eaAbilities = NULL;
+//	if (pUnit)
+//		eaAbilities = pUnit->GetAbilityList();
+//	eaCopy(&eaAbilityList, &eaAbilities);
+//	lua_pushlightuserdata(L, eaAbilityList);
+//	luabind::object ret(luabind::from_stack(L, -1));
+//	lua_pop(L,1);
+//	return ret;
+//}
+
 void NotificationFocus(lua_State *L, playerNotification* pNote)
 {
 	switch (pNote->eType)
@@ -977,6 +1015,17 @@ GameTexturePortion* GetNotificationIcon(lua_State *L, playerNotification* pNote)
 const TCHAR* GetNotificationText(lua_State *L, playerNotification* pNote)
 {
 	return pNote ? _wcsdup(pNote->pchText) : NULL;
+}
+
+const TCHAR* GetAbilityName(lua_State *L, UnitAbilityRef* pRef)
+{
+	if (pRef)
+	{
+		UnitAbilityDef* currAbility = (UnitAbilityDef*) pRef->hAbility.pObj;
+		return _wcsdup(currAbility->displayName);
+	}
+	else
+		return NULL;
 }
 
 float GetCurTechProgress(lua_State *L)
@@ -1204,6 +1253,7 @@ void DoAllLuaBinds()
 		luabind::def("Layout_GetVarAsNotification", &GetLayoutVarAsNotification),
 		luabind::def("Layout_GetVarAsTechNodeDef", &GetLayoutVarAsTechNodeDef),
 		luabind::def("Layout_GetVarAsCityProject", &GetLayoutVarAsCityProject),
+		luabind::def("Layout_GetVarAsAbilityRef", &GetLayoutVarAsAbilityRef),
 		luabind::def("Tile_GetLoc", &GetTileLoc),
 		luabind::def("Tile_GetCity", &GetCityFromTile),
 		luabind::def("Gameplay_TilePtToScreen", &TileCoordToScreen),
@@ -1228,6 +1278,7 @@ void DoAllLuaBinds()
 		luabind::def("Notification_Dismiss", &NotificationKill),
 		luabind::def("Notification_GetIcon", &GetNotificationIcon),
 		luabind::def("Notification_GetText", &GetNotificationText),
+		luabind::def("Ability_GetName", &GetAbilityName),
 		luabind::def("Player_GetCurrentTechPct", &GetCurTechProgress),
 		luabind::def("Player_GetCurrentTechName", &GetCurTechName),
 		luabind::def("Tech_ScrollDisplay", &TechTreeScrollDisplay),
@@ -1242,6 +1293,8 @@ void DoAllLuaBinds()
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
 		luabind::def("Debug_DistCalcUnitTest", &DistCalcUnitTest),
+		luabind::def("Abilities_ShowUI", &ShowAbilityUI),
+		luabind::def("Gameplay_GetAbilityList", &GetAbilityList),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")
@@ -1261,6 +1314,8 @@ void DoAllLuaBinds()
 		class_<CHexUnit>("CHexUnit")
 		.def(constructor<>()),
 		class_<cityProject>("cityProject")
+		.def(constructor<>()),
+		class_<UnitAbilityRef>("UnitAbilityRef")
 		.def(constructor<>())
 	];
 }

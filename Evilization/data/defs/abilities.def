@@ -1,0 +1,20 @@
+UnitAbilityDef basic_aoe
+{
+	cost 50
+	range 3
+	radius 2
+	damage 50
+	cooldown 3
+	eAffectsFlags Enemy
+	displayName "AoE"
+}
+UnitAbilityDef basic_nuke
+{
+	cost 50
+	range 5
+	radius 1
+	damage 100
+	cooldown 3
+	eAffectsFlags Enemy
+	displayName "Nuke"
+}

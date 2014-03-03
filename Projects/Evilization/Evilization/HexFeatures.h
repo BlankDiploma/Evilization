@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "structparse.h"
 #include "earray.h"
+#include "Abilities.h"
 
 
 #pragma once
@@ -56,15 +57,6 @@ struct HEXPATH
 	POINT ptOrigin;
 };
 
-PARSE_STRUCT(hexAbilityDef)
-{
-	//	dungeonScript* pScript;
-	int cooldown;
-	int range;
-	int damage;
-	int flags;
-};
-
 PARSE_STRUCT(hexUnitDef)
 {
 	int movement;
@@ -76,7 +68,8 @@ PARSE_STRUCT(hexUnitDef)
 	int meleeStr;
 	int attackRange;
 	int visRadius;
-	hexAbilityDef** pAbilities;
+	int maxMana;
+	UnitAbilityRef** eaAbilityRefs;
 	DEF_REF(GameTexturePortion) hTex;
 	const TCHAR* name;
 	const TCHAR* displayName;
@@ -120,7 +113,7 @@ PARSE_STRUCT(hexBuildingDef)
 struct HEXPATH;
 
 
-AUTO_ENUM(unitOrderType) {kOrder_Sleep = 0, kOrder_Move, kOrder_Melee, kOrder_AutoExplore};
+AUTO_ENUM(unitOrderType) {kOrder_Sleep = 0, kOrder_Move, kOrder_Melee, kOrder_AutoExplore, kOrder_Ability};
 
 struct hexUnitOrder
 {
@@ -146,20 +139,24 @@ class CHexUnit
 private:
 	hexUnitDef* pDef;
 	int health;
+	int mana;
 	int ownerID;
 	int movRemaining;
 	int* abilityCooldowns;
 	bool bIsDead;
 	hexUnitOrder** eaOrders;
 	POINT loc;
+	UnitAbility** eaAbilities;
 public:
 	CHexUnit()
 	{
 		pDef = NULL;
 		health = 100;
+		mana = 0;
 		ownerID = -1;
 		movRemaining = 0;
 		abilityCooldowns = NULL;
+		eaAbilities = NULL;
 		eaOrders = NULL;
 		bIsDead = false;
 	}
@@ -241,9 +238,26 @@ public:
 		else if (_wcsicmp(pName, _T("maxmov")) == 0)
 		{
 			pOut->SetInt(pDef->movement);
-		}		else if (_wcsicmp(pName, _T("str")) == 0)
+		}
+		else if (_wcsicmp(pName, _T("str")) == 0)
 		{
 			pOut->SetInt(pDef->meleeStr);
+		}
+		else if (_wcsicmp(pName, _T("maxmana")) == 0)
+		{
+			pOut->SetInt(pDef->maxMana);
+		}
+		else if (_wcsicmp(pName, _T("mana")) == 0)
+		{
+			pOut->SetInt(mana);
+		}
+		else if (_wcsicmp(pName, _T("maxhealth")) == 0)
+		{
+			pOut->SetInt(pDef->maxHealth);
+		}
+		else if (_wcsicmp(pName, _T("health")) == 0)
+		{
+			pOut->SetInt(health);
 		}
 	}
 
@@ -265,6 +279,10 @@ public:
 	bool IsDead()
 	{
 		return bIsDead;
+	}
+	UnitAbilityRef** GetAbilityList()
+	{
+		return pDef->eaAbilityRefs;
 	}
 };
 class CHexBuilding

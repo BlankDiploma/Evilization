@@ -503,6 +503,7 @@ public:
 	void AdjustMapZoom( int rot );
 	POINT GetViewCenter();
 	void ShowTechTreeUI();
+	void ShowAbilityUI();
 	CHexPlayer* GetCurrentPlayer();
 
 	CHexMap* GetCurrentMap()

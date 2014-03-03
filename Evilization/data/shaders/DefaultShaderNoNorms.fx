@@ -170,7 +170,8 @@ technique Translucent3D
         FillMode = SOLID;
         CullMode = CCW;
 		ZEnable = TRUE;
-		ZWriteEnable = FALSE;
+		ZWriteEnable = TRUE;
+		ALPHATESTENABLE = TRUE;
 
 		MagFilter[0] = NONE;
 		MinFilter[0] = NONE;

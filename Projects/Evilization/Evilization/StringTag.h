@@ -1,7 +1,7 @@
 #include "stdafx.h"
 class CHexUnit;
 class CHexCity;
-struct UnitAbility;
+class UnitAbility;
 
 struct StringTagContext
 {

@@ -9,6 +9,9 @@ hexUnitDef stickfigure
 	visRadius 2
 	displayName "Stick Figure"
 	hTex stickfigure
+	maxMana 100
+	eaAbilityRefs basic_aoe
+	eaAbilityRefs basic_nuke
 }
 
 hexUnitDef barbarian

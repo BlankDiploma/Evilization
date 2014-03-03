@@ -2,6 +2,8 @@
 #include "structparse.h"
 #include "earray.h"
 
+#pragma once
+
 AUTO_ENUM(AbilityAffectsFlags) 
 {
 	kAffects_None = 0,
@@ -11,16 +13,28 @@ AUTO_ENUM(AbilityAffectsFlags)
 };
 
 PARSE_STRUCT(UnitAbilityDef)
-{
+{	
+	int cost;
+	int range;
+	int radius;
+	int damage;
 	float cooldown;
-	const TCHAR* name;
 	FLAGS AbilityAffectsFlags eAffectsFlags;
+	const TCHAR* name;
+	const TCHAR* displayName;
 };
 
-struct UnitAbility
+PARSE_STRUCT(UnitAbilityRef)
 {
+    INLINE_ARG DEF_REF(UnitAbilityDef) hAbility;
+};
+
+class UnitAbility
+{
+public:
 	float cooldown;
 	const UnitAbilityDef* pDef;
+	void GetStatByName(const TCHAR* pName, multiVal* pOut);
 };
 
 struct StringTagContext;
