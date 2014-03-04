@@ -32,8 +32,8 @@ UILayoutDef LaborLayout
 	eType Layout
 	eaChildren LaborButton_World
 	{
-		Y -48
-		X 32
+		Y -86
+		X -32
 		Anchor Top left
 	}
 }
@@ -57,21 +57,23 @@ UIButtonDef LaborButton_World
 	}
 	eaChildren LaborButtonText
 	{
-		Y 68
 		Anchor Bottom
+		X 32
+		Y 32
 	}
 	clickFunc <& Labor_Toggle(Layout_GetVarAsLaborSlot()) &>
 }
 
 UITextDef LaborButtonText
 {
-	Width 64
+	Width 48
 	Height 16
 	eType Text
 	hFont courier_new
 	textcolor 255 255 255
 	textFunc <& return Labor_FormatString(Layout_GetVarAsLaborSlot()) &>
 	textflags CENTERX DROPSHADOW
+	fIconScale 0.5
 }
 
 UIButtonDef ExitButton

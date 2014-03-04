@@ -9,6 +9,8 @@
 #include "TextureLibrary.h"
 #include "structparse.h"
 #include <stdlib.h>
+#include <dxerr.h>
+#include "flexerrorwindow.h"
 
 using namespace std;
 
@@ -43,7 +45,12 @@ bool TextureLibrary::LoadTextures(const TCHAR* pchDir, const TCHAR* pchFilename,
 			if (f.cFileName[0] == '.')
 				continue;
 			IDirect3DTexture9* pTex = NULL;
-			D3DXCreateTextureFromFileEx(pDevice, directory, 0, 0, 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_FILTER_LINEAR, D3DX_FILTER_NONE, 0xffff00ff, NULL, NULL, &pTex);
+			HRESULT error = D3DXCreateTextureFromFileEx(pDevice, directory, 0, 0, 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_FILTER_LINEAR, D3DX_FILTER_NONE, 0xffff00ff, NULL, NULL, &pTex);
+			
+			if (FAILED(error))
+			{
+				Errorf("DirectX Create Texture Error: %s (%s)", DXGetErrorString(error), DXGetErrorString(error));
+			}
 			_wsplitpath_s(directory, NULL, 0, NULL, 0, fnameBuf, _MAX_FNAME, NULL, 0);
 
 			GameTexture* pGameTex = new GameTexture;

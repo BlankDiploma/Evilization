@@ -12,6 +12,7 @@
 #include "StructParse.h"
 #include "EArray.h"
 #include <direct.h>
+#include "flexerrorwindow.h"
 
 using namespace std;
 
@@ -417,7 +418,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	bool bWroteAnything = false;
 	bool bErrored = false;
 
-	printf("y helo thar");
+	Errorf("y helo thar");
 	GetFileAttributesEx(timestampFilename.c_str(), GetFileExInfoStandard, &dat);
 
 	for (int i = 1; i < argc; i++)
@@ -477,7 +478,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (filesToProcess.empty())
 	{
-		printf("WARNING: Structparse found no files to process.");
+		Errorf("WARNING: Structparse found no files to process. This may be because you didn't modify any relevant files prior to this compilation.");
 		return 0;
 	}
 	
@@ -491,7 +492,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -501,7 +502,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (!bWroteAnything)
 	{
-		printf("WARNING: Structparse processed files but didn't output anything.");
+		Errorf("WARNING: Structparse processed files but didn't output anything.");
 		return 0;
 	}
 	
@@ -515,7 +516,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for reading.", path.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -530,7 +531,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -543,7 +544,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -572,7 +573,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -586,7 +587,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if (!input)
 		{
-			printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
+			Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", autogenFilename.c_str());
 			return ERROR_INVALID_DATA;
 		}
 
@@ -606,7 +607,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (!timestampFile)
 	{
-		printf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", timestampFilename.c_str());
+		Errorf("FATAL ERROR: Structpare.exe was unable to open file %s for writing.", timestampFilename.c_str());
 		return ERROR_INVALID_DATA;
 	}
 

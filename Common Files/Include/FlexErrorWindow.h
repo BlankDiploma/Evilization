@@ -29,9 +29,16 @@ struct ErrorTracker
 	int id;
 };
 
-#endif
-
 void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...);
 #define Errorf(text, ...) ErrorInternalf(_T(text), NULL, __VA_ARGS__)
 #define ErrorFilenamef(text, file, ...) ErrorInternalf(_T(text), file, __VA_ARGS__)
 #define ErrorAutoStructf(text, pStruct, ...) ErrorInternalf(_T(text), pStruct->filename, __VA_ARGS__)
+
+#else
+	
+void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...);
+#define Errorf(text, ...) ErrorInternalf(_T(text)_T("\n"), NULL, __VA_ARGS__)
+#define ErrorFilenamef(text, file, ...) ErrorInternalf(_T(text)_T("\n"), file, __VA_ARGS__)
+#define ErrorAutoStructf(text, pStruct, ...) ErrorInternalf(_T(text)_T("\n"), pStruct->filename, __VA_ARGS__)
+
+#endif
