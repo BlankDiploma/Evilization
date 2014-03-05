@@ -3,6 +3,7 @@
 #include "FlexRenderer.h"
 #include "earray.h"
 #include "DefLibrary.h"
+#include "FlexErrorWindow.h"
 
 LPDIRECT3DVERTEXBUFFER9 g_pCubeVertex = NULL;
 LPDIRECT3DINDEXBUFFER9 g_pCubeIndex = NULL;
@@ -452,14 +453,9 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 		);
 
 
-	if (effectErrors)
+	if (FAILED(error) && effectErrors)
 	{
-		size_t origsize = strlen((char*)effectErrors->GetBufferPointer()) + 1;
-		const size_t newsize = 100;
-		wchar_t wcstring[1000];
-		size_t convertedChars = 0;
-		mbstowcs_s(&convertedChars, wcstring, origsize, (char*)effectErrors->GetBufferPointer(), _TRUNCATE);
-		MessageBoxW(0, wcstring, 0, 0);
+		ErrorFilenamef("Shader compile errors: %S", L"data/shaders/DefaultShaderNoNorms.fx", (char*)effectErrors->GetBufferPointer());
 		effectErrors->Release();
 	}
 
@@ -475,12 +471,18 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
 
-	default3DTech = pDefaultShader->GetTechniqueByName("Default3D");
-	default2DTech = pDefaultShader->GetTechniqueByName("Default2D");
-	wireframe3DTech = pDefaultShader->GetTechniqueByName("Wireframe3D");
-	translucent3DTech = pDefaultShader->GetTechniqueByName("Translucent3D");
+	if (pDefaultShader)
+	{
+		default3DTech = pDefaultShader->GetTechniqueByName("Default3D");
+		default2DTech = pDefaultShader->GetTechniqueByName("Default2D");
+		wireframe3DTech = pDefaultShader->GetTechniqueByName("Wireframe3D");
+		translucent3DTech = pDefaultShader->GetTechniqueByName("Translucent3D");
+	}
 
-	error = pDefaultShader->SetTechnique(default3DTech);
+	if (!pDefaultShader || FAILED(pDefaultShader->SetTechnique(default3DTech)))
+	{
+		Errorf("Fatal error: Failed to set default shader technique to Default3D");
+	}
 
 	pD3DDevice->CreateVertexBuffer(8*sizeof(FlexVertex), D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &g_pCubeVertex, NULL);
 	
@@ -876,6 +878,10 @@ void FlexRenderer::ProcessRenderLists()
 		assert(pGameTex);	//there must be a "white" texture available
 		pWhite = pGameTex->pD3DTex;
 	}
+
+	if (!pDefaultShader)
+		return;
+
 #ifdef FLEX_RENDERER_SINGLE_THREAD
 	if (pCurRenderList->bUsed && !pNextRenderList->bUsed)
 	{

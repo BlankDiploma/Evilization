@@ -210,6 +210,7 @@ BOOL CALLBACK ErrorProc(HWND hwndDlg,
 				{
 					ErrorTracker* pError = eaErrors[VAL_notify->iItem];// Use VAL_notify->iItem as the new selected item
 					SetWindowText(GetDlgItem(hErrorDlg, IDC_DETAILS), pError->pParent ? pError->pParent->pchText : pError->pchText);
+					SendMessage(GetDlgItem(hErrorDlg, IDC_DETAILS), EM_FMTLINES , 0, 0);
 				}
 			}break; 
 	}
