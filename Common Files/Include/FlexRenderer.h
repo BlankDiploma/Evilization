@@ -301,8 +301,8 @@ class FlexRenderer
 	
 
 	void CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
-
-
+	void TesselateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut);
+	int GetNumTesselatedTriangles(int iDegree);
 	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
 public:
 	FlexRenderer();

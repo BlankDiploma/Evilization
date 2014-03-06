@@ -334,6 +334,64 @@ float FlexFrustum::GetFarPlaneDist()
 	return zf;
 }
 
+static inline void DoVertexLerp(FlexVertex* pA, FlexVertex* pB, FlexVertex* pOut)
+{
+	pOut->u = (pA->u+pB->u)/2;
+	pOut->v = (pA->v+pB->v)/2;
+	pOut->x = (pA->x+pB->x)/2;
+	pOut->y = (pA->y+pB->y)/2;
+	pOut->z = (pA->z+pB->z)/2;
+	pOut->diffuse = (pA->diffuse+pB->diffuse)/2;
+}
+
+static void TesselateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+{
+	//input:
+	//	A
+	//
+	//			B
+	//
+	//	C
+
+	//output:
+	//  0
+	//		1
+	//  3		2
+	//		4
+	//  5
+	FlexVertex vertsTmp[6] = {0};
+	vertsTmp[0] = *vA;
+	vertsTmp[2] = *vB;
+	vertsTmp[5] = *vC;
+	DoVertexLerp(vA, vB, &vertsTmp[1]);
+	DoVertexLerp(vA, vC, &vertsTmp[3]);
+	DoVertexLerp(vB, vC, &vertsTmp[4]);
+	if (iDegree > 0)
+	{
+		TesselateTriangleRecurse(&vertsTmp[0], &vertsTmp[1], &vertsTmp[3], iDegree-1, vertBufferOut);
+		TesselateTriangleRecurse(&vertsTmp[1], &vertsTmp[2], &vertsTmp[4], iDegree-1, vertBufferOut);
+		TesselateTriangleRecurse(&vertsTmp[3], &vertsTmp[4], &vertsTmp[5], iDegree-1, vertBufferOut);
+	}
+	else
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			**vertBufferOut = vertsTmp[i];
+			(*vertBufferOut)++;
+		}
+	}
+}
+
+void FlexRenderer::TesselateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+{
+	TesselateTriangleRecurse(vA, vB, vC, iDegree, vertBufferOut);
+}
+
+int FlexRenderer::GetNumTesselatedTriangles(int iDegree)
+{
+	return pow(4, iDegree);
+}
+
 void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2)
 {
 
@@ -923,7 +981,7 @@ void FlexRenderer::ProcessRenderLists()
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
 			pD3DDevice->SetIndices(pCall->pIndices);
 
 		D3DXMATRIXA16 matWorld, matProj, matView;
@@ -947,7 +1005,7 @@ void FlexRenderer::ProcessRenderLists()
 		{
 			pDefaultShader->BeginPass(j);
 
-			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
 				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
 			else
 				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
@@ -964,7 +1022,7 @@ void FlexRenderer::ProcessRenderLists()
 		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
 		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
 			pD3DDevice->SetIndices(pCall->pIndices);
 
 		D3DXMATRIXA16 matWorld, matProj, matView;
@@ -987,7 +1045,7 @@ void FlexRenderer::ProcessRenderLists()
 		for(unsigned j = 0; j < passes; j++)
 		{
 			pDefaultShader->BeginPass(j);
-			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP)
+			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
 				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
 			else
 				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
