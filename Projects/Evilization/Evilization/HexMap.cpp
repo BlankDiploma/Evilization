@@ -32,6 +32,8 @@ hexTileDef* pMountain;
 #define TERRAIN_CHUNK_WIDTH 16
 #define TERRAIN_CHUNK_HEIGHT 16
 
+#define TESSELLATION_DEGREE 2
+
 union biomeIndex{
 	DWORD color;
 	hexTileDef* pDef;
@@ -173,19 +175,28 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 
 IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
-	IDirect3DVertexBuffer9* pNewBuffer;
+	IDirect3DVertexBuffer9* pNewBuffer = NULL;
 	
+/*
+			0
+		2		1
+			3
+		4		5
+			6
+*/
 	FlexVertex hexVerts[] = {
 		{HEX_HALF_WIDTH,	HEX_HEIGHT,				0.0f, 0xFFFFFFFF, 0.5f, 0},//0
 		{HEX_WIDTH,			HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 1.0f, 0.25f},//1
 		{0.0f,				HEX_HEIGHT*3.0f/4.0f,	0.0f, 0xFFFFFFFF, 0, 0.25f},//2
-		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0.75f},//3
-		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 1.0f, 0.75f},//4
-		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0.5f, 1.0f},//5
+		{HEX_HALF_WIDTH,	HEX_HALF_HEIGHT,		0.0f, 0xFFFFFFFF, 0.5f, 0.5f},//3
+		{0.0f,				HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 0, 0.75f},//4
+		{HEX_WIDTH,			HEX_HALF_HEIGHT/2.0f,	0.0f, 0xFFFFFFFF, 1.0f, 0.75f},//5
+		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0.5f, 1.0f},//6
 	};
 
-	g_Renderer.CreateVertexBuffer(sizeof(hexVerts)*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+	int iNumTrisPerHex = g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE)*6;
 
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTrisPerHex*3*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
 
 	void* vb_vertices;
 
@@ -210,55 +221,31 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			float fMaxU = (pTileTex->rSrc->right-1.0f)/pSrcTex->width;
 			float fMinV = (pTileTex->rSrc->top+1.0f)/pSrcTex->height;
 			float fMaxV = (pTileTex->rSrc->bottom-1.0f)/pSrcTex->height;
+			
+			FlexVertex adjustedHexVerts[7];
 
-			for (int k = 0; k < 6; k++)
+			//prep verts for tessellation
+			for (int k = 0; k < 7; k++)
 			{
-				pIter->x = hexVerts[k].x + i*(HEX_WIDTH);
+				adjustedHexVerts[k] = hexVerts[k];
+				adjustedHexVerts[k].x += i*(HEX_WIDTH);
 				if (j&1)
-					pIter->x += HEX_HALF_WIDTH;
-				pIter->y = hexVerts[k].y + j*(HEX_HEIGHT * (3.0f/4.0f));
-				pIter->z = hexVerts[k].z;
-				pIter->u = hexVerts[k].u;
-				pIter->v = hexVerts[k].v;
-				pIter->u *= fMaxU-fMinU;
-				pIter->u += fMinU;
-				pIter->v *= fMaxV-fMinV;
-				pIter->v += fMinV;
-				pIter->diffuse = 0xffffffff;
-				pIter++;
+					adjustedHexVerts[k].x += HEX_HALF_WIDTH;
+				adjustedHexVerts[k].y += j*(HEX_HEIGHT * (3.0f/4.0f));
+				adjustedHexVerts[k].u *= fMaxU-fMinU;
+				adjustedHexVerts[k].u += fMinU;
+				adjustedHexVerts[k].v *= fMaxV-fMinV;
+				adjustedHexVerts[k].v += fMinV;
+				adjustedHexVerts[k].diffuse = 0xffffffff;
 			}
-		}
-	}
 
-	pNewBuffer->Unlock();
-
-	return pNewBuffer;
-}
-
-IDirect3DIndexBuffer9* CHexMap::CreateTerrainIndexBufferChunk()
-{
-	IDirect3DIndexBuffer9* pNewBuffer;
-
-	int hexInds[] = {0,1,2, 2,1,3,
-					 3,1,4, 4,5,3};
-
-	g_Renderer.GetD3DDevice()->CreateIndexBuffer(sizeof(int)*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*12, D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_MANAGED, &pNewBuffer, NULL);
-
-	void* ib_indices;
-
-	pNewBuffer->Lock(0, 0, &ib_indices, 0);
-
-	int* pIter = (int*)ib_indices;
-
-	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
-	{
-		for (int j = 0; j < TERRAIN_CHUNK_HEIGHT; j++)
-		{
-			for (int k = 0; k < 12; k++)
-			{
-				*pIter = hexInds[k] + ((i + (j*TERRAIN_CHUNK_WIDTH))*6);
-				pIter++;
-			}
+			//tessellate
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[0], &adjustedHexVerts[3], TESSELLATION_DEGREE, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[0], &adjustedHexVerts[1], &adjustedHexVerts[3], TESSELLATION_DEGREE, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[1], &adjustedHexVerts[5], TESSELLATION_DEGREE, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[5], &adjustedHexVerts[6], TESSELLATION_DEGREE, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[4], &adjustedHexVerts[3], &adjustedHexVerts[6], TESSELLATION_DEGREE, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[3], &adjustedHexVerts[4], TESSELLATION_DEGREE, &pIter);
 		}
 	}
 
@@ -280,7 +267,7 @@ void CHexMap::CreateAllTerrainVertexBuffers()
 			ppVertBuffers[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
 		}
 	}
-	pIndexBuffer = CreateTerrainIndexBufferChunk();
+	pIndexBuffer = NULL;
 }
 
 void CHexMap::GetTilespaceCullRect(RECT* pOut)
@@ -374,8 +361,8 @@ void CHexMap::RenderTerrain()
 	GetChunkspaceCullRect(&chunks);
 	const GameTexture* pTerrainTex = GET_TEXTURE(L"terrain");
 
-	static int iNumTris = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*4;
-	static int iNumVerts = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*6;
+	static int iNumTrisPerHex = g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE)*6;
+	static int iNumTrisTotal = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*iNumTrisPerHex;
 
 	for (int i = chunks.left; i < chunks.right; i++)
 	{
@@ -392,7 +379,7 @@ void CHexMap::RenderTerrain()
 				continue;
 			pos[0] = ((int)i) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
 			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
-			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTris, &iNumVerts, pTerrainTex, pos, scl, rot, false);
+			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTrisTotal, NULL, pTerrainTex, pos, scl, rot, false);
 		}
 	}
 }

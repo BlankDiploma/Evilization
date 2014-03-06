@@ -341,10 +341,61 @@ static inline void DoVertexLerp(FlexVertex* pA, FlexVertex* pB, FlexVertex* pOut
 	pOut->x = (pA->x+pB->x)/2;
 	pOut->y = (pA->y+pB->y)/2;
 	pOut->z = (pA->z+pB->z)/2;
-	pOut->diffuse = (pA->diffuse+pB->diffuse)/2;
+	pOut->diffuse = (pB->diffuse-pA->diffuse)/2 + pA->diffuse;
 }
 
-static void TesselateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+IDirect3DSurface9* FlexRenderer::CreateScratchSurface(int size)
+{
+	IDirect3DSurface9* pSurfaceOut = NULL;
+	pD3DDevice->CreateOffscreenPlainSurface(size, size, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pSurfaceOut, NULL);
+	return pSurfaceOut;
+}
+
+void FlexRenderer::RenderToScratchSurface(IDirect3DSurface9* pSurface, FlexVertex2D* ppVerts, int iNumVerts)
+{
+	IDirect3DSurface9* origTarget = NULL;
+
+	assert(!bActiveFrame);
+
+	bActiveFrame = true;
+	
+	pD3DDevice->GetRenderTarget(0, &origTarget);
+	pD3DDevice->SetRenderTarget(0, pSurface);
+
+	pD3DDevice->BeginScene();
+
+	pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET  , D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	pD3DDevice->SetVertexDeclaration(FlexVertex2DDecl);
+	pDefaultShader->SetTechnique(default2DTech);
+	//lol slow as shit
+	pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, iNumVerts/3, ppVerts, sizeof(FlexVertex2D));
+	pD3DDevice->EndScene();
+
+	pD3DDevice->SetRenderTarget(0, origTarget);
+
+	bActiveFrame = false;
+}
+
+
+void FlexRenderer::DestroyScratchSurface(IDirect3DSurface9* pSurface)
+{
+	if (pSurface)
+		pSurface->Release();
+}
+
+void FlexRenderer::GetScratchSurfaceData(IDirect3DSurface9* pSurface, DWORD* pDataOut)
+{
+	D3DSURFACE_DESC desc;
+	pSurface->GetDesc(&desc);
+	
+	D3DLOCKED_RECT d3dlr;
+	pSurface->LockRect(&d3dlr, 0, 0); 
+	char* pDst = (char*)d3dlr.pBits;
+	memcpy(pDataOut, d3dlr.pBits, d3dlr.Pitch*desc.Height);
+	pSurface->UnlockRect();
+}
+
+static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
 {
 	//input:
 	//	A
@@ -356,7 +407,7 @@ static void TesselateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex*
 	//output:
 	//  0
 	//		1
-	//  3		2
+	//  3		2		->	6 unique verts, 12 index entries (NYI)
 	//		4
 	//  5
 	FlexVertex vertsTmp[6] = {0};
@@ -366,30 +417,42 @@ static void TesselateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex*
 	DoVertexLerp(vA, vB, &vertsTmp[1]);
 	DoVertexLerp(vA, vC, &vertsTmp[3]);
 	DoVertexLerp(vB, vC, &vertsTmp[4]);
-	if (iDegree > 0)
+	if (iDegree > 1)
 	{
-		TesselateTriangleRecurse(&vertsTmp[0], &vertsTmp[1], &vertsTmp[3], iDegree-1, vertBufferOut);
-		TesselateTriangleRecurse(&vertsTmp[1], &vertsTmp[2], &vertsTmp[4], iDegree-1, vertBufferOut);
-		TesselateTriangleRecurse(&vertsTmp[3], &vertsTmp[4], &vertsTmp[5], iDegree-1, vertBufferOut);
+		//once for each new tri
+		_tessellateTriangleRecurse(&vertsTmp[0], &vertsTmp[1], &vertsTmp[3], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[1], &vertsTmp[2], &vertsTmp[4], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[4], &vertsTmp[5], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[1], &vertsTmp[4], iDegree-1, vertBufferOut);
 	}
 	else
 	{
-		for (int i = 0; i < 6; i++)
-		{
-			**vertBufferOut = vertsTmp[i];
-			(*vertBufferOut)++;
-		}
+		*((*vertBufferOut)++) = vertsTmp[0];
+		*((*vertBufferOut)++) = vertsTmp[1];
+		*((*vertBufferOut)++) = vertsTmp[3];
+
+		*((*vertBufferOut)++) = vertsTmp[1];
+		*((*vertBufferOut)++) = vertsTmp[2];
+		*((*vertBufferOut)++) = vertsTmp[4];
+
+		*((*vertBufferOut)++) = vertsTmp[3];
+		*((*vertBufferOut)++) = vertsTmp[4];
+		*((*vertBufferOut)++) = vertsTmp[5];
+
+		*((*vertBufferOut)++) = vertsTmp[3];
+		*((*vertBufferOut)++) = vertsTmp[1];
+		*((*vertBufferOut)++) = vertsTmp[4];
 	}
 }
 
-void FlexRenderer::TesselateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+void FlexRenderer::TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
 {
-	TesselateTriangleRecurse(vA, vB, vC, iDegree, vertBufferOut);
+	_tessellateTriangleRecurse(vA, vB, vC, iDegree, vertBufferOut);
 }
 
-int FlexRenderer::GetNumTesselatedTriangles(int iDegree)
+int FlexRenderer::GetNumTessellatedTriangles(int iDegree)
 {
-	return pow(4, iDegree);
+	return (int)pow(4, iDegree);
 }
 
 void FlexRenderer::PlaneIntersectRay(D3DXVECTOR3* pOut, const D3DXVECTOR3* pPlanePoint, const D3DXVECTOR3* pPlaneNorm, const D3DXVECTOR3* pRayPoint1, const D3DXVECTOR3* pRayPoint2)
@@ -974,6 +1037,8 @@ void FlexRenderer::ProcessRenderLists()
 	UpdateCamera();
 
 	BeginFrame();
+
+	pDefaultShader->SetTechnique(wireframe3DTech);
 
 	for (int i = 0; i < pCurRenderList->modelsUsed; i++)
 	{

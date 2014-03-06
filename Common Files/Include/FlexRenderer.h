@@ -301,8 +301,6 @@ class FlexRenderer
 	
 
 	void CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
-	void TesselateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut);
-	int GetNumTesselatedTriangles(int iDegree);
 	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
 public:
 	FlexRenderer();
@@ -351,6 +349,12 @@ public:
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
 	void CreateAllTextureAtlasBuffers();
+	void TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut);
+	int GetNumTessellatedTriangles(int iDegree);
+	void RenderToScratchSurface(IDirect3DSurface9* pSurface, FlexVertex2D* ppVerts, int iNumVerts);
+	IDirect3DSurface9* CreateScratchSurface(int size);
+	void DestroyScratchSurface(IDirect3DSurface9* pSurface);
+	void GetScratchSurfaceData(IDirect3DSurface9* pSurface, DWORD* pDataOut);
 };
 
 extern FlexRenderer g_Renderer;
