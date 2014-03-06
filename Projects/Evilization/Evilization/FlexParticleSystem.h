@@ -17,6 +17,7 @@ struct FlexParticle
 	GameTexture* pFontTex;
 	D3DXCOLOR color;
 	DWORD lifetime;
+	DWORD delay;
 	DWORD timeLeft;
 	D3DXVECTOR3 vel;
 };

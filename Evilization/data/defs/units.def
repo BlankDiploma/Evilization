@@ -8,7 +8,7 @@ hexUnitDef stickfigure
 	attackRange 3
 	visRadius 2
 	displayName "Stick Figure"
-	hTex stickfigure
+	hTex scout
 	maxMana 100
 	eaAbilityRefs basic_aoe
 	eaAbilityRefs basic_nuke

@@ -24,6 +24,18 @@ void formatAbilityTag(const TCHAR* tag, TCHAR* pOut, StringTagContext* pContext)
 	}
 }
 
+UnitAbility::UnitAbility()
+{
+	cooldown = 0;
+	pDef = NULL;
+}
+
+UnitAbility::UnitAbility(UnitAbility* pAbility)
+{
+	cooldown = pAbility->cooldown;
+	pDef = pAbility->pDef;
+}
+
 
 void UnitAbility::GetStatByName(const TCHAR* pName, multiVal* pOut)
 {

@@ -119,10 +119,12 @@ struct hexUnitOrder
 {
 	unitOrderType eType;
 	HEXPATH* pPath;
+	UnitAbility* pAbility;
 	POINT targetPt;
 	hexUnitOrder()
 	{
 		pPath = NULL;
+		pAbility = NULL;
 	}
 	~hexUnitOrder()
 	{
@@ -130,6 +132,8 @@ struct hexUnitOrder
 		{
 			delete pPath;
 			pPath = NULL;
+			delete pAbility;
+			pAbility = NULL;
 		}
 	}
 };
@@ -166,7 +170,7 @@ public:
 	{
 		return false;
 	}
-	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
+	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility)
 	{
 		for (int i = 0; i < eaSize(&eaOrders); i++)
 		{
@@ -177,14 +181,18 @@ public:
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		if (pAbility)
+			eaOrders[eaSize(&eaOrders)-1]->pAbility = new UnitAbility(pAbility);
 		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 	}
-	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
+	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility)
 	{
 		eaPush(&eaOrders, new hexUnitOrder);
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		if (pAbility)
+			eaOrders[eaSize(&eaOrders)-1]->pAbility = new UnitAbility(pAbility);
 		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 
 	}
@@ -280,9 +288,13 @@ public:
 	{
 		return bIsDead;
 	}
-	UnitAbilityRef** GetAbilityList()
+	UnitAbilityRef** GetAbilityRefs()
 	{
 		return pDef->eaAbilityRefs;
+	}
+	UnitAbility** GetAbilities()
+	{
+		return eaAbilities;
 	}
 };
 class CHexBuilding

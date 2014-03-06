@@ -557,7 +557,7 @@ void SelectedUnitIssueOrder(lua_State *L, int orderType)
 	POINT targetPt;
 	targetPt.x = 0;
 	targetPt.y = 0;
-	g_GameState.IssueOrder((unitOrderType)orderType, NULL, targetPt);
+	g_GameState.IssueOrder((unitOrderType)orderType, NULL, targetPt, NULL);
 }
 
 void RenderSelectedUnit(lua_State *L)
@@ -649,6 +649,11 @@ cityProject* GetLayoutVarAsCityProject(lua_State *L)
 UnitAbilityRef* GetLayoutVarAsAbilityRef(lua_State *L)
 {
 	return (UnitAbilityRef*)g_pCurContext->pUI->GetLayoutVar();
+}
+
+UnitAbility* GetLayoutVarAsUnitAbility(lua_State *L)
+{
+	return (UnitAbility*)g_pCurContext->pUI->GetLayoutVar();
 }
 
 CHexCity* GetSelectedCity(lua_State *L)
@@ -952,14 +957,16 @@ luabind::object GetNotifications(lua_State *L)
 luabind::object GetAbilityList(lua_State *L)
 {
 	CHexUnit* pUnit = g_GameState.GetSelectedUnit();
-	UnitAbilityRef** eaAbilityList = NULL;
-	UnitAbilityRef** eaAbilities = NULL;
+	UnitAbility** eaAbilityList = NULL;
+	UnitAbility** eaAbilities = NULL;
 	if (pUnit)
-		eaAbilities = pUnit->GetAbilityList();
+	{
+		eaAbilities = pUnit->GetAbilities();
+	}
 	eaCopy(&eaAbilityList, &eaAbilities);
 	lua_pushlightuserdata(L, eaAbilityList);
 	luabind::object ret(luabind::from_stack(L, -1));
-	lua_pop(L,1);		
+	lua_pop(L,1);
 	return ret;
 }
 
@@ -1017,12 +1024,22 @@ const TCHAR* GetNotificationText(lua_State *L, playerNotification* pNote)
 	return pNote ? _wcsdup(pNote->pchText) : NULL;
 }
 
-const TCHAR* GetAbilityName(lua_State *L, UnitAbilityRef* pRef)
+const TCHAR* GetAbilityName(lua_State *L, UnitAbility* pAbility)
 {
-	if (pRef)
+	if (pAbility)
 	{
-		UnitAbilityDef* currAbility = (UnitAbilityDef*) pRef->hAbility.pObj;
-		return _wcsdup(currAbility->displayName);
+		TCHAR* abilityName = _wcsdup(pAbility->pDef->displayName);
+		if (pAbility->cooldown <= 0)
+		{
+			return _wcsdup(pAbility->pDef->displayName);
+		}
+		else
+		{
+			TCHAR widebuf[128];
+			swprintf_s(widebuf, L"(%d) ", pAbility->cooldown);
+			wcscat_s(widebuf, abilityName);
+			return _wcsdup(widebuf);
+		}
 	}
 	else
 		return NULL;
@@ -1230,6 +1247,13 @@ void DistCalcUnitTest(lua_State *L)
 	wsprintf(buf, L"%d calculations performed.", i);
 	g_Console.AddConsoleString(buf);
 }
+void TargetAbility(lua_State *L, UnitAbility* pAbility)
+{
+	if (pAbility)
+	{
+		g_GameState.MouseHandlerPushState(kGameplayMouse_SelectAbilityTarget, pAbility, NULL);
+	}
+}
 
 void DoAllLuaBinds()
 {
@@ -1254,6 +1278,7 @@ void DoAllLuaBinds()
 		luabind::def("Layout_GetVarAsTechNodeDef", &GetLayoutVarAsTechNodeDef),
 		luabind::def("Layout_GetVarAsCityProject", &GetLayoutVarAsCityProject),
 		luabind::def("Layout_GetVarAsAbilityRef", &GetLayoutVarAsAbilityRef),
+		luabind::def("Layout_GetVarAsUnitAbility", &GetLayoutVarAsUnitAbility),
 		luabind::def("Tile_GetLoc", &GetTileLoc),
 		luabind::def("Tile_GetCity", &GetCityFromTile),
 		luabind::def("Gameplay_TilePtToScreen", &TileCoordToScreen),
@@ -1295,6 +1320,7 @@ void DoAllLuaBinds()
 		luabind::def("Debug_DistCalcUnitTest", &DistCalcUnitTest),
 		luabind::def("Abilities_ShowUI", &ShowAbilityUI),
 		luabind::def("Gameplay_GetAbilityList", &GetAbilityList),
+		luabind::def("Ability_Target", &TargetAbility),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")
@@ -1316,6 +1342,8 @@ void DoAllLuaBinds()
 		class_<cityProject>("cityProject")
 		.def(constructor<>()),
 		class_<UnitAbilityRef>("UnitAbilityRef")
+		.def(constructor<>()),
+		class_<UnitAbility>("UnitAbility")
 		.def(constructor<>())
 	];
 }

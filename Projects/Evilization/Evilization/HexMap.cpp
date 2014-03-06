@@ -901,9 +901,41 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 			g_GameState.RenderDamageText(damageTaken, pTarUnit->GetLoc());
 			if (pTarUnit->IsDead())
 			{
-				DeleteUnit(pTarUnit);
+				g_GameState.AddUnitToDeadList(pTarUnit);
 			}
 			return true;
+		}break;
+	case kOrder_Ability:
+		{
+			AbilityAffectsFlags eAffects = pOrder->pAbility->pDef->eAffectsFlags;
+			int radius = pOrder->pAbility->pDef->radius;
+			if (radius >= 0)
+			{
+				int numTiles = (1+(radius*6 + 6)/2 * radius);
+				POINT* buf;
+				buf = (POINT*) malloc(numTiles * sizeof(POINT));
+				POINT targetPt = pOrder->targetPt;
+				GetTilesInRadius(targetPt, radius, buf);
+				for (int i = 0; i < numTiles; i++)
+				{
+					POINT curTilePt = buf[i];
+					hexTile* curTile = GetTile(curTilePt);
+					CHexUnit* curUnit = curTile->pUnit;
+					if (curUnit)
+					{
+						if (curUnit->GetOwnerID() != pUnit->GetOwnerID())
+						{
+							int damageTaken = curUnit->TakeDamage(pOrder->pAbility->pDef->damage);
+							g_GameState.RenderDamageText(damageTaken, curUnit->GetLoc());
+							if (curUnit->IsDead())
+							{
+								g_GameState.AddUnitToDeadList(curUnit);
+							}
+						}
+					}
+				}
+			}
+		return true;
 		}break;
 	}
 	return false;
@@ -1040,20 +1072,6 @@ int CHexMap::GetDistanceBetweenTiles(POINT ptA, POINT ptB)
 	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
 
 	return dist;
-}
-
-void CHexMap::DeleteUnit(CHexUnit* pUnit)
-{
-	CHexPlayer* pOwner = g_GameState.GetPlayerByID(pUnit->GetOwnerID());
-	hexTile* pTile = GetTile(pUnit->GetLoc());
-	
-	CHexUnit* curSelected = g_GameState.GetSelectedUnit();
-	if (curSelected == pUnit)
-		curSelected = NULL;
-
-	pOwner->RemoveOwnership(pUnit);
-	delete pTile->pUnit;
-	pTile->pUnit = NULL;
 }
 
 #include "Autogen\HexMap_h_ast.cpp"

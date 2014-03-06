@@ -7,9 +7,9 @@
 AUTO_ENUM(AbilityAffectsFlags) 
 {
 	kAffects_None = 0,
-	kAffects_Enemy,
-	kAffects_Ally,
-	kAffects_Tile
+	kAffects_Enemy = 1,
+	kAffects_Ally = 2,
+	kAffects_Tile = 4
 };
 
 PARSE_STRUCT(UnitAbilityDef)
@@ -35,6 +35,8 @@ public:
 	float cooldown;
 	const UnitAbilityDef* pDef;
 	void GetStatByName(const TCHAR* pName, multiVal* pOut);
+	UnitAbility();
+	UnitAbility(UnitAbility* pAbility);
 };
 
 struct StringTagContext;

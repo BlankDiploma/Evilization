@@ -162,7 +162,6 @@ public:
 	void GetWorldspaceCullTrapezoid(D3DXVECTOR3 pointsOut[4]);
 	bool IsUnitInTiles(CHexUnit* pUnit, POINT* pTilePts, int numTiles); 
 	int GetDistanceBetweenTiles(POINT ptA, POINT ptB);
-	void DeleteUnit(CHexUnit* pUnit);
 
 private:
 

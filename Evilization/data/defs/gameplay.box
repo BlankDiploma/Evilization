@@ -244,10 +244,10 @@ UIButtonDef Ability
 		pressedIdx 2
 	}
 	textFlags CenterX CenterY Dropshadow
-	textFunc <& return Ability_GetName(Layout_GetVarAsAbilityRef()) &>
+	textFunc <& return Ability_GetName(Layout_GetVarAsUnitAbility()) &>
 	hFont courier_new
 	textcolor 255 255 255
-	//clickFunc <& Abilities_ShowUI() &>
+	clickFunc <& Ability_Target(Layout_GetVarAsUnitAbility()) &>
 }
 
 UIBoxDef Portrait

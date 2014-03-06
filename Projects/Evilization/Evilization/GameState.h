@@ -387,6 +387,7 @@ private:
 	GameState eCurState;
 	CHexUnit* curSelUnit;
 	CHexCity* curSelCity;
+	CHexUnit** eaDeadUnits;
 
 	int iCurPlayer;
 	int iNumPlayers;
@@ -404,6 +405,7 @@ private:
 	void CreateSplatBuffers();
 	void RenderTextureSplat(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );
+	void DeleteUnit(CHexUnit* pUnit);
 
 public:
 	CGameState();
@@ -425,6 +427,7 @@ public:
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
 	void RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	void RenderDamageText(int damage, POINT tarPt);
+	void AddUnitToDeadList(CHexUnit* pUnit);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
 	{
@@ -490,7 +493,7 @@ public:
 	void StartPlayerTurn(int idx);
 	void EndCurrentTurn();
 	void ExecuteQueuedActions();
-	void IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt);
+	void IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility);
 	void RenderSelectedUnit(POINT screenPt, float scale = 1.0);
 	CHexUnit* GetSelectedUnit();
 	POINT TilePtToScreenPt(int x, int y);
@@ -516,6 +519,10 @@ public:
 			return &pPlayers[id];
 
 		return NULL;
+	}
+	CHexUnit* GetCurSelUnit()
+	{
+		return curSelUnit;
 	}
 };
 

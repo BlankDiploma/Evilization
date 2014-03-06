@@ -19,6 +19,7 @@ CGameState::CGameState()
 	eCurState = kGameState_Invalid;
 	g_HexSize = DEFAULT_HEX_SIZE;
 	eaMouseStates = NULL;
+	eaDeadUnits = NULL;
 }
 
 void CGameState::Initialize(int screenW, int screenH)
@@ -95,10 +96,10 @@ void CGameState::Update(DWORD tick)
 static POINT points[32];
 static int num = 0;
 
-void CGameState::IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt)
+void CGameState::IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility)
 {
 	if (curSelUnit)
-		curSelUnit->OverwriteQueuedOrders(eType, pPath, targetPt);
+		curSelUnit->OverwriteQueuedOrders(eType, pPath, targetPt, pAbility);
 }
 
 void CGameState::DoGameplayMouseInput_Default(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
@@ -157,14 +158,14 @@ void CGameState::DoGameplayMouseInput_UnitSelected(UINT msg, POINT pt, WPARAM wP
 					int unitRange = pUnit->GetAttackRange();
 					int dist = pCurrentMap->GetDistanceBetweenTiles(curSelUnit->GetLoc(), pUnit->GetLoc());
 					if (dist <= unitRange)
-						IssueOrder(kOrder_Melee, pPath, pUnit->GetLoc());
+						IssueOrder(kOrder_Melee, pPath, pUnit->GetLoc(), NULL);
 				}
 			}
 			else
 			{
 				pCurrentMap->HexPathfindTile(curSelUnit, curSelUnit->GetLoc(),PixelToTilePt(pt.x, pt.y),&pPath);
 				if (pPath)
-					IssueOrder(kOrder_Move, pPath, targetPt);
+					IssueOrder(kOrder_Move, pPath, targetPt, NULL);
 			}
 		}break;
 	case WM_MOUSEWHEEL:
@@ -232,6 +233,34 @@ void CGameState::DoGameplayMouseInput_PlaceBuilding(UINT msg, POINT pt, WPARAM w
 
 void CGameState::DoGameplayMouseInput_SelectAbilityTarget(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam, void* pHandlerParam)
 {
+	switch (msg)
+	{
+	case WM_LBUTTONDOWN:
+		{
+			uiDragStart = GetTickCount();
+		}break;
+	case WM_LBUTTONUP:
+		{
+			if (GetTickCount() - uiDragStart < DRAG_THRESHOLD_MS)
+			{
+				HEXPATH* pPath = NULL;
+				POINT targetPt;
+				targetPt = PixelToTilePt(pt.x, pt.y);
+				IssueOrder(kOrder_Ability, pPath, targetPt, (UnitAbility*) pHandlerParam);
+				MouseHandlerPopState();
+			}
+			uiDragStart = 0;
+		}break;
+	case WM_RBUTTONUP:
+		{
+			MouseHandlerPopState();
+		}break;
+	case WM_MOUSEWHEEL:
+		{
+			int rot = GET_WHEEL_DELTA_WPARAM(wParam)/WHEEL_DELTA;
+			g_Renderer.GetCamera()->MoveCamera(0,0,rot);
+		}break;
+	}
 }
 
 void CGameState::GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam)
@@ -285,6 +314,25 @@ void CGameState::MouseHandlerAdditionalRendering()
 					RenderTextureSplat(pTopOrder->targetPt.x, pTopOrder->targetPt.y, pPortion, 0, fScalar);
 				}
 
+				if (pTopOrder && (pTopOrder->eType == kOrder_Ability))
+				{
+					int radius = pTopOrder->pAbility->pDef->radius;
+					if (radius >= 0)
+					{
+						int numTiles = (1+(radius*6 + 6)/2 * radius);
+						POINT* buf;
+						buf = (POINT*) malloc(numTiles * sizeof(POINT));
+						POINT targetPt = pTopOrder->targetPt;
+						pCurrentMap->GetTilesInRadius(targetPt, radius, buf);
+						for (int i = 0; i < numTiles; i++)
+						{
+							POINT curTile = buf[i];
+							GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+							float fScalar = 3.5f;
+							RenderTextureSplat(curTile.x, curTile.y, pPortion, 0, fScalar);
+						}
+					}
+				}
 
 				HEXPATH* pPath = NULL;
 				if (PtInRect(&mapViewport, ptMousePos) && bMouseOverGameplay)
@@ -317,6 +365,22 @@ void CGameState::MouseHandlerAdditionalRendering()
 		}break;
 	case kGameplayMouse_SelectAbilityTarget:
 		{
+			int radius = ((UnitAbility*)pCurHandler->pMouseHandlerParam)->pDef->radius;
+			if (radius >= 0)
+			{
+				int numTiles = (1+(radius*6 + 6)/2 * radius);
+				POINT* buf;
+				buf = (POINT*) malloc(numTiles * sizeof(POINT));
+				POINT mouseoverPt = PixelToTilePt(ptMousePos.x, ptMousePos.y);
+				pCurrentMap->GetTilesInRadius(mouseoverPt, radius, buf);
+				for (int i = 0; i < numTiles; i++)
+				{
+					POINT curTile = buf[i];
+					GameTexturePortion* pPortion = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
+					float fScalar = 3.5f;
+					RenderTextureSplat(curTile.x, curTile.y, pPortion, 0, fScalar);
+				}
+			}
 		}break;
 	}
 }
@@ -338,7 +402,8 @@ void CGameState::Render()
 				POINT mouseoverTile = PixelToTilePt(ptMousePos.x, ptMousePos.y);
 				GameTexturePortion* pSplatTexture;
 				pSplatTexture = GET_DEF_FROM_STRING(GameTexturePortion, L"selectedtile");
-				RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, pSplatTexture, 0, 4.0f);
+				if (eaMouseStates[eaSize(&eaMouseStates)-1]->eMouseHandler != kGameplayMouse_SelectAbilityTarget)
+					RenderTextureSplat(mouseoverTile.x, mouseoverTile.y, pSplatTexture, 0, 4.0f);
 			}
 
 			UI.Render();
@@ -639,10 +704,29 @@ void CGameState::ExecuteQueuedActions()
 void CGameState::EndCurrentTurn()
 {
 	ExecuteQueuedActions();
+	for(int i = eaSize(&eaDeadUnits)-1; i >= 0; i--)
+	{
+		DeleteUnit(eaDeadUnits[i]);
+		eaPop(&eaDeadUnits);
+	}
 
 	iCurPlayer++;
 	iCurPlayer = iCurPlayer % iNumPlayers;
 	StartPlayerTurn(iCurPlayer);
+}
+
+void CGameState::DeleteUnit(CHexUnit* pUnit)
+{
+	CHexPlayer* pOwner = GetPlayerByID(pUnit->GetOwnerID());
+	hexTile* pTile = pCurrentMap->GetTile(pUnit->GetLoc());
+	
+	CHexUnit* curSelected = g_GameState.GetSelectedUnit();
+	if (curSelected == pUnit)
+		curSelected = NULL;
+
+	pOwner->RemoveOwnership(pUnit);
+	delete pTile->pUnit;
+	pTile->pUnit = NULL;
 }
 
 void CGameState::SelectNextUnit( CHexPlayer* pPlayer )
@@ -711,7 +795,7 @@ void CGameState::ShowGameplayUI()
 
 void CGameState::ShowTechTreeUI()
 {
-	g_GameState.MouseHandlerPushState(kGameplayMouse_Disable, NULL);
+	MouseHandlerPushState(kGameplayMouse_Disable, NULL);
 	UI.Reset(screenW, screenH);
 	UI.AddWindowByName(_T("TechTree"));
 }
@@ -902,7 +986,7 @@ void CGameState::CreateSplatBuffers()
 
 void CGameState::RenderTextureSplat(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
 {
-	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, -0.011f};
+	float vPos[3] = {x*HEX_WIDTH + HEX_HALF_WIDTH, y*HEX_HEIGHT*3/4 + HEX_HALF_HEIGHT, -0.010f};
 	float vRot[3] = {0.0f, 0.0f, rot};
 	float vScale[3] = {scale, scale, 1.0f};
 	if (y & 1)
@@ -1102,6 +1186,20 @@ void CGameState::RenderDamageText(int damage, POINT tarPt)
 	TCHAR text[64];
 	wsprintf(text, L"%d", damage*-1);
 	g_ParticleSystem.AddParticle(pFontTex, text, pos, color, lifetime, vel);
+}
+
+void CGameState::AddUnitToDeadList(CHexUnit* pUnit)
+{
+	bool alreadyDead = false;
+	for (int i = 0; i < eaSize(&eaDeadUnits); i++)
+	{
+		if (eaDeadUnits[i] == pUnit)
+		{
+			alreadyDead = true;
+		}
+	}
+	if (!alreadyDead)
+		eaPush(&eaDeadUnits, pUnit);
 }
 
 CGameState g_GameState;

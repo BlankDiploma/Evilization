@@ -2,7 +2,7 @@ UnitAbilityDef basic_aoe
 {
 	cost 50
 	range 3
-	radius 2
+	radius 1
 	damage 50
 	cooldown 3
 	eAffectsFlags Enemy
@@ -12,7 +12,7 @@ UnitAbilityDef basic_nuke
 {
 	cost 50
 	range 5
-	radius 1
+	radius 0
 	damage 100
 	cooldown 3
 	eAffectsFlags Enemy

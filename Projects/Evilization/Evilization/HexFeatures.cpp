@@ -251,11 +251,12 @@ CHexUnit::CHexUnit(hexUnitDef* def, CHexPlayer* pOwner)
 	mana = def->maxMana;
 	movRemaining = def->movement;
 	eaOrders = NULL;
+	eaAbilities = NULL;
 	for (int i = 0; i < eaSize(&def->eaAbilityRefs); i++)
 	{
-		UnitAbility* pAbility = new UnitAbility;
-		pAbility->pDef = (UnitAbilityDef*) def->eaAbilityRefs[i]->hAbility.pObj;
-		pAbility->cooldown = pAbility->pDef->cooldown;
+		eaPush(&eaAbilities, new UnitAbility);
+		eaAbilities[eaSize(&eaAbilities)-1]->pDef = (UnitAbilityDef*) def->eaAbilityRefs[i]->hAbility.pObj;
+		eaAbilities[eaSize(&eaAbilities)-1]->cooldown = 0;
 	}
 	bIsDead = false;
 	if (pOwner)
