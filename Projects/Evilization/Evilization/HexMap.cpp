@@ -332,7 +332,7 @@ void CHexMap::ApplyHeightmapToTileVerts(POINT tilePt, int chunkX, int chunkY, Fl
 		if (heightmapDataBuffer[index] == 0)
 			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH;
 		else
-			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH * (1.0f - (((float)(heightmapDataBuffer[index] - 0xff000000)) / 0xffffff));
+			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH * (1.0f - (((float)(heightmapDataBuffer[index] & 0xffffff)) / 0xffffff));
 	}
 }
 

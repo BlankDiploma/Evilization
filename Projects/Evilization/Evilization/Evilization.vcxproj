@@ -71,7 +71,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
-      <AdditionalOptions>d3d9.lib d3dx9d.lib dxguid.lib luad.lib luabindd_noRTTI.lib  dxerr.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>d3d9.lib d3dx9.lib dxguid.lib luad.lib luabindd_noRTTI.lib  dxerr.lib %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
