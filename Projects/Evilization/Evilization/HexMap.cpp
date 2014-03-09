@@ -174,7 +174,10 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
 }
 
-#define DEEP_WATER_HEIGHT 2.0f
+#define OCEAN_FLOOR_VERTEX_DEPTH 2.0f
+#define OCEAN_SURFACE_VERTEX_DEPTH 0.5f
+
+#define HEIGHT_MAP_RESOLUTION 128
 
 void CHexMap::GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile, hexTile* neighbors[6])
 {
@@ -220,17 +223,17 @@ void CHexMap::GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile,
 		{
 			for (int j = 0; j < 3; j++)
 			{
-				vertsByDirection[i][j].x *= 16.0f;
-				vertsByDirection[i][j].y *= 16.0f;
+				vertsByDirection[i][j].x *= HEIGHT_MAP_RESOLUTION/HEX_HEIGHT;
+				vertsByDirection[i][j].y *= HEIGHT_MAP_RESOLUTION/HEX_HEIGHT;
 
-				if (vertsByDirection[i][j].x < 32)
+				if (vertsByDirection[i][j].x < HEIGHT_MAP_RESOLUTION/2)
 					vertsByDirection[i][j].x--;
-				else if (vertsByDirection[i][j].x > 32)
+				else if (vertsByDirection[i][j].x > HEIGHT_MAP_RESOLUTION/2)
 					vertsByDirection[i][j].x++;
 
-				if (vertsByDirection[i][j].y < 32)
+				if (vertsByDirection[i][j].y < HEIGHT_MAP_RESOLUTION/2)
 					vertsByDirection[i][j].y--;
-				else if (vertsByDirection[i][j].y > 32)
+				else if (vertsByDirection[i][j].y > HEIGHT_MAP_RESOLUTION/2)
 					vertsByDirection[i][j].y++;
 
 				vertsByDirection[i][j].x -= 0.5f;
@@ -291,11 +294,12 @@ void CHexMap::GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile,
 	g_Renderer.RenderToScratchSurface(pOut, pCoastline, vertsToDraw, pVertIter-vertsToDraw);
 }
 
-static DWORD heightmapDataBuffer[64*64];
+
+static DWORD heightmapDataBuffer[HEIGHT_MAP_RESOLUTION*HEIGHT_MAP_RESOLUTION];
 
 void CHexMap::ApplyHeightmapToTileVerts(POINT tilePt, int chunkX, int chunkY, FlexVertex* pStart, FlexVertex* pEnd, bool bIsCoastline)
 {
-	static FlexScratchSurface heightmap(64);
+	static FlexScratchSurface heightmap(HEIGHT_MAP_RESOLUTION);
 	hexTile* pTile = GetTile(tilePt);
 	hexTile* neighbors[6];
 	if (bIsCoastline)
@@ -313,22 +317,22 @@ void CHexMap::ApplyHeightmapToTileVerts(POINT tilePt, int chunkX, int chunkY, Fl
 	{
 		if (!bIsCoastline)
 		{
-			pIter->z = DEEP_WATER_HEIGHT;
+			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH;
 			continue;
 		}
 		float adjX = pIter->x - ((tilePt.y & 1 ? HEX_HALF_WIDTH : 0) + tilePt.x * HEX_WIDTH);
 		float adjY = pIter->y - (tilePt.y * HEX_HEIGHT*3/4);
-		adjX *= 15.9f;
-		adjY *= 15.9f;
-		if (adjX >= 64)
-			adjX = 63;
-		if (adjY >= 64)
-			adjY = 63;
-		int index = ((int)adjX) + ((int)adjY)*64;
+		adjX *= HEIGHT_MAP_RESOLUTION/HEX_HEIGHT;
+		adjY *= HEIGHT_MAP_RESOLUTION/HEX_HEIGHT;
+		if (adjX >= HEIGHT_MAP_RESOLUTION)
+			adjX = HEIGHT_MAP_RESOLUTION-1;
+		if (adjY >= HEIGHT_MAP_RESOLUTION)
+			adjY = HEIGHT_MAP_RESOLUTION-1;
+		int index = ((int)adjX) + ((int)adjY)*HEIGHT_MAP_RESOLUTION;
 		if (heightmapDataBuffer[index] == 0)
-			pIter->z = DEEP_WATER_HEIGHT;
+			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH;
 		else
-			pIter->z = DEEP_WATER_HEIGHT * (1.0f - (((float)(heightmapDataBuffer[index] - 0xff000000)) / 0xffffff));
+			pIter->z = OCEAN_FLOOR_VERTEX_DEPTH * (1.0f - (((float)(heightmapDataBuffer[index] - 0xff000000)) / 0xffffff));
 	}
 }
 
@@ -343,9 +347,19 @@ bool CHexMap::TileIsCoastline(int x, int y)
 	return false;
 }
 
+static void CalcTileUVsFromGameTexturePortion(const GameTexturePortion* pTileTex, float* fMinU, float* fMaxU, float* fMinV, float* fMaxV)
+{
+	const GameTexture* pSrcTex = pTileTex->hTex.pTex;
+	*fMinU = (pTileTex->rSrc->left+1.0f)/pSrcTex->width;
+	*fMaxU = (pTileTex->rSrc->right-1.0f)/pSrcTex->width;
+	*fMinV = (pTileTex->rSrc->top+1.0f)/pSrcTex->height;
+	*fMaxV = (pTileTex->rSrc->bottom-1.0f)/pSrcTex->height;
+}
+
 TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 {
 	TerrainVertexChunk* pNewBuffer = new TerrainVertexChunk;
+	static GameTexturePortion* pSandTexture = GET_DEF_FROM_STRING(GameTexturePortion, L"terrain_desert");
 	
 /*
 			0
@@ -376,6 +390,10 @@ TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
 			currTile = &pTiles[iActualTileX + iActualTileY*w];
 
+			if ((currTile->pDef->eFlags & kTileFlag_Water))
+			{
+				iNumTris += 6;
+			}
 			if ((currTile->pDef->eFlags & kTileFlag_Water) && TileIsCoastline(iActualTileX, iActualTileY))
 			{
 				iNumTris += g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE_COASTLINE)*6;
@@ -406,16 +424,20 @@ TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			currTile = &pTiles[iActualTileX + iActualTileY*w];
 
 			const GameTexturePortion* pTileTex = GET_REF(GameTexturePortion, currTile->pDef->hTex);
-			const GameTexture* pSrcTex = pTileTex->hTex.pTex;
+			float fMinU;
+			float fMaxU;
+			float fMinV;
+			float fMaxV;
 
-			float fMinU = (pTileTex->rSrc->left+1.0f)/pSrcTex->width;
-			float fMaxU = (pTileTex->rSrc->right-1.0f)/pSrcTex->width;
-			float fMinV = (pTileTex->rSrc->top+1.0f)/pSrcTex->height;
-			float fMaxV = (pTileTex->rSrc->bottom-1.0f)/pSrcTex->height;
+			if ((currTile->pDef->eFlags & kTileFlag_Water))
+				CalcTileUVsFromGameTexturePortion(pSandTexture, &fMinU, &fMaxU, &fMinV, &fMaxV);
+			else
+				CalcTileUVsFromGameTexturePortion(pTileTex, &fMinU, &fMaxU, &fMinV, &fMaxV);
+
 			float fZ = 0.0f;
 
 			if (currTile->pDef->eFlags & kTileFlag_DeepWater)
-				fZ = DEEP_WATER_HEIGHT;
+				fZ = OCEAN_SURFACE_VERTEX_DEPTH;
 			
 			FlexVertex adjustedHexVerts[7];
 
@@ -460,7 +482,56 @@ TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			{
 				POINT pt = {iActualTileX, iActualTileY};
 				ApplyHeightmapToTileVerts(pt, x, y, pHeightmapIter, pIter, (tessellationDegree == TESSELLATION_DEGREE_COASTLINE));
+				
+				CalcTileUVsFromGameTexturePortion(pTileTex, &fMinU, &fMaxU, &fMinV, &fMaxV);
+			
+				//prep verts for tessellation
+				for (int k = 0; k < 7; k++)
+				{
+					adjustedHexVerts[k] = hexVerts[k];
+					adjustedHexVerts[k].x += i*(HEX_WIDTH);
+					if (j&1)
+						adjustedHexVerts[k].x += HEX_HALF_WIDTH;
+
+					adjustedHexVerts[k].y += j*(HEX_HEIGHT * (3.0f/4.0f));
+				
+					adjustedHexVerts[k].z = OCEAN_SURFACE_VERTEX_DEPTH;
+
+					adjustedHexVerts[k].u *= fMaxU-fMinU;
+					adjustedHexVerts[k].u += fMinU;
+
+					adjustedHexVerts[k].v *= fMaxV-fMinV;
+					adjustedHexVerts[k].v += fMinV;
+
+					adjustedHexVerts[k].diffuse = 0xffffffff;
+				}
+				(*pIter++) = adjustedHexVerts[2];
+				(*pIter++) = adjustedHexVerts[0];
+				(*pIter++) = adjustedHexVerts[3];
+				
+				(*pIter++) = adjustedHexVerts[0];
+				(*pIter++) = adjustedHexVerts[1];
+				(*pIter++) = adjustedHexVerts[3];
+				
+				(*pIter++) = adjustedHexVerts[3];
+				(*pIter++) = adjustedHexVerts[1];
+				(*pIter++) = adjustedHexVerts[5];
+				
+				(*pIter++) = adjustedHexVerts[3];
+				(*pIter++) = adjustedHexVerts[5];
+				(*pIter++) = adjustedHexVerts[6];
+				
+				(*pIter++) = adjustedHexVerts[4];
+				(*pIter++) = adjustedHexVerts[3];
+				(*pIter++) = adjustedHexVerts[6];
+				
+				(*pIter++) = adjustedHexVerts[2];
+				(*pIter++) = adjustedHexVerts[3];
+				(*pIter++) = adjustedHexVerts[4];
 			}
+
+			//if this hex has water, draw another hex at water-level with a different texture
+
 			
 		}
 	}

@@ -396,6 +396,11 @@ static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVerte
 
 void FlexRenderer::TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
 {
+	if (iDegree < 1)
+	{
+		Errorf("TessellateTriangleIntoBuffer called with a degree of 0 or less, which is invalid.");
+		return;
+	}
 	_tessellateTriangleRecurse(vA, vB, vC, iDegree, vertBufferOut);
 }
 
@@ -987,7 +992,7 @@ void FlexRenderer::ProcessRenderLists()
 
 	BeginFrame();
 
-	pDefaultShader->SetTechnique(wireframe3DTech);
+//	pDefaultShader->SetTechnique(wireframe3DTech);
 
 	for (int i = 0; i < pCurRenderList->modelsUsed; i++)
 	{
