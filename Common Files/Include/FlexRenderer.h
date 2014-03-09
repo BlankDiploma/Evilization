@@ -262,6 +262,19 @@ class FlexModel
 	IDirect3DTexture9* pTex;
 };
 
+class FlexScratchSurface
+{
+	int size;
+	IDirect3DSurface9* pRenderTarget;
+	IDirect3DSurface9* pOffscreenPlain;
+public:
+	FlexScratchSurface(int size);
+	~FlexScratchSurface();
+	void GetData(DWORD* pDataOut);
+	void SaveToPNG(TCHAR* filename);
+	IDirect3DSurface9* GetRenderTarget();
+};
+
 class FlexRenderer
 {
 	IDirect3D9* pD3D;
@@ -351,10 +364,7 @@ public:
 	void CreateAllTextureAtlasBuffers();
 	void TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut);
 	int GetNumTessellatedTriangles(int iDegree);
-	void RenderToScratchSurface(IDirect3DSurface9* pSurface, FlexVertex2D* ppVerts, int iNumVerts);
-	IDirect3DSurface9* CreateScratchSurface(int size);
-	void DestroyScratchSurface(IDirect3DSurface9* pSurface);
-	void GetScratchSurfaceData(IDirect3DSurface9* pSurface, DWORD* pDataOut);
+	void RenderToScratchSurface(FlexScratchSurface* pSurface, GameTexture* pTexture, FlexVertex2D* ppVerts, int iNumVerts);
 };
 
 extern FlexRenderer g_Renderer;

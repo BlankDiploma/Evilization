@@ -344,57 +344,6 @@ static inline void DoVertexLerp(FlexVertex* pA, FlexVertex* pB, FlexVertex* pOut
 	pOut->diffuse = (pB->diffuse-pA->diffuse)/2 + pA->diffuse;
 }
 
-IDirect3DSurface9* FlexRenderer::CreateScratchSurface(int size)
-{
-	IDirect3DSurface9* pSurfaceOut = NULL;
-	pD3DDevice->CreateOffscreenPlainSurface(size, size, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pSurfaceOut, NULL);
-	return pSurfaceOut;
-}
-
-void FlexRenderer::RenderToScratchSurface(IDirect3DSurface9* pSurface, FlexVertex2D* ppVerts, int iNumVerts)
-{
-	IDirect3DSurface9* origTarget = NULL;
-
-	assert(!bActiveFrame);
-
-	bActiveFrame = true;
-	
-	pD3DDevice->GetRenderTarget(0, &origTarget);
-	pD3DDevice->SetRenderTarget(0, pSurface);
-
-	pD3DDevice->BeginScene();
-
-	pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET  , D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-	pD3DDevice->SetVertexDeclaration(FlexVertex2DDecl);
-	pDefaultShader->SetTechnique(default2DTech);
-	//lol slow as shit
-	pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, iNumVerts/3, ppVerts, sizeof(FlexVertex2D));
-	pD3DDevice->EndScene();
-
-	pD3DDevice->SetRenderTarget(0, origTarget);
-
-	bActiveFrame = false;
-}
-
-
-void FlexRenderer::DestroyScratchSurface(IDirect3DSurface9* pSurface)
-{
-	if (pSurface)
-		pSurface->Release();
-}
-
-void FlexRenderer::GetScratchSurfaceData(IDirect3DSurface9* pSurface, DWORD* pDataOut)
-{
-	D3DSURFACE_DESC desc;
-	pSurface->GetDesc(&desc);
-	
-	D3DLOCKED_RECT d3dlr;
-	pSurface->LockRect(&d3dlr, 0, 0); 
-	char* pDst = (char*)d3dlr.pBits;
-	memcpy(pDataOut, d3dlr.pBits, d3dlr.Pitch*desc.Height);
-	pSurface->UnlockRect();
-}
-
 static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
 {
 	//input:
@@ -1463,6 +1412,76 @@ void FlexRenderer::CreateAllTextureAtlasBuffers()
 		eaDestroy(&atlasIter->second);
 	}
 }
+FlexScratchSurface::FlexScratchSurface(int size)
+{
+	this->size = size;
+	g_Renderer.GetD3DDevice()->CreateRenderTarget(size, size, D3DFMT_X8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &pRenderTarget, NULL);
+	pOffscreenPlain = NULL;
+}
+
+void FlexRenderer::RenderToScratchSurface(FlexScratchSurface* pSurface, GameTexture* pTexture, FlexVertex2D* ppVerts, int iNumVerts)
+{
+	IDirect3DSurface9* origTarget = NULL;
+
+	assert(!bActiveFrame);
+
+	bActiveFrame = true;
+	
+	pD3DDevice->GetRenderTarget(0, &origTarget);
+	pD3DDevice->SetRenderTarget(0, pSurface->GetRenderTarget());
+	pD3DDevice->SetTexture(0, pTexture->pD3DTex);
+
+	Begin2D();
+	pD3DDevice->BeginScene();
+
+	pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER  , D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	//lol slow as shit
+	pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, iNumVerts/3, ppVerts, sizeof(FlexVertex2D));
+	
+	pD3DDevice->EndScene();
+	End2D();
+
+	pD3DDevice->SetRenderTarget(0, origTarget);
+
+	bActiveFrame = false;
+}
+
+void FlexScratchSurface::SaveToPNG(TCHAR* filename)
+{
+	D3DXSaveSurfaceToFile(filename,  D3DXIFF_PNG, pRenderTarget, NULL, NULL);
+}
+
+IDirect3DSurface9* FlexScratchSurface::GetRenderTarget()
+{
+	return pRenderTarget;
+}
+
+
+FlexScratchSurface::~FlexScratchSurface()
+{
+	if (pRenderTarget)
+		pRenderTarget->Release();
+	if (pOffscreenPlain)
+		pOffscreenPlain->Release();
+}
+
+void FlexScratchSurface::GetData(DWORD* pDataOut)
+{
+	if (!pOffscreenPlain)
+		g_Renderer.GetD3DDevice()->CreateOffscreenPlainSurface(size, size, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pOffscreenPlain, NULL);
+
+	D3DSURFACE_DESC desc;
+	pOffscreenPlain->GetDesc(&desc);
+	
+	g_Renderer.GetD3DDevice()->GetRenderTargetData(pRenderTarget, pOffscreenPlain);
+
+	D3DLOCKED_RECT d3dlr;
+	pOffscreenPlain->LockRect(&d3dlr, 0, 0); 
+	char* pDst = (char*)d3dlr.pBits;
+	memcpy(pDataOut, d3dlr.pBits, d3dlr.Pitch*desc.Height);
+	pOffscreenPlain->UnlockRect();
+}
+
 
 FlexRenderer g_Renderer;
 

@@ -32,7 +32,8 @@ hexTileDef* pMountain;
 #define TERRAIN_CHUNK_WIDTH 16
 #define TERRAIN_CHUNK_HEIGHT 16
 
-#define TESSELLATION_DEGREE 2
+#define TESSELLATION_DEGREE_COASTLINE 3
+#define TESSELLATION_DEGREE_OTHER 1
 
 union biomeIndex{
 	DWORD color;
@@ -173,9 +174,178 @@ void CHexMap::RenderTile(POINT tilePt, hexTile* pTile, DWORD color, float scale)
 		g_Renderer.AddSpriteToRenderList(GET_REF(GameTexturePortion, pTile->pUnit->GetDef()->hTex), tilePt, color, scale);
 }
 
-IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
+#define DEEP_WATER_HEIGHT 2.0f
+
+void CHexMap::GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile, hexTile* neighbors[6])
 {
-	IDirect3DVertexBuffer9* pNewBuffer = NULL;
+	static GameTexture* pCoastline = NULL;
+	static bool bInitialized = false;
+
+	//these verts are arranged in the same order as the HexDirection enum
+	//within a set of 3 verts, vert 0 will always be the one closer to the "previous" direction, vert 1 will be the "next" direction, and vert 2 is the center point.
+	static FlexVertex2D vertsByDirection[6][3] = {
+		
+		{{0, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{0, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}}, 
+
+		{{0, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_HALF_WIDTH, 0, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}},
+		
+		{{HEX_HALF_WIDTH, 0, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_WIDTH, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}},
+		
+		{{HEX_WIDTH, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_WIDTH, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}},
+		
+		{{HEX_WIDTH, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}},
+		
+		{{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{0, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}}
+
+	};
+	FlexVertex2D vertsToDraw[18] = {0};
+	FlexVertex2D* pVertIter = vertsToDraw;
+	if (!bInitialized)
+	{
+		pCoastline = GET_TEXTURE(L"Coastline");
+		//too lazy to inline this math in the above declaration, sue me
+		for (int i = 0; i < 6; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				vertsByDirection[i][j].x *= 16.0f;
+				vertsByDirection[i][j].y *= 16.0f;
+
+				if (vertsByDirection[i][j].x < 32)
+					vertsByDirection[i][j].x--;
+				else if (vertsByDirection[i][j].x > 32)
+					vertsByDirection[i][j].x++;
+
+				if (vertsByDirection[i][j].y < 32)
+					vertsByDirection[i][j].y--;
+				else if (vertsByDirection[i][j].y > 32)
+					vertsByDirection[i][j].y++;
+
+				vertsByDirection[i][j].x -= 0.5f;
+				vertsByDirection[i][j].y -= 0.5f;
+			}
+		}
+		bInitialized = true;
+	}
+	for (int iDir = kHexDir_W; iDir < kHexDir_Count; iDir++)
+	{
+		if (!neighbors[iDir])
+			continue;
+
+		if (neighbors[iDir]->pDef->eFlags & kTileFlag_Water)
+		{
+			//this neighbor is water
+			int iPrevClockwise = (iDir+5) % kHexDir_Count;
+			int iNextClockwise = (iDir+1) % kHexDir_Count;
+
+			(*pVertIter) = vertsByDirection[iDir][0];
+			if (neighbors[iPrevClockwise] && !(neighbors[iPrevClockwise]->pDef->eFlags & kTileFlag_Water))
+			{
+				pVertIter->u = 1.0f;
+				pVertIter->v = 1.0f;
+			}
+			else
+			{
+				pVertIter->u = 0.0f;
+				pVertIter->v = 0.0f;
+			}
+			pVertIter++;
+
+			(*pVertIter) = vertsByDirection[iDir][1];
+			if (neighbors[iNextClockwise] && !(neighbors[iNextClockwise]->pDef->eFlags & kTileFlag_Water))
+			{
+				pVertIter->u = 1.0f;
+				pVertIter->v = 1.0f;
+			}
+			else
+			{
+				pVertIter->u = 0.0f;
+				pVertIter->v = 0.0f;
+			}
+			pVertIter++;
+
+			(*pVertIter) = vertsByDirection[iDir][2];
+			pVertIter->u = 0.0f;
+			pVertIter->v = 0.0f;
+			pVertIter++;
+		}
+		else
+		{
+			(*pVertIter++) = vertsByDirection[iDir][0];
+			(*pVertIter++) = vertsByDirection[iDir][1];
+			(*pVertIter++) = vertsByDirection[iDir][2];
+		}
+	}
+	g_Renderer.RenderToScratchSurface(pOut, pCoastline, vertsToDraw, pVertIter-vertsToDraw);
+}
+
+static DWORD heightmapDataBuffer[64*64];
+
+void CHexMap::ApplyHeightmapToTileVerts(POINT tilePt, int chunkX, int chunkY, FlexVertex* pStart, FlexVertex* pEnd, bool bIsCoastline)
+{
+	static FlexScratchSurface heightmap(64);
+	hexTile* pTile = GetTile(tilePt);
+	hexTile* neighbors[6];
+	if (bIsCoastline)
+	{
+		for (int iDir = 0; iDir < kHexDir_Count; iDir++)
+		{
+			neighbors[iDir] = GetTile(GetTileInDirection(tilePt, iDir));
+		}
+		GenerateHeightmapForTile(&heightmap, pTile, neighbors);
+		heightmap.GetData(heightmapDataBuffer);
+	}
+	tilePt.x -= chunkX*TERRAIN_CHUNK_WIDTH;
+	tilePt.y -= chunkY*TERRAIN_CHUNK_HEIGHT;
+	for (FlexVertex* pIter = pStart; pIter < pEnd; pIter++)
+	{
+		if (!bIsCoastline)
+		{
+			pIter->z = DEEP_WATER_HEIGHT;
+			continue;
+		}
+		float adjX = pIter->x - ((tilePt.y & 1 ? HEX_HALF_WIDTH : 0) + tilePt.x * HEX_WIDTH);
+		float adjY = pIter->y - (tilePt.y * HEX_HEIGHT*3/4);
+		adjX *= 15.9f;
+		adjY *= 15.9f;
+		if (adjX >= 64)
+			adjX = 63;
+		if (adjY >= 64)
+			adjY = 63;
+		int index = ((int)adjX) + ((int)adjY)*64;
+		if (heightmapDataBuffer[index] == 0)
+			pIter->z = DEEP_WATER_HEIGHT;
+		else
+			pIter->z = DEEP_WATER_HEIGHT * (1.0f - (((float)(heightmapDataBuffer[index] - 0xff000000)) / 0xffffff));
+	}
+}
+
+bool CHexMap::TileIsCoastline(int x, int y)
+{
+	for (int iDir = 0; iDir < kHexDir_Count; iDir++)
+	{
+		hexTile* pTile = GetTile(GetTileInDirection(x, y, iDir));
+		if (pTile && !(pTile->pDef->eFlags & kTileFlag_Water))
+			return true;
+	}
+	return false;
+}
+
+TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
+{
+	TerrainVertexChunk* pNewBuffer = new TerrainVertexChunk;
 	
 /*
 			0
@@ -194,17 +364,38 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 		{HEX_HALF_WIDTH,	0.0f,					0.0f, 0xFFFFFFFF, 0.5f, 1.0f},//6
 	};
 
-	int iNumTrisPerHex = g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE)*6;
+	int iNumTris = 0;
+	hexTile* currTile;
+	
+	//count tris needed
+	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
+	{
+		for (int j = 0; j < TERRAIN_CHUNK_HEIGHT; j++)
+		{
+			int iActualTileX = (x*TERRAIN_CHUNK_WIDTH + i);
+			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
+			currTile = &pTiles[iActualTileX + iActualTileY*w];
 
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTrisPerHex*3*TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer, NULL);
+			if ((currTile->pDef->eFlags & kTileFlag_Water) && TileIsCoastline(iActualTileX, iActualTileY))
+			{
+				iNumTris += g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE_COASTLINE)*6;
+
+			}
+			else
+				iNumTris += g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE_OTHER)*6;
+			
+		}
+	}
+
+	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer->pVerts, NULL);
+	pNewBuffer->iTris = iNumTris;
 
 	void* vb_vertices;
 
-	pNewBuffer->Lock(0, 0, &vb_vertices, 0);
+	pNewBuffer->pVerts->Lock(0, 0, &vb_vertices, 0);
 
 	FlexVertex* pIter = (FlexVertex*)vb_vertices;
 
-	hexTile currTile;
 
 	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
 	{
@@ -212,15 +403,19 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 		{
 			int iActualTileX = (x*TERRAIN_CHUNK_WIDTH + i);
 			int iActualTileY = (y*TERRAIN_CHUNK_HEIGHT + j);
-			currTile = pTiles[iActualTileX + iActualTileY*w];
+			currTile = &pTiles[iActualTileX + iActualTileY*w];
 
-			const GameTexturePortion* pTileTex = GET_REF(GameTexturePortion, currTile.pDef->hTex);
+			const GameTexturePortion* pTileTex = GET_REF(GameTexturePortion, currTile->pDef->hTex);
 			const GameTexture* pSrcTex = pTileTex->hTex.pTex;
 
 			float fMinU = (pTileTex->rSrc->left+1.0f)/pSrcTex->width;
 			float fMaxU = (pTileTex->rSrc->right-1.0f)/pSrcTex->width;
 			float fMinV = (pTileTex->rSrc->top+1.0f)/pSrcTex->height;
 			float fMaxV = (pTileTex->rSrc->bottom-1.0f)/pSrcTex->height;
+			float fZ = 0.0f;
+
+			if (currTile->pDef->eFlags & kTileFlag_DeepWater)
+				fZ = DEEP_WATER_HEIGHT;
 			
 			FlexVertex adjustedHexVerts[7];
 
@@ -231,25 +426,46 @@ IDirect3DVertexBuffer9* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 				adjustedHexVerts[k].x += i*(HEX_WIDTH);
 				if (j&1)
 					adjustedHexVerts[k].x += HEX_HALF_WIDTH;
+
 				adjustedHexVerts[k].y += j*(HEX_HEIGHT * (3.0f/4.0f));
+				
+				adjustedHexVerts[k].z = fZ;
+
 				adjustedHexVerts[k].u *= fMaxU-fMinU;
 				adjustedHexVerts[k].u += fMinU;
+
 				adjustedHexVerts[k].v *= fMaxV-fMinV;
 				adjustedHexVerts[k].v += fMinV;
+
 				adjustedHexVerts[k].diffuse = 0xffffffff;
 			}
 
+			FlexVertex* pHeightmapIter = pIter;
+
+			int tessellationDegree = TESSELLATION_DEGREE_OTHER;
 			//tessellate
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[0], &adjustedHexVerts[3], TESSELLATION_DEGREE, &pIter);
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[0], &adjustedHexVerts[1], &adjustedHexVerts[3], TESSELLATION_DEGREE, &pIter);
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[1], &adjustedHexVerts[5], TESSELLATION_DEGREE, &pIter);
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[5], &adjustedHexVerts[6], TESSELLATION_DEGREE, &pIter);
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[4], &adjustedHexVerts[3], &adjustedHexVerts[6], TESSELLATION_DEGREE, &pIter);
-			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[3], &adjustedHexVerts[4], TESSELLATION_DEGREE, &pIter);
+			if ((currTile->pDef->eFlags & kTileFlag_Water) && TileIsCoastline(iActualTileX, iActualTileY))
+			{
+				tessellationDegree = TESSELLATION_DEGREE_COASTLINE;
+			}
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[0], &adjustedHexVerts[3], tessellationDegree, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[0], &adjustedHexVerts[1], &adjustedHexVerts[3], tessellationDegree, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[1], &adjustedHexVerts[5], tessellationDegree, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[3], &adjustedHexVerts[5], &adjustedHexVerts[6], tessellationDegree, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[4], &adjustedHexVerts[3], &adjustedHexVerts[6], tessellationDegree, &pIter);
+			g_Renderer.TessellateTriangleIntoBuffer(&adjustedHexVerts[2], &adjustedHexVerts[3], &adjustedHexVerts[4], tessellationDegree, &pIter);
+
+			//apply heightmap data if necessary
+			if (currTile->pDef->eFlags & kTileFlag_Water)
+			{
+				POINT pt = {iActualTileX, iActualTileY};
+				ApplyHeightmapToTileVerts(pt, x, y, pHeightmapIter, pIter, (tessellationDegree == TESSELLATION_DEGREE_COASTLINE));
+			}
+			
 		}
 	}
 
-	pNewBuffer->Unlock();
+	pNewBuffer->pVerts->Unlock();
 
 	return pNewBuffer;
 }
@@ -259,12 +475,12 @@ void CHexMap::CreateAllTerrainVertexBuffers()
 	//create enough buffers of the specified size to hold the entire map
 	iNumChunksWide = (int)ceil(((float)w)/TERRAIN_CHUNK_WIDTH);
 	iNumChunksHigh = (int)ceil(((float)h)/TERRAIN_CHUNK_HEIGHT);
-	ppVertBuffers = new IDirect3DVertexBuffer9*[iNumChunksWide*iNumChunksHigh];
+	ppVertChunks = new TerrainVertexChunk*[iNumChunksWide*iNumChunksHigh];
 	for (int iChunk = 0; iChunk < iNumChunksWide; iChunk++)
 	{
 		for (int jChunk = 0; jChunk < iNumChunksHigh; jChunk++)
 		{
-			ppVertBuffers[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
+			ppVertChunks[iChunk + jChunk*iNumChunksWide] = CreateTerrainVertexBufferChunk(iChunk, jChunk);
 		}
 	}
 	pIndexBuffer = NULL;
@@ -361,9 +577,6 @@ void CHexMap::RenderTerrain()
 	GetChunkspaceCullRect(&chunks);
 	const GameTexture* pTerrainTex = GET_TEXTURE(L"terrain");
 
-	static int iNumTrisPerHex = g_Renderer.GetNumTessellatedTriangles(TESSELLATION_DEGREE)*6;
-	static int iNumTrisTotal = TERRAIN_CHUNK_WIDTH*TERRAIN_CHUNK_HEIGHT*iNumTrisPerHex;
-
 	for (int i = chunks.left; i < chunks.right; i++)
 	{
 		if ((i < 0 || i >= iNumChunksWide) && g_DebugFlags.disableMapXWrap)
@@ -379,7 +592,8 @@ void CHexMap::RenderTerrain()
 				continue;
 			pos[0] = ((int)i) * TERRAIN_CHUNK_WIDTH*HEX_WIDTH;
 			pos[1] = ((int)j) * TERRAIN_CHUNK_HEIGHT*HEX_HEIGHT*3.0f/4.0f;
-			g_Renderer.AddModelToRenderList(&ppVertBuffers[((int)iNormalized) + ((int)j) * iNumChunksWide], pIndexBuffer, &iNumTrisTotal, NULL, pTerrainTex, pos, scl, rot, false);
+			TerrainVertexChunk* pChunk = ppVertChunks[((int)iNormalized) + ((int)j) * iNumChunksWide];
+			g_Renderer.AddModelToRenderList(&pChunk->pVerts, pIndexBuffer, &pChunk->iTris, NULL, pTerrainTex, pos, scl, rot, false);
 		}
 	}
 }

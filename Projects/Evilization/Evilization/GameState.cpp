@@ -581,6 +581,47 @@ void CGameState::StartNewGame(hexMapGenerationDesc* pMapDesc, int iNumPlayers)
 	}
 	pPlayers[0].SetType(kPlayerControl_Human_Local);
 	StartPlayerTurn(0);
+	
+	FlexVertex2D hexVerts[] = {
+		{0, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_HALF_WIDTH, 0, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		
+		{HEX_HALF_WIDTH, 0, 0.0f, 1.0f, 0xFFFFFFFF,	1.0f, 1.0f},
+		{HEX_WIDTH, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		
+		{HEX_WIDTH, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_WIDTH, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		
+		{HEX_WIDTH, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		
+		{HEX_HALF_WIDTH, HEX_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{0, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f},
+		
+		{0, HEX_HALF_HEIGHT*3/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{0, HEX_HALF_HEIGHT/2, 0.0f, 1.0f, 0xFFFFFFFF,1.0f, 1.0f},
+		{HEX_HALF_WIDTH, HEX_HALF_HEIGHT, 0.0f, 1.0f, 0xFFFFFFFF, 0.0f, 0.0f}
+
+	};
+	for (int i = 0; i < 18; i++)
+	{
+		hexVerts[i].x *= 16.0f;
+		hexVerts[i].y *= 16.0f;
+		hexVerts[i].x -= 0.5f;
+		hexVerts[i].y -= 0.5f;
+	}
+	FlexScratchSurface test(64);
+	DWORD buf[64*64] = {0};
+	GameTexture* pTexture = GET_TEXTURE(L"Coastline");
+	g_Renderer.RenderToScratchSurface(&test, pTexture, hexVerts, 18);
+	test.GetData(buf);
+	test.SaveToPNG(L"test.png");
+	
 }
 
 void CGameState::StartPlayerTurn(int idx)
