@@ -259,6 +259,14 @@ CHexUnit::CHexUnit(hexUnitDef* def, CHexPlayer* pOwner)
 		eaAbilities[eaSize(&eaAbilities)-1]->cooldown = 0;
 	}
 	bIsDead = false;
+	defaultAttributes.stats[kUnitAttribute_MaxHealth] = (float) def->maxHealth;
+	defaultAttributes.stats[kUnitAttribute_MaxMana] = (float) def->maxMana;
+	defaultAttributes.stats[kUnitAttribute_MaxMovement] = (float) def->movement;
+	defaultAttributes.stats[kUnitAttribute_MeleeStr] = (float) def->meleeStr;
+	defaultAttributes.stats[kUnitAttribute_Defense] = (float) def->defense;
+	defaultAttributes.stats[kUnitAttribute_Range] = (float) def->attackRange;
+	defaultAttributes.stats[kUnitAttribute_VisRadius] = (float) def->visRadius;
+	eaAttributeMods = NULL;
 	if (pOwner)
 		pOwner->TakeOwnership(this);
 }
@@ -293,6 +301,60 @@ int CHexUnit::TakeDamage(int attackerStr)
 	}
 
 	return damageDealt;
+}
+
+void CHexUnit::UpdateUnit()
+{
+	currentAttributes = defaultAttributes;
+
+	float percentAdditiveMods[kUnitAttribute_NumAttributes] = {};
+	float absoluteMods[kUnitAttribute_NumAttributes] = {};
+	float percentMultiplicativeMods[kUnitAttribute_NumAttributes];
+	for (int k = 0; k < kUnitAttribute_NumAttributes; k++)
+		percentMultiplicativeMods[k] = 1.0f;
+
+	//update mod durations, get all mods for each stat
+	for (int i = eaSize(&eaAttributeMods)-1; i >= 0; i--)
+	{
+		if (eaAttributeMods[i]->fDurationInTurns > 0)
+		{
+			eaAttributeMods[i]->fDurationInTurns--;
+		}
+		else
+		{
+			eaRemove(&eaAttributeMods, i);
+			continue;
+		}
+
+		UnitAttributeModType eModType = eaAttributeMods[i]->pDef->eModType;
+		switch (eModType)
+		{
+			case kUnitAttributeModType_Absolute:
+				absoluteMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->fMagnitude;
+				break;
+			case kUnitAttributeModType_PercentAdditive:
+				percentAdditiveMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->fMagnitude;
+				break;
+			case kUnitAttributeModType_PercentMultiplicative:
+				percentMultiplicativeMods[eaAttributeMods[i]->pDef->eAffects] *= 1 + eaAttributeMods[i]->pDef->fMagnitude;
+				break;
+		}
+	}
+	//apply mods
+	for (int j = 0; j < kUnitAttribute_NumAttributes; j++)
+	{
+		currentAttributes.stats[j] *= 1 + percentAdditiveMods[j];
+		currentAttributes.stats[j] *= percentMultiplicativeMods[j];
+		currentAttributes.stats[j] += absoluteMods[j];
+	}
+}
+
+void CHexUnit::AddModifier(UnitAttributeModifier* pMod)
+{
+	if (pMod)
+	{
+		eaPush(&eaAttributeMods, pMod);
+	}
 }
 
 CHexBuilding::CHexBuilding(hexBuildingDef* def, CHexPlayer* pOwner, bool bTakeOwnership)

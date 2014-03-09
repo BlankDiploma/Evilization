@@ -3,7 +3,6 @@
 #include "earray.h"
 #include "Abilities.h"
 
-
 #pragma once
 
 class CHexCity;
@@ -114,6 +113,13 @@ struct HEXPATH;
 
 
 AUTO_ENUM(unitOrderType) {kOrder_Sleep = 0, kOrder_Move, kOrder_Melee, kOrder_AutoExplore, kOrder_Ability};
+AUTO_ENUM(UnitAttribute) {kUnitAttribute_MaxHealth = 0, kUnitAttribute_MaxMana, kUnitAttribute_MaxMovement, kUnitAttribute_MeleeStr, 
+						  kUnitAttribute_Defense, kUnitAttribute_Range, kUnitAttribute_VisRadius, kUnitAttribute_NumAttributes};
+
+struct UnitAttributes
+{
+	float stats[kUnitAttribute_NumAttributes];
+};
 
 struct hexUnitOrder
 {
@@ -146,11 +152,13 @@ private:
 	int mana;
 	int ownerID;
 	int movRemaining;
-	int* abilityCooldowns;
 	bool bIsDead;
 	hexUnitOrder** eaOrders;
 	POINT loc;
 	UnitAbility** eaAbilities;
+	UnitAttributes defaultAttributes;
+	UnitAttributes currentAttributes;
+	UnitAttributeModifier** eaAttributeMods;
 public:
 	CHexUnit()
 	{
@@ -159,10 +167,10 @@ public:
 		mana = 0;
 		ownerID = -1;
 		movRemaining = 0;
-		abilityCooldowns = NULL;
 		eaAbilities = NULL;
 		eaOrders = NULL;
 		bIsDead = false;
+		eaAttributeMods = NULL;
 	}
 	CHexUnit(hexUnitDef* def, CHexPlayer* pOwner);
 
@@ -296,6 +304,8 @@ public:
 	{
 		return eaAbilities;
 	}
+	void AddModifier(UnitAttributeModifier* pMod);
+	void UpdateUnit();
 };
 class CHexBuilding
 {

@@ -4,6 +4,23 @@
 
 #pragma once
 
+enum UnitAttribute;
+AUTO_ENUM(UnitAttributeModType) {kUnitAttributeModType_Absolute = 0, kUnitAttributeModType_PercentAdditive, kUnitAttributeModType_PercentMultiplicative};
+
+PARSE_STRUCT(UnitAttributeModifierDef)
+{
+	UnitAttribute eAffects;
+	UnitAttributeModType eModType;
+	float fMagnitude;
+	float fDurationInTurns;
+};
+
+struct UnitAttributeModifier
+{
+	float fDurationInTurns;
+	const UnitAttributeModifierDef* pDef;
+};
+
 AUTO_ENUM(AbilityAffectsFlags) 
 {
 	kAffects_None = 0,
@@ -22,6 +39,7 @@ PARSE_STRUCT(UnitAbilityDef)
 	FLAGS AbilityAffectsFlags eAffectsFlags;
 	const TCHAR* name;
 	const TCHAR* displayName;
+	UnitAttributeModifierDef** eaUnitAttributeModList;
 };
 
 PARSE_STRUCT(UnitAbilityRef)
