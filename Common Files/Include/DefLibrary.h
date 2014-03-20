@@ -28,6 +28,7 @@ struct PendingRef
 {
 	const void** pReference;
 	TCHAR* pchName;
+	TCHAR* pchFilename;
 	const ParseTable* pParseTable;
 	const TCHAR* pParentObjName;
 	const TCHAR* pParentObjType;
@@ -37,6 +38,7 @@ struct PendingTexture
 {
 	void** pReference;
 	TCHAR* pchName;
+	TCHAR* pchFilename;
 	const TCHAR* pParentObjName;
 	const TCHAR* pParentObjType;
 };
@@ -70,8 +72,8 @@ public:
 	~DefLibrary(void);
 	bool SaveDefs(const TCHAR* pchStructName, const TCHAR* pchFilename);
 	bool WriteDefToFileInternal(wofstream& file, const TCHAR* pchName, const void* pCurObject, const ParseTable* pEntry, int iIndent);
-	void AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType);
-	void AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType);
+	void AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType, TCHAR* pchFilename);
+	void AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType, TCHAR* pchFilename);
 	void AddUncompiledLuaScript(void* pObj, const StructParseEntry* pParseTableEntry);
 	void ResolvePendingRefs();
 	void ResolvePendingTextures();

@@ -343,11 +343,11 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 						ReadParseTableValue(sObjStack.top(), &pCurTable->pEntries[i], pchStructParam, pchFilename);
 						
 						if (pCurTable->pEntries[i].eType == kStruct_DefRef)
-							AddPendingDefRef(sObjStack.top(), &pCurTable->pEntries[i], pchObjName, pCurTable->pchName);
+							AddPendingDefRef(sObjStack.top(), &pCurTable->pEntries[i], pchObjName, pCurTable->pchName, _wcsdup(pchFilename));
 						else if (pCurTable->pEntries[i].eType == kStruct_TextureRef)
-							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName);
+							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName, _wcsdup(pchFilename));
 						else if (pCurTable->pEntries[i].eType == kStruct_NinepatchRef)
-							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName);
+							AddPendingTextureRef(sObjStack.top(), &pCurTable->pEntries[i], sObjNameStack.top(), pCurTable->pchName, _wcsdup(pchFilename));
 						else if (pCurTable->pEntries[i].eType == kStruct_LuaScript)
 							AddUncompiledLuaScript(sObjStack.top(), &pCurTable->pEntries[i]);
 						
@@ -372,11 +372,11 @@ bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 					ReadParseTableValue(sObjStack.top(), pEntry, pchNextToken, pchFilename);
 					
 					if (pEntry->eType == kStruct_DefRef)
-						AddPendingDefRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
+						AddPendingDefRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName, _wcsdup(pchFilename));
 					else if (pEntry->eType == kStruct_TextureRef)
-						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
+						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName, _wcsdup(pchFilename));
 					else if (pEntry->eType == kStruct_NinepatchRef)
-						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName);
+						AddPendingTextureRef(sObjStack.top(), pEntry, sObjNameStack.top(), pCurTable->pchName, _wcsdup(pchFilename));
 					else if (pEntry->eType == kStruct_LuaScript)
 						AddUncompiledLuaScript(sObjStack.top(), pEntry);
 					pchToken = NULL;
@@ -604,7 +604,7 @@ DefLibrary::~DefLibrary(void)
 {
 }
 
-void DefLibrary::AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType)
+void DefLibrary::AddPendingDefRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType, TCHAR* pchFilename)
 {
 	PendingRef* pPending = new PendingRef;
 	pPending->pchName = *(TCHAR**)((char*)pObj + pParseTableEntry->offset);
@@ -612,16 +612,18 @@ void DefLibrary::AddPendingDefRef(void* pObj, const StructParseEntry* pParseTabl
 	pPending->pReference = (const void**)((char*)pObj + pParseTableEntry->offset + sizeof(TCHAR*));
 	pPending->pParentObjName = pchObjName;
 	pPending->pParentObjType = pchObjType;
+	pPending->pchFilename = pchFilename;
 	vPendingRefs.push_back(pPending);
 }
 
-void DefLibrary::AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType)
+void DefLibrary::AddPendingTextureRef(void* pObj, const StructParseEntry* pParseTableEntry, const TCHAR* pchObjName, const TCHAR* pchObjType, TCHAR* pchFilename)
 {
 	PendingTexture* pPending = new PendingTexture;
 	pPending->pchName = *(TCHAR**)((char*)pObj + pParseTableEntry->offset);
 	pPending->pReference = (void**)((char*)pObj + pParseTableEntry->offset + sizeof(TCHAR*));
 	pPending->pParentObjName = pchObjName;
 	pPending->pParentObjType = pchObjType;
+	pPending->pchFilename = pchFilename;
 	vPendingTextures.push_back(pPending);
 }
 
@@ -644,9 +646,10 @@ void DefLibrary::ResolvePendingRefs()
 		const void* pDef = GetDefUsingParseTable(pPending->pParseTable, pPending->pchName);
 		if (!pDef)
 		{
-			Errorf("Bad ref to %s \"%s\" found while loading %s \"%s\".", pPending->pParseTable->pchName, pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
+			ErrorFilenamef("Bad ref to %s \"%s\" found while loading %s \"%s\".", pPending->pchFilename, pPending->pParseTable->pchName, pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
 		}
 		(*pPending->pReference) = pDef;
+		free(pPending->pchFilename);
 		delete pPending;
 		vPendingRefs.pop_back();
 	}
@@ -661,9 +664,10 @@ void DefLibrary::ResolvePendingTextures()
 		GameTexture* pTex = g_TextureLibrary.GetTexture(pPending->pchName);
 		if (!pTex)
 		{
-			Errorf("Bad ref to texture \"%s\" found while loading %s \"%s\".", pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
+			ErrorFilenamef("Bad ref to texture \"%s\" found while loading %s \"%s\".", pPending->pchFilename, pPending->pchName, pPending->pParentObjType, pPending->pParentObjName);
 		}
 		(*pPending->pReference) = pTex;
+		free(pPending->pchFilename);
 		delete pPending;
 		vPendingTextures.pop_back();
 	}
