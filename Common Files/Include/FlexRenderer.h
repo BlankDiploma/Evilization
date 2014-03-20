@@ -235,7 +235,7 @@ struct ModelCall
 
 #define RENDER_LIST_BUFFER_SIZE 2048
 
-enum ShaderTechniques3D {kShader3D_Default = 0, kShader3D_2xBlend, kShader3D_3xBlend, kShader3D_Translucent, kShader3D_Translucent2xBlend, kShader3D_Count};
+enum ShaderTechniques3D {kShader3D_Default = 0, kShader3D_2xBlend, kShader3D_3xBlend, kShader3D_Translucent2xBlend, kShader3D_Translucent, kShader3D_Count};
 
 struct RenderList
 {
