@@ -704,6 +704,10 @@ void CGameState::ExecuteQueuedActions()
 void CGameState::EndCurrentTurn()
 {
 	ExecuteQueuedActions();
+
+	CHexPlayer* pPlayer = &pPlayers[iCurPlayer];
+	pPlayer->UpdateUnits();
+
 	for(int i = eaSize(&eaDeadUnits)-1; i >= 0; i--)
 	{
 		DeleteUnit(eaDeadUnits[i]);

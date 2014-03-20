@@ -304,7 +304,7 @@ public:
 	{
 		return eaAbilities;
 	}
-	void AddModifier(UnitAttributeModifier* pMod);
+	void AddModifier(UnitAttributeModifierDef* pDef);
 	void UpdateUnit();
 };
 class CHexBuilding

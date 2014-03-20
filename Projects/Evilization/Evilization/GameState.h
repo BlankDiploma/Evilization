@@ -327,6 +327,13 @@ public:
 	bool CanResearchTech( techTreeNodeDef* pNode );
 	techTreeNodeDef* GetCurrentTech();
 	float GetTechPct( );
+	void UpdateUnits()
+	{
+		for (int i = 0; i < eaSize(&eaUnits); i++)
+		{
+			eaUnits[i]->UpdateUnit();
+		}
+	}
 };
 
 enum GameState {kGameState_Invalid = 0, kGameState_MainMenu, kGameState_Gameplay};

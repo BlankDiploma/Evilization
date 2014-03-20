@@ -11,8 +11,8 @@ PARSE_STRUCT(UnitAttributeModifierDef)
 {
 	UnitAttribute eAffects;
 	UnitAttributeModType eModType;
-	float fMagnitude;
-	float fDurationInTurns;
+	float magnitude;
+	float duration;
 };
 
 struct UnitAttributeModifier

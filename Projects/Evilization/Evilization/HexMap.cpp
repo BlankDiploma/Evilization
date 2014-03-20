@@ -926,7 +926,15 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 						if (curUnit->GetOwnerID() != pUnit->GetOwnerID())
 						{
 							int damageTaken = curUnit->TakeDamage(pOrder->pAbility->pDef->damage);
-							g_GameState.RenderDamageText(damageTaken, curUnit->GetLoc());
+							if (damageTaken > 0)
+								g_GameState.RenderDamageText(damageTaken, curUnit->GetLoc());
+
+							UnitAttributeModifierDef** eaAttributeMods = pOrder->pAbility->pDef->eaUnitAttributeModList;
+							if (eaAttributeMods)
+							{
+								for (int i = 0; i < eaSize(&eaAttributeMods); i++)
+									curUnit->AddModifier(eaAttributeMods[i]);
+							}
 							if (curUnit->IsDead())
 							{
 								g_GameState.AddUnitToDeadList(curUnit);

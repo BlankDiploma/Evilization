@@ -330,13 +330,13 @@ void CHexUnit::UpdateUnit()
 		switch (eModType)
 		{
 			case kUnitAttributeModType_Absolute:
-				absoluteMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->fMagnitude;
+				absoluteMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->magnitude;
 				break;
 			case kUnitAttributeModType_PercentAdditive:
-				percentAdditiveMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->fMagnitude;
+				percentAdditiveMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->magnitude;
 				break;
 			case kUnitAttributeModType_PercentMultiplicative:
-				percentMultiplicativeMods[eaAttributeMods[i]->pDef->eAffects] *= 1 + eaAttributeMods[i]->pDef->fMagnitude;
+				percentMultiplicativeMods[eaAttributeMods[i]->pDef->eAffects] *= 1 + eaAttributeMods[i]->pDef->magnitude;
 				break;
 		}
 	}
@@ -347,12 +347,22 @@ void CHexUnit::UpdateUnit()
 		currentAttributes.stats[j] *= percentMultiplicativeMods[j];
 		currentAttributes.stats[j] += absoluteMods[j];
 	}
+	//Make sure health/mana/movement are within bounds
+	if (health > currentAttributes.stats[kUnitAttribute_MaxHealth])
+		health = (int) currentAttributes.stats[kUnitAttribute_MaxHealth];
+	if (mana > currentAttributes.stats[kUnitAttribute_MaxMana])
+		mana = (int) currentAttributes.stats[kUnitAttribute_MaxMana];
+	if (movRemaining > currentAttributes.stats[kUnitAttribute_MaxMovement])
+		movRemaining = (int) currentAttributes.stats[kUnitAttribute_MaxMovement];
 }
 
-void CHexUnit::AddModifier(UnitAttributeModifier* pMod)
+void CHexUnit::AddModifier(UnitAttributeModifierDef* pDef)
 {
-	if (pMod)
+	if (pDef)
 	{
+		UnitAttributeModifier* pMod = new UnitAttributeModifier;
+		pMod->pDef = pDef;
+		pMod->fDurationInTurns = pDef->duration;
 		eaPush(&eaAttributeMods, pMod);
 	}
 }

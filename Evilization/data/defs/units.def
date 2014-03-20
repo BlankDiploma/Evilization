@@ -12,6 +12,7 @@ hexUnitDef stickfigure
 	maxMana 100
 	eaAbilityRefs basic_aoe
 	eaAbilityRefs basic_nuke
+	eaAbilityRefs basic_debuff
 }
 
 hexUnitDef barbarian
