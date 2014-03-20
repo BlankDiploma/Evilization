@@ -74,6 +74,8 @@ void CGameState::Update(DWORD tick)
 				g_Renderer.GetCamera()->MoveCamera((float)(ptMousePos.x - ptMousePosLastFrame.x), (float)(ptMousePos.y - ptMousePosLastFrame.y ), 0);
 			}
 			POINT mouseDeltas = {ptMouse.x - ptMousePosLastFrame.x, ptMouse.y - ptMousePosLastFrame.y};
+			
+			//Update UI
 			if (!UI.Update(ptMousePos) && PtInRect(&window, ptMousePos))
 			{
 				bMouseOverGameplay = true;

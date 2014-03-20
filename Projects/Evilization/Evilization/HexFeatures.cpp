@@ -297,7 +297,7 @@ CHexCity::CHexCity(hexBuildingDef* def, CHexPlayer* pOwner) : CHexBuilding(def, 
 	eaProjectQueue = NULL;
 	materials = 0;
 	materialsmax = 50;
-	name = _T("dongopolis");
+	name = _T("Test City");
 	pOwner->TakeOwnership(this);
 }
 

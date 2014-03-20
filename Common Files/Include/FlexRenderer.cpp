@@ -837,6 +837,8 @@ void FlexRenderer::AddSpriteToRenderList(const GameTexture* pTex, POINT topleft,
 
 void FlexRenderer::AddSpriteToRenderList(const GameTexturePortion* pPortion, POINT dst, DWORD color, float fZoom)
 {
+	if (!pPortion)
+		return;
 	const GameTexture* pSrcTex = pPortion->hTex.pTex;
 	RECT rDst = {(LONG)(dst.x - pPortion->offset->x * fZoom),
 		(LONG)(dst.y - pPortion->offset->y * fZoom),

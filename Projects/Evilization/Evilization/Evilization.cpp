@@ -18,6 +18,7 @@
 #include "flexlua.h"
 #include "HexFeatures.h"
 #include "FlexDebugConsole.h"
+#include "Autogen/AutoEnums.h"
 
 using namespace luabind;
 
@@ -366,6 +367,7 @@ void D3DInitialize()
 //Load all your data from disk.
 void LoadGameData()
 {
+	PopulateAutoEnumTables();
 	g_LUA = luaL_newstate();
 
 	luabind::open(g_LUA);

@@ -93,7 +93,6 @@ void DoNewObjectPolish(const ParseTable* pTable, void* pObj, const TCHAR* pchNam
 
 bool DefLibrary::LoadDefsFromFileInternal(const TCHAR* pchFilename)
 {
-	PopulateAutoEnumTables();
 	try
 	{
 		FILE* input = NULL;

@@ -511,7 +511,7 @@ bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntr
 	{
 		pEntry->eType = kStruct_String;
 		pEntry->eFlags = kStructFlag_AutoFileName;
-		pEntry->name = "name";
+		pEntry->name = "filename";
 	}
 	else
 	{
