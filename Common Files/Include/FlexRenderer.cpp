@@ -334,17 +334,28 @@ float FlexFrustum::GetFarPlaneDist()
 	return zf;
 }
 
+#define DWORD_TO_R_CHANNEL(a) (((a) >> 16) & 0xff) 
+#define DWORD_TO_G_CHANNEL(a) (((a) >> 8) & 0xff) 
+#define DWORD_TO_B_CHANNEL(a) ((a) & 0xff) 
+#define DWORD_TO_A_CHANNEL(a) (((a) >> 24) & 0xff) 
+
 static inline void DoVertexLerp(FlexVertex* pA, FlexVertex* pB, FlexVertex* pOut)
 {
 	pOut->u = (pA->u+pB->u)/2;
 	pOut->v = (pA->v+pB->v)/2;
+	pOut->u1 = (pA->u1+pB->u1)/2;
+	pOut->v1 = (pA->v1+pB->v1)/2;
 	pOut->x = (pA->x+pB->x)/2;
 	pOut->y = (pA->y+pB->y)/2;
 	pOut->z = (pA->z+pB->z)/2;
-	pOut->diffuse = (pB->diffuse-pA->diffuse)/2 + pA->diffuse;
+	int r = (DWORD_TO_R_CHANNEL(pB->diffuse) + DWORD_TO_R_CHANNEL(pA->diffuse))/2;
+	int g = (DWORD_TO_G_CHANNEL(pB->diffuse) + DWORD_TO_G_CHANNEL(pA->diffuse))/2;
+	int b = (DWORD_TO_B_CHANNEL(pB->diffuse) + DWORD_TO_B_CHANNEL(pA->diffuse))/2;
+	int a = (DWORD_TO_A_CHANNEL(pB->diffuse) + DWORD_TO_A_CHANNEL(pA->diffuse))/2;
+	pOut->diffuse = D3DCOLOR_ARGB(a, r, g, b);
 }
 
-static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, float fBlendA, float fBlendB, float fBlendC, int iDegree, FlexVertex** vertBufferOut)
 {
 	//input:
 	//	A
@@ -360,6 +371,7 @@ static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVerte
 	//		4
 	//  5
 	FlexVertex vertsTmp[6] = {0};
+	float fBlends[6] = {fBlendA, (fBlendA+fBlendB)/2.0f, fBlendB, (fBlendA+fBlendC)/2.0f, (fBlendB+fBlendC)/2.0f, fBlendC};
 	vertsTmp[0] = *vA;
 	vertsTmp[2] = *vB;
 	vertsTmp[5] = *vC;
@@ -369,13 +381,18 @@ static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVerte
 	if (iDegree > 1)
 	{
 		//once for each new tri
-		_tessellateTriangleRecurse(&vertsTmp[0], &vertsTmp[1], &vertsTmp[3], iDegree-1, vertBufferOut);
-		_tessellateTriangleRecurse(&vertsTmp[1], &vertsTmp[2], &vertsTmp[4], iDegree-1, vertBufferOut);
-		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[4], &vertsTmp[5], iDegree-1, vertBufferOut);
-		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[1], &vertsTmp[4], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[0], &vertsTmp[1], &vertsTmp[3], fBlends[0], fBlends[1], fBlends[3], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[1], &vertsTmp[2], &vertsTmp[4], fBlends[1], fBlends[2], fBlends[4], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[4], &vertsTmp[5], fBlends[3], fBlends[4], fBlends[5], iDegree-1, vertBufferOut);
+		_tessellateTriangleRecurse(&vertsTmp[3], &vertsTmp[1], &vertsTmp[4], fBlends[3], fBlends[1], fBlends[4], iDegree-1, vertBufferOut);
 	}
 	else
 	{
+		for (int i = 0; i < 6; i++)
+		{
+			vertsTmp[i].diffuse &= 0xff00ffff;
+			vertsTmp[i].diffuse |= ((int)(max(fBlends[i], 0.0f) * 255)) << 16;
+		}
 		*((*vertBufferOut)++) = vertsTmp[0];
 		*((*vertBufferOut)++) = vertsTmp[1];
 		*((*vertBufferOut)++) = vertsTmp[3];
@@ -394,14 +411,14 @@ static void _tessellateTriangleRecurse(FlexVertex* vA, FlexVertex* vB, FlexVerte
 	}
 }
 
-void FlexRenderer::TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut)
+void FlexRenderer::TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, float fBlendA, float fBlendB, float fBlendC, int iDegree, FlexVertex** vertBufferOut)
 {
 	if (iDegree < 1)
 	{
 		Errorf("TessellateTriangleIntoBuffer called with a degree of 0 or less, which is invalid.");
 		return;
 	}
-	_tessellateTriangleRecurse(vA, vB, vC, iDegree, vertBufferOut);
+	_tessellateTriangleRecurse(vA, vB, vC, fBlendA, fBlendB, fBlendC, iDegree, vertBufferOut);
 }
 
 int FlexRenderer::GetNumTessellatedTriangles(int iDegree)
@@ -537,7 +554,7 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 	D3DVERTEXELEMENT9 decl3D[MAX_FVF_DECL_SIZE];
 	D3DVERTEXELEMENT9 decl2D[MAX_FVF_DECL_SIZE];
 
-	D3DXDeclaratorFromFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl3D);
+	D3DXDeclaratorFromFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX2, decl3D);
 	D3DXDeclaratorFromFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1, decl2D);
 
 	pD3DDevice->CreateVertexDeclaration(decl3D, &FlexVertexDecl);
@@ -548,13 +565,15 @@ void FlexRenderer::Initialize(HWND hWndMain, int screenW, int screenH)
 
 	if (pDefaultShader)
 	{
-		default3DTech = pDefaultShader->GetTechniqueByName("Default3D");
+		pShaderTechniques[kShader3D_Default] = pDefaultShader->GetTechniqueByName("Default3D");
+		pShaderTechniques[kShader3D_2xBlend] = pDefaultShader->GetTechniqueByName("TextureBlend3D");
 		default2DTech = pDefaultShader->GetTechniqueByName("Default2D");
-		wireframe3DTech = pDefaultShader->GetTechniqueByName("Wireframe3D");
-		translucent3DTech = pDefaultShader->GetTechniqueByName("Translucent3D");
+//		wireframe3DTech = pDefaultShader->GetTechniqueByName("Wireframe3D");
+		pShaderTechniques[kShader3D_Translucent] = pDefaultShader->GetTechniqueByName("Translucent3D");
+		pShaderTechniques[kShader3D_Translucent2xBlend] = pDefaultShader->GetTechniqueByName("TranslucentBlend3D");
 	}
 
-	if (!pDefaultShader || FAILED(pDefaultShader->SetTechnique(default3DTech)))
+	if (!pDefaultShader || FAILED(pDefaultShader->SetTechnique(pShaderTechniques[kShader3D_Default])))
 	{
 		Errorf("Fatal error: Failed to set default shader technique to Default3D");
 	}
@@ -606,6 +625,8 @@ FlexRenderer::FlexRenderer()
 	pCurRenderList = new RenderList;
 	eaVertsToDestroy = NULL;
 	eaAtlasVertexBuffers = NULL;
+	bForceWireframe = false;
+	bForceTextureBlending = true;
 }
 
 FlexRenderer::~FlexRenderer()
@@ -663,8 +684,7 @@ void FlexRenderer::SetRenderMode(FlexRendererMode eMode)
 void FlexRenderer::StartNewRenderList()
 {
 	pFutureRenderList->bUsed = false;
-	pFutureRenderList->modelsUsed = 0;
-	pFutureRenderList->translucentModelsUsed = 0;
+	memset(pFutureRenderList->pModelsUsedByTechnique, 0, sizeof(int)*kShader3D_Count);
 	pFutureRenderList->spritesUsed = 0;
 	eaClear(&pFutureRenderList->eaSpriteTextures);
 }
@@ -684,13 +704,12 @@ void FlexRenderer::CommitRenderList()
 	}
 }
 
-void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], ShaderTechniques3D eTechnique)
 {
-	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
+	assert(pFutureRenderList->pModelsUsedByTechnique[eTechnique] < RENDER_LIST_BUFFER_SIZE);
 
-	ModelCall* pModel = bTranslucent ? 
-		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
-		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
+	ModelCall* pModel = &pFutureRenderList->pCallsByTechnique[eTechnique][pFutureRenderList->pModelsUsedByTechnique[eTechnique]++];
+
 	pModel->ppVerts = ppVerts;
 	pModel->pIndices = pIndices;
 	pModel->pTex = pTex ? pTex->pD3DTex : NULL;
@@ -708,15 +727,13 @@ void FlexRenderer::AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirec
 	D3DXMatrixMultiply(&pModel->matWorld, &pModel->matWorld, &matTrans);
 }
 
-void FlexRenderer::Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent)
+void FlexRenderer::Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], ShaderTechniques3D eTechnique)
 {
-	assert(pFutureRenderList->modelsUsed < RENDER_LIST_BUFFER_SIZE);
-	static int iNumTris = 2;
-	//static int iNumVerts = 4;
+	assert(pFutureRenderList->pModelsUsedByTechnique[eTechnique] < RENDER_LIST_BUFFER_SIZE);
 
-	ModelCall* pModel = bTranslucent ? 
-		&pFutureRenderList->translucentModels[pFutureRenderList->translucentModelsUsed++] : 
-		&pFutureRenderList->models[pFutureRenderList->modelsUsed++];
+	ModelCall* pModel = &pFutureRenderList->pCallsByTechnique[eTechnique][pFutureRenderList->pModelsUsedByTechnique[eTechnique]++];
+
+	static int iNumTris = 2;
 
 	pModel->ppVerts = &pTex->pVerts;
 	pModel->pTex = pTex->hTex.pTex->pD3DTex;
@@ -991,86 +1008,57 @@ void FlexRenderer::ProcessRenderLists()
 	UpdateCamera();
 
 	BeginFrame();
-
-//	pDefaultShader->SetTechnique(wireframe3DTech);
-
-	for (int i = 0; i < pCurRenderList->modelsUsed; i++)
+	/*
+	if (bForceWireframe)
+		pDefaultShader->SetTechnique(wireframe3DTech);
+	else if (bForceTextureBlending)
+		pDefaultShader->SetTechnique(blendTextures3DTech);
+	*/
+	for (int iTechnique = 0; iTechnique < kShader3D_Count; iTechnique++)
 	{
-		ModelCall* pCall = &pCurRenderList->models[i];
-		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
-
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
-			pD3DDevice->SetIndices(pCall->pIndices);
-
-		D3DXMATRIXA16 matWorld, matProj, matView;
-		D3DXVECTOR3 camEye;
-		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
-		pCamera->GetProjMatrix(&matProj);
-		pCamera->GetViewMatrix(&matView);
-		pCamera->GetCameraEye(&camEye);
-
-		pDefaultShader->SetMatrix("matWorld", &matWorld);
-		pDefaultShader->SetMatrix("matProj", &matProj);
-		pDefaultShader->SetMatrix("matView", &matView);
-		pDefaultShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
-		pDefaultShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
-
-		pDefaultShader->CommitChanges();
-
-		unsigned passes = 0;
-		pDefaultShader->Begin(&passes,0);
-		for(unsigned j = 0; j < passes; j++)
+		int iModelsUsed = pCurRenderList->pModelsUsedByTechnique[iTechnique];
+		if (iModelsUsed > 0)
 		{
-			pDefaultShader->BeginPass(j);
+			pDefaultShader->SetTechnique(pShaderTechniques[iTechnique]);
+			for (int i = 0; i < iModelsUsed; i++)
+			{
+				ModelCall* pCall = &pCurRenderList->pCallsByTechnique[iTechnique][i];
+				pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
 
-			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
-				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
-			else
-				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
-			pDefaultShader->EndPass();
+				pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
+				if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
+					pD3DDevice->SetIndices(pCall->pIndices);
+
+				D3DXMATRIXA16 matWorld, matProj, matView;
+				D3DXVECTOR3 camEye;
+				pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
+				pCamera->GetProjMatrix(&matProj);
+				pCamera->GetViewMatrix(&matView);
+				pCamera->GetCameraEye(&camEye);
+
+				pDefaultShader->SetMatrix("matWorld", &matWorld);
+				pDefaultShader->SetMatrix("matProj", &matProj);
+				pDefaultShader->SetMatrix("matView", &matView);
+				pDefaultShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
+				pDefaultShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
+
+				pDefaultShader->CommitChanges();
+
+				unsigned passes = 0;
+				pDefaultShader->Begin(&passes,0);
+				for(unsigned j = 0; j < passes; j++)
+				{
+					pDefaultShader->BeginPass(j);
+
+					if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
+						pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
+					else
+						pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
+					pDefaultShader->EndPass();
+				}
+				pDefaultShader->End();
+			}
 		}
-		pDefaultShader->End();
-	}
-	
-	pDefaultShader->SetTechnique(translucent3DTech);
-
-	for (int i = 0; i < pCurRenderList->translucentModelsUsed; i++)
-	{
-		ModelCall* pCall = &pCurRenderList->translucentModels[i];
-		pD3DDevice->SetTransform(D3DTS_WORLD,&pCall->matWorld);
-
-		pD3DDevice->SetStreamSource(0, *(pCall->ppVerts), pCall->iVertStart*sizeof(FlexVertex), sizeof(FlexVertex));
-		if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
-			pD3DDevice->SetIndices(pCall->pIndices);
-
-		D3DXMATRIXA16 matWorld, matProj, matView;
-		D3DXVECTOR3 camEye;
-		pD3DDevice->GetTransform(D3DTS_WORLD, &matWorld);
-		pCamera->GetProjMatrix(&matProj);
-		pCamera->GetViewMatrix(&matView);
-		pCamera->GetCameraEye(&camEye);
-
-		pDefaultShader->SetMatrix("matWorld", &matWorld);
-		pDefaultShader->SetMatrix("matProj", &matProj);
-		pDefaultShader->SetMatrix("matView", &matView);
-		pDefaultShader->SetVector("eye",(D3DXVECTOR4*) &camEye);
-		pDefaultShader->SetTexture("shaderTexture", pCall->pTex ? pCall->pTex : pWhite);
-
-		pDefaultShader->CommitChanges();
-
-		unsigned passes = 0;
-		pDefaultShader->Begin(&passes,0);
-		for(unsigned j = 0; j < passes; j++)
-		{
-			pDefaultShader->BeginPass(j);
-			if (pCall->ePrimitiveType != D3DPT_TRIANGLESTRIP && pCall->pIndices)
-				pD3DDevice->DrawIndexedPrimitive(pCall->ePrimitiveType, 0, 0, (*pCall->piNumVerts), 0, (*pCall->piNumTris));
-			else
-				pD3DDevice->DrawPrimitive(pCall->ePrimitiveType, 0, (*pCall->piNumTris));
-			pDefaultShader->EndPass();
-		}
-		pDefaultShader->End();
 	}
 	
 	Begin2D();
@@ -1141,7 +1129,6 @@ void FlexRenderer::End2D()
 	assert(bActive2D);
 	bActive2D = false;
 	pD3DDevice->SetVertexDeclaration(FlexVertexDecl);
-	pDefaultShader->SetTechnique(default3DTech);
 }
 
 void FlexRenderer::GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2])
@@ -1308,7 +1295,7 @@ void FlexRenderer::RenderCubeAtPoint(D3DXVECTOR3 vPoint)
 	float rot[3] = {0,0,0};
 	static int numCubeTris = 12;
 	static int numCubeVerts = 8;
-	AddModelToRenderList(&g_pCubeVertex, g_pCubeIndex, &numCubeTris, &numCubeVerts, NULL, pos, scale, rot, true);
+	AddModelToRenderList(&g_pCubeVertex, g_pCubeIndex, &numCubeTris, &numCubeVerts, NULL, pos, scale, rot, kShader3D_Default);
 }
 
 void FlexCamera::CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y, int iWidth, int iHeight)

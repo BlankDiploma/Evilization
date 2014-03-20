@@ -4,6 +4,7 @@
 #include "EArray.h"
 #include "windows.h"
 #include <stdio.h>
+#include "strsafe.h"
 
 #ifndef FLEX_ERROR_USE_STDERR
 
@@ -15,31 +16,31 @@ static HWND hErrorDlg = 0;
 ErrorHash stErrorTextToTracker;
 int idx = 0;
 
-ErrorTracker** eaErrors;
+ErrorTracker** eaErrors = NULL;
 
 void AddErrorToList(HWND hListControl, ErrorTracker* pTracker)
 {
-	static TCHAR buf[512] = {0};
+	static TCHAR buf[1024] = {0};
 	LVITEM item = {0};
-
-	wsprintf(buf, L"%d", pTracker->id);
+	
+	StringCchPrintf(buf, 1024, L"%d", pTracker->id);
 	item.mask = LVIF_TEXT;
 	item.pszText = buf;
 	item.iItem = pTracker->id;
 	item.iSubItem = 0;
 	ListView_InsertItem(hListControl, &item);
 	
-	wsprintf(buf, L"%d", pTracker->Count);
+	StringCchPrintf(buf, 1024, L"%d", pTracker->Count);
 	item.pszText = buf;
 	item.iSubItem = 1;
 	ListView_SetItem(hListControl, &item);
 	
-	wsprintf(buf, L"%s", pTracker->pParent ? pTracker->pchText : NULL);
+	StringCchPrintf(buf, 1024, L"%s", pTracker->pParent ? pTracker->pchText : NULL);
 	item.pszText = buf;
 	item.iSubItem = 2;
 	ListView_SetItem(hListControl, &item);
 	
-	wsprintf(buf, L"%s", pTracker->pParent ? pTracker->pParent->pchText : pTracker->pchText);
+	StringCchPrintf(buf, 1024, L"%s", pTracker->pParent ? pTracker->pParent->pchText : pTracker->pchText);
 	item.pszText = buf;
 	item.iSubItem = 3;
 	ListView_SetItem(hListControl, &item);
@@ -219,7 +220,7 @@ BOOL CALLBACK ErrorProc(HWND hwndDlg,
 
 void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...)
 {
-	static TCHAR errorText[512] = {0};
+	static TCHAR errorText[1024] = {0};
 	ErrorHash::iterator hashIter;
 	if (!IsWindow(hErrorDlg))
 	{
@@ -228,7 +229,7 @@ void ErrorInternalf(const TCHAR* pchErrorFmt, const TCHAR* pchFilename, ...)
 	}
 	va_list args;
 	va_start(args, pchFilename);
-	wvsprintf(errorText, pchErrorFmt, args);
+	StringCchVPrintf(errorText, 1024, pchErrorFmt, args);
 	va_end(args);
 
 	const TCHAR* pchTextDup = _wcsdup(errorText);

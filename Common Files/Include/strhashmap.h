@@ -8,7 +8,8 @@ struct stringHasher : public stdext::hash_compare <const wchar_t*>
 	size_t operator() (const wchar_t* s) const
 	{
 		size_t h = 0;
-		for(unsigned int i = 0; i < wcslen(s); i++)
+		unsigned int size = wcslen(s);
+		for(unsigned int i = 0; i < size; i++)
 		{
 			if (s[i] >= 'A' && s[i] <= 'Z')
 				h = 31 * h + s[i] - 'A' + 'a';

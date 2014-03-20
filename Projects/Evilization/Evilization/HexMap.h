@@ -72,7 +72,6 @@ PARSE_STRUCT(hexMapGenerationDesc)
 	int w;
 	int h;
 	float fMountainThreshold;
-	float fShallowWaterThreshold;
 	float fOceanThreshold;
 };
  
@@ -106,7 +105,9 @@ typedef bool (*finishedFunc)(POINT pt, void* pData);
 struct TerrainVertexChunk
 {
 	IDirect3DVertexBuffer9* pVerts;
+	IDirect3DVertexBuffer9* pTranslucentVerts;
 	int iTris;
+	int iTranslucentTris;
 };
 
 class CHexMap
@@ -138,6 +139,7 @@ public:
 	void Render(RECT* view, FLOATPOINT fpMapOffset, CHexPlayer* pPlayer);
 	void RenderInterface( RECT* mapViewport, FLOATPOINT fpMapOffset, POINT ptMouseoverTile );
 	void EndTurn(int player, queuedAction* pActions);
+	void ApplyShallowWater();
 	void Generate(hexMapGenerationDesc* pDesc, int seed);
 	void UpdateMinimapTexture(GameTexture* pTex, RECT* view, FLOATPOINT fpMapOffset, playerVisibility* pVis);
 	void GetTileDescription( hexTile* pTile, TCHAR* pchDescOut );
@@ -205,9 +207,14 @@ private:
 	void RenderCityLabel( POINT pt, CHexCity* pCity );
 	void RenderFog(POINT tilePt);
 	int HexPathfindInternal(POINT a, CHexUnit* pUnit, finishedFunc pfFinished, void* pData, HEXPATH** pPathOut, int maxUnreachableDist);
-	void ApplyHeightmapToTileVerts(POINT tilePt, int chunkX, int chunkY, FlexVertex* pStart, FlexVertex* pEnd, bool bIsCoastline);
+	void ApplyHeightmapToTileVerts(int x, int y, int chunkX, int chunkY, FlexVertex* pStart, FlexVertex* pEnd);
 	void GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile, hexTile* neighbors[6]);
-	bool CHexMap::TileIsCoastline(int x, int y);
+	bool TileIsCoastline(int x, int y);
+	int GetNumTrisForTesselatedTile(int x, int y);
+	int GetNumTranslucentTrisForTesselatedTile(int x, int y);
+	void CHexMap::WriteSingleHexVertsToBuffers(int tileX, int tileY, int chunkX, int chunkY, FlexVertex** ppVertIter, FlexVertex** ppTranslucentVertIter);
+	void WriteHexSliceVertsToBuffer(FlexVertex* pVA, FlexVertex* pVB, FlexVertex* pVCenter, float fBlendA, float fBlendB, float fBlendC, int iTessellationDegree, FlexVertex** ppVertIter);
+	void PostProcessTileVerts(GameTexturePortion* pTex, GameTexturePortion* pBlendTex, float fZ, float fAlpha, FlexVertex* pStart, FlexVertex* pEnd);
 };
 void InitializeBiomeMap(LPCTSTR  filename);
 
@@ -237,13 +244,13 @@ inline POINT CHexMap::GetTileInDirection(POINT pt, HexDirection eDir)
 		{
 			pt.x--;
 		}break;
-	case kHexDir_NW:
+	case kHexDir_SW:
 		{
 			pt.y--;
 			if (pt.y % 2)
 				pt.x--;
 		}break;
-	case kHexDir_NE:
+	case kHexDir_SE:
 		{
 			pt.y--;
 			if (!(pt.y % 2))
@@ -253,13 +260,13 @@ inline POINT CHexMap::GetTileInDirection(POINT pt, HexDirection eDir)
 		{
 			pt.x++;
 		}break;
-	case kHexDir_SE:
+	case kHexDir_NE:
 		{
 			pt.y++;
 			if (!(pt.y % 2))
 				pt.x++;
 		}break;
-	case kHexDir_SW:
+	case kHexDir_NW:
 		{
 			pt.y++;
 			if (pt.y % 2)
@@ -278,13 +285,13 @@ inline POINT CHexMap::GetTileInDirection(POINT pt, int eDir)
 		{
 			pt.x--;
 		}break;
-	case kHexDir_NW:
+	case kHexDir_SW:
 		{
 			pt.y--;
 			if (pt.y % 2)
 				pt.x--;
 		}break;
-	case kHexDir_NE:
+	case kHexDir_SE:
 		{
 			pt.y--;
 			if (!(pt.y % 2))
@@ -294,13 +301,13 @@ inline POINT CHexMap::GetTileInDirection(POINT pt, int eDir)
 		{
 			pt.x++;
 		}break;
-	case kHexDir_SE:
+	case kHexDir_NE:
 		{
 			pt.y++;
 			if (!(pt.y % 2))
 				pt.x++;
 		}break;
-	case kHexDir_SW:
+	case kHexDir_NW:
 		{
 			pt.y++;
 			if (pt.y % 2)
@@ -319,13 +326,13 @@ inline POINT CHexMap::GetTileInDirection(int x, int y, int eDir)
 		{
 			x--;
 		}break;
-	case kHexDir_NW:
+	case kHexDir_SW:
 		{
 			y--;
 			if (y % 2)
 				x--;
 		}break;
-	case kHexDir_NE:
+	case kHexDir_SE:
 		{
 			y--;
 			if (!(y % 2))
@@ -335,13 +342,13 @@ inline POINT CHexMap::GetTileInDirection(int x, int y, int eDir)
 		{
 			x++;
 		}break;
-	case kHexDir_SE:
+	case kHexDir_NE:
 		{
 			y++;
 			if (!(y % 2))
 				x++;
 		}break;
-	case kHexDir_SW:
+	case kHexDir_NW:
 		{
 			y++;
 			if (y % 2)
@@ -363,13 +370,13 @@ inline POINT CHexMap::GetTileInDirection(PATHFINDPOINT* pt, int eDir)
 		{
 			retpt.x--;
 		}break;
-	case kHexDir_NW:
+	case kHexDir_SW:
 		{
 			retpt.y--;
 			if (retpt.y % 2)
 				retpt.x--;
 		}break;
-	case kHexDir_NE:
+	case kHexDir_SE:
 		{
 			retpt.y--;
 			if (!(retpt.y % 2))
@@ -379,13 +386,13 @@ inline POINT CHexMap::GetTileInDirection(PATHFINDPOINT* pt, int eDir)
 		{
 			retpt.x++;
 		}break;
-	case kHexDir_SE:
+	case kHexDir_NE:
 		{
 			retpt.y++;
 			if (!(retpt.y % 2))
 				retpt.x++;
 		}break;
-	case kHexDir_SW:
+	case kHexDir_NW:
 		{
 			retpt.y++;
 			if (retpt.y % 2)

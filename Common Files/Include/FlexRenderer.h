@@ -88,6 +88,7 @@ struct FlexVertex
 	float x, y, z;
 	DWORD diffuse;
 	float u, v;
+	float u1, v1;
 };
 struct FlexVertex2D
 {
@@ -232,14 +233,15 @@ struct ModelCall
 	D3DPRIMITIVETYPE ePrimitiveType;
 };
 
-#define RENDER_LIST_BUFFER_SIZE 4096
+#define RENDER_LIST_BUFFER_SIZE 2048
+
+enum ShaderTechniques3D {kShader3D_Default = 0, kShader3D_2xBlend, kShader3D_3xBlend, kShader3D_Translucent, kShader3D_Translucent2xBlend, kShader3D_Count};
 
 struct RenderList
 {
-	ModelCall models[RENDER_LIST_BUFFER_SIZE];
-	int modelsUsed;
-	ModelCall translucentModels[RENDER_LIST_BUFFER_SIZE];
-	int translucentModelsUsed;
+	ModelCall pCallsByTechnique[kShader3D_Count][RENDER_LIST_BUFFER_SIZE];
+	int pModelsUsedByTechnique[kShader3D_Count];
+
 	LPDIRECT3DVERTEXBUFFER9 pSpriteVerts;
 
 	LPDIRECT3DTEXTURE9* eaSpriteTextures;
@@ -248,7 +250,11 @@ struct RenderList
 	volatile bool bUsed;//the only time in history that I have used "volatile"
 	RenderList()
 	{
-		modelsUsed = spritesUsed = translucentModelsUsed = 0;
+		for (int i = 0; i < kShader3D_Count; i++)
+		{
+			pModelsUsedByTechnique[i] = 0;
+		}
+		spritesUsed = 0;
 		eaSpriteTextures = NULL;
 		pSpriteVerts = NULL;
 		bUsed = true;
@@ -284,8 +290,8 @@ class FlexRenderer
 	FlexCamera* pCamera;
 	ID3DXEffect* pDefaultShader;
 	LPDIRECT3DVERTEXDECLARATION9 FlexVertexDecl, FlexVertex2DDecl;
-	D3DXHANDLE default3DTech, default2DTech, wireframe3DTech, translucent3DTech;
-
+	D3DXHANDLE pShaderTechniques[kShader3D_Count];
+	D3DXHANDLE default2DTech;
 
 	int iScreenW;
 	int iScreenH;
@@ -315,6 +321,10 @@ class FlexRenderer
 
 	void CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture, GameTexturePortion** eaPortions);
 	LPDIRECT3DVERTEXBUFFER9* eaAtlasVertexBuffers;
+
+	
+	bool bForceWireframe;
+	bool bForceTextureBlending;
 public:
 	FlexRenderer();
 	~FlexRenderer();
@@ -326,6 +336,14 @@ public:
 	void Initialize(HWND hWndMain, int screenW, int screenH);
 	void SetRenderMode(FlexRendererMode eMode);
 	void GetTextureDimensions(IDirect3DTexture9* pTex, float dimensions[2]);
+	void ForceWireframe(bool bEnable)
+	{
+		bForceWireframe = bEnable;
+	}
+	void ForceTextureBlending(bool bEnable)
+	{
+		bForceTextureBlending = bEnable;
+	}
 
 	FlexCamera* GetCamera()
 	{
@@ -346,8 +364,8 @@ public:
 	void WorldSpaceToScreen(D3DXVECTOR3* pWorld, POINT* pOut);
 	void StartNewRenderList();
 	void CommitRenderList();
-	void Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
-	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], bool bTranslucent);
+	void Add3DTexturePortionToRenderList(const GameTexturePortion* pTex, float pos[3], float scale[3], float rot[3], ShaderTechniques3D eTechnique);
+	void AddModelToRenderList(IDirect3DVertexBuffer9** ppVerts, IDirect3DIndexBuffer9* pIndices, int* piNumTris, int* piNumVerts, const GameTexture* pTex, float pos[3], float scale[3], float rot[3], ShaderTechniques3D eTechnique);
 	void AddSpriteToRenderList(const GameTexture* pTex, RECT* pDst, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(const GameTexture* pTex, POINT topleft, RECT* pSrc, DWORD color = 0xffffffff);
 	void AddSpriteToRenderList(const GameTexture* pTex, int x, int y, RECT* pSrc, DWORD color = 0xffffffff);
@@ -362,7 +380,7 @@ public:
 	void QueueVertexBufferForDestruction(LPDIRECT3DVERTEXBUFFER9 pVerts);
 	void CastRayThroughPixel(D3DXVECTOR3 pOut[2], int x, int y);
 	void CreateAllTextureAtlasBuffers();
-	void TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, int iDegree, FlexVertex** vertBufferOut);
+	void TessellateTriangleIntoBuffer(FlexVertex* vA, FlexVertex* vB, FlexVertex* vC, float fBlendA, float fBlendB, float fBlendC, int iDegree, FlexVertex** vertBufferOut);
 	int GetNumTessellatedTriangles(int iDegree);
 	void RenderToScratchSurface(FlexScratchSurface* pSurface, GameTexture* pTexture, FlexVertex2D* ppVerts, int iNumVerts);
 };

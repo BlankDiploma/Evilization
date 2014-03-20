@@ -932,7 +932,7 @@ void CGameState::RenderTextureSplat(int x, int y, SplattableTexture eType, float
 	float vScale[3] = {scale, scale, 1.0f};
 	if (y & 1)
 		vPos[0] += HEX_HALF_WIDTH;
-	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pVertBuf, pTextureSplatBuffers[eType].pIndBuf, &pTextureSplatBuffers[eType].iNumTris, &pTextureSplatBuffers[eType].iNumVerts, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, true);
+	g_Renderer.AddModelToRenderList(&pTextureSplatBuffers[eType].pVertBuf, pTextureSplatBuffers[eType].pIndBuf, &pTextureSplatBuffers[eType].iNumTris, &pTextureSplatBuffers[eType].iNumVerts, pTextureSplatBuffers[eType].pTex, vPos, vScale, vRot, kShader3D_Translucent);
 }
 
 void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale)
@@ -946,7 +946,7 @@ void CGameState::RenderTileObject(int x, int y, GameTexturePortion* pPortion, fl
 	if (y & 1)
 		vPos[0] += HEX_HALF_WIDTH;
 
-	g_Renderer.Add3DTexturePortionToRenderList(pPortion, vPos, vScale, vRot, true);
+	g_Renderer.Add3DTexturePortionToRenderList(pPortion, vPos, vScale, vRot, kShader3D_Translucent);
 }
 
 void CGameState::RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha )

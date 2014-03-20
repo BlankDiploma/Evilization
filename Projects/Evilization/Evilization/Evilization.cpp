@@ -1154,6 +1154,26 @@ void TestDistCalc(lua_State *L, int ax, int ay, int bx, int by)
 	g_Console.AddConsoleString(buf);
 }
 
+void ForceWireframe(lua_State *L, int enable)
+{
+	g_Renderer.ForceWireframe(!!enable);
+}
+
+void ForceTextureBlending(lua_State *L, int enable)
+{
+	g_Renderer.ForceTextureBlending(!!enable);
+}
+
+void PrintMouseoverLoc(lua_State *L)
+{
+	POINT pt;
+	TCHAR buf[10] = {0};
+	GetCursorPos(&pt);
+	pt = g_GameState.PixelToTilePt(pt.x, pt.y);
+	wsprintf(buf, L"%d,%d", pt.x, pt.y);
+	g_Console.AddConsoleString(buf);
+}
+
 void DistCalcUnitTest(lua_State *L)
 {
 	POINT points[] =	{{0,0},{1,0},	//1
@@ -1255,6 +1275,9 @@ void DoAllLuaBinds()
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
 		luabind::def("Dist", &TestDistCalc),
 		luabind::def("DistUnitTest", &DistCalcUnitTest),
+		luabind::def("ForceWireframe", &ForceWireframe),
+		luabind::def("ForceTextureBlending", &ForceTextureBlending),
+		luabind::def("PrintMouseoverLoc", &PrintMouseoverLoc),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")
