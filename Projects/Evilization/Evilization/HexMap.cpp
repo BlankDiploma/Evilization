@@ -553,20 +553,27 @@ TerrainVertexChunk* CHexMap::CreateTerrainVertexBufferChunk(int x, int y)
 			iNumTranslucentTris += GetNumTranslucentTrisForTesselatedTile(iActualTileX, iActualTileY);
 		}
 	}
-
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer->pVerts, NULL);
-	g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTranslucentTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer->pTranslucentVerts, NULL);
-	pNewBuffer->iTris = iNumTris;
-	pNewBuffer->iTranslucentTris = iNumTranslucentTris;
-
+	
 	void* vb_vertices;
-	pNewBuffer->pVerts->Lock(0, 0, &vb_vertices, 0);
-	FlexVertex* pIter = (FlexVertex*)vb_vertices;
-
 	void* vb_vertices_translucent;
-	pNewBuffer->pTranslucentVerts->Lock(0, 0, &vb_vertices_translucent, 0);
-	FlexVertex* pTranslucentIter = (FlexVertex*)vb_vertices_translucent;
+	FlexVertex* pIter = NULL;
+	FlexVertex* pTranslucentIter = NULL;
+	
+	if (iNumTris > 0)
+	{
+		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer->pVerts, NULL);
+		pNewBuffer->iTris = iNumTris;
+		pNewBuffer->pVerts->Lock(0, 0, &vb_vertices, 0);
+		pIter = (FlexVertex*)vb_vertices;
+	}
 
+	if (iNumTranslucentTris > 0)
+	{
+		g_Renderer.CreateVertexBuffer(sizeof(FlexVertex)*iNumTranslucentTris*3, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &pNewBuffer->pTranslucentVerts, NULL);
+		pNewBuffer->iTranslucentTris = iNumTranslucentTris;
+		pNewBuffer->pTranslucentVerts->Lock(0, 0, &vb_vertices_translucent, 0);
+		pTranslucentIter = (FlexVertex*)vb_vertices_translucent;
+	}
 
 	for (int i = 0; i < TERRAIN_CHUNK_WIDTH; i++)
 	{
