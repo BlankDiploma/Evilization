@@ -24,6 +24,10 @@ DefLibrary::DefLibrary(void)
 	PopulateParseTableDict(&htNameToParseTableHash);
 	PopulatePolyTableNameHash(&htNameToPolyTableHash);
 	PopulateObjSizeHash(&htNameToObjSizeHash);
+
+	//hard-coded parse tables
+	htNameToObjSizeHash[&parse_RECT] = 16;
+	htNameToObjSizeHash[&parse_POINT] = 8;
 }
 
 DefHash::iterator DefLibrary::GetDefIteratorBegin(const TCHAR* pchType)

@@ -318,7 +318,7 @@ void CHexMap::GenerateHeightmapForTile(FlexScratchSurface* pOut, hexTile* pTile,
 }
 
 
-static DWORD heightmapDataBuffer[HEIGHT_MAP_RESOLUTION*HEIGHT_MAP_RESOLUTION];
+static DWORD heightmapDataBuffer[HEIGHT_MAP_RESOLUTION*HEIGHT_MAP_RESOLUTION] = {0};
 
 void CHexMap::ApplyHeightmapToTileVerts(int x, int y, int chunkX, int chunkY, FlexVertex* pStart, FlexVertex* pEnd)
 {

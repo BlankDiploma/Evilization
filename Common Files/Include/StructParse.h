@@ -76,7 +76,6 @@ struct StructParseEntry_ForOutput
 };
 
 int ParseTableLength(const ParseTable* pTable);
-int ParseTableSizeInBytes(const ParseTable* pTable);
 const StructParseEntry* ParseTableFind(const ParseTable* pTable, const TCHAR* pchName);
 bool ReadParseTableValue(void* pCurObject, const StructParseEntry* pEntry, const char* pchTokens, const TCHAR* pchFilename);
 bool ParseEntryFromStructMember(char* line, StructParseEntry_ForOutput*** eaEntries);

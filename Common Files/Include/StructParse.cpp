@@ -12,19 +12,6 @@ int ParseTableLength(const ParseTable* pTable)
 	return pTable->iLength;
 }
 
-int ParseTableSizeInBytes(const ParseTable* pTable)
-{
-	int size = 0;
-	int iTableLength = ParseTableLength(pTable);
-	for (int i = 0; i < iTableLength; i++)
-	{
-		if (pTable->pEntries[i].pchName)
-			size += StructParseEntryTypeSize[pTable->pEntries[i].eType];
-
-	}
-	return size;
-}
-
 const StructParseEntry* ParseTableFind(const ParseTable* pTable, const TCHAR* pchName)
 {
 	int iSize = ParseTableLength(pTable);
@@ -636,10 +623,8 @@ static const StructParseEntry parse_entries_RECT[] = {
 const ParseTable parse_RECT = {L"RECT", 4, parse_entries_RECT};
 
 static const StructParseEntry parse_entries_POINT[] = {
-{_T("left"), kStruct_Int, NULL, 2, offsetof(RECT, left)},
-{_T("top"), kStruct_Int, NULL, 2, offsetof(RECT, top)},
-{_T("right"), kStruct_Int, NULL, 2, offsetof(RECT, right)},
-{_T("bottom"), kStruct_Int, NULL, 2, offsetof(RECT, bottom)},
+{_T("x"), kStruct_Int, NULL, 2, offsetof(POINT, x)},
+{_T("y"), kStruct_Int, NULL, 2, offsetof(POINT, y)},
 {NULL, kStruct_Int, NULL, 0, 0}
 };
 const ParseTable parse_POINT = {L"POINT", 2, parse_entries_POINT};
