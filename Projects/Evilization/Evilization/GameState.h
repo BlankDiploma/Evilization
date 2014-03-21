@@ -334,7 +334,6 @@ struct MouseHandlerState
 	}
 };
 
-
 class CGameState
 {
 private:

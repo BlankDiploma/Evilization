@@ -22,7 +22,6 @@ PARSE_STRUCT(techTreeNodeDef)
 {
 	TEXTURE_REF hIcon;
 	int cost;
-
 	const TCHAR** eaRequiredNames;
 	
 	const TCHAR** eaGrants;

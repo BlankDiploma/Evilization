@@ -22,6 +22,7 @@ __forceinline bool NodeStartsNewEra(techTreeNodeDef* pNode)
 	return true;
 }
 
+
 #define GRID_HEIGHT 9
 
 int GetBestYCoordForTech(techTreeNodeDef* pNode, techTreeNodeDef* ppGrids[128][GRID_HEIGHT], int x)
