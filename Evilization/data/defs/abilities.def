@@ -1,0 +1,38 @@
+UnitAbilityDef basic_aoe
+{
+	cost 50
+	range 3
+	radius 1
+	damage 50
+	cooldown 3
+	eAffectsFlags Enemy
+	displayName "AoE"
+}
+UnitAbilityDef basic_nuke
+{
+	cost 50
+	range 5
+	radius 0
+	damage 100
+	cooldown 3
+	eAffectsFlags Enemy
+	displayName "Nuke"
+}
+
+UnitAbilityDef basic_debuff
+{
+	cost 50
+	range 3
+	radius 0
+	damage 20
+	cooldown 3
+	eAffectsFlags Enemy
+	eaUnitAttributeModList
+	{
+		eAffects maxhealth
+		eModType absolute
+		magnitude 50
+		duration 3
+	}	
+	displayName "debuff"
+}

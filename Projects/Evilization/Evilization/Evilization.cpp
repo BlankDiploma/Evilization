@@ -84,7 +84,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	g_Renderer.Initialize(hWndMain, g_screenWidth, g_screenHeight);
 
-	//KRIS: run game init
 	LoadGameData();
 	
 
@@ -119,14 +118,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 		else
 		{
-			//KRIS: Main loop goes here
 			GameLoop ( ) ;
 			g_Renderer.ProcessRenderLists();
 			
 		}
 	}
 quit:
-	//KRIS: Call shutdown
 	return (int) msg.wParam;
 }
 
@@ -175,7 +172,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-//KRIS: This is where you handle input
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
@@ -224,7 +220,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYUP:
 		{
 			int keyCode = wParam;
-			//KRIS: handle keyCode here
 			g_GameState.KeyInput(keyCode, false);
 		}break;
 	case WM_PAINT:
@@ -233,7 +228,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		EndPaint(hWnd, &ps);
 		break;
 
-		//KRIS: you can extrapolate the rest of the mouse events from this one
 	case WM_LBUTTONUP:
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONUP:
@@ -556,7 +550,10 @@ void MinimapClick(lua_State *L)
 
 void SelectedUnitIssueOrder(lua_State *L, int orderType)
 {
-	g_GameState.IssueOrder((unitOrderType)orderType, NULL);
+	POINT targetPt;
+	targetPt.x = 0;
+	targetPt.y = 0;
+	g_GameState.IssueOrder((unitOrderType)orderType, NULL, targetPt, NULL);
 }
 
 void RenderSelectedUnit(lua_State *L)
@@ -610,6 +607,11 @@ void ShowTechTreeUI(lua_State *L)
 	g_GameState.ShowTechTreeUI();
 }
 
+void ShowAbilityUI(lua_State *L)
+{
+	g_GameState.ShowAbilityUI();
+}
+
 hexTile* GetLayoutVarAsTile(lua_State *L)
 {
 	return (hexTile*)g_pCurContext->pUI->GetLayoutVar();
@@ -638,6 +640,16 @@ techTreeNodeDef* GetLayoutVarAsTechNodeDef(lua_State *L)
 cityProject* GetLayoutVarAsCityProject(lua_State *L)
 {
 	return (cityProject*)g_pCurContext->pUI->GetLayoutVar();
+}
+
+UnitAbilityRef* GetLayoutVarAsAbilityRef(lua_State *L)
+{
+	return (UnitAbilityRef*)g_pCurContext->pUI->GetLayoutVar();
+}
+
+UnitAbility* GetLayoutVarAsUnitAbility(lua_State *L)
+{
+	return (UnitAbility*)g_pCurContext->pUI->GetLayoutVar();
 }
 
 CHexCity* GetSelectedCity(lua_State *L)
@@ -938,6 +950,36 @@ luabind::object GetNotifications(lua_State *L)
 	return ret;
 }
 
+luabind::object GetAbilityList(lua_State *L)
+{
+	CHexUnit* pUnit = g_GameState.GetSelectedUnit();
+	UnitAbility** eaAbilityList = NULL;
+	UnitAbility** eaAbilities = NULL;
+	if (pUnit)
+	{
+		eaAbilities = pUnit->GetAbilities();
+	}
+	eaCopy(&eaAbilityList, &eaAbilities);
+	lua_pushlightuserdata(L, eaAbilityList);
+	luabind::object ret(luabind::from_stack(L, -1));
+	lua_pop(L,1);
+	return ret;
+}
+
+//luabind::object GetAbilityList(lua_State *L)
+//{
+//	CHexUnit* pUnit = g_GameState.GetSelectedUnit();
+//	UnitAbility** eaAbilityList = NULL;
+//	UnitAbility** eaAbilities = NULL;
+//	if (pUnit)
+//		eaAbilities = pUnit->GetAbilityList();
+//	eaCopy(&eaAbilityList, &eaAbilities);
+//	lua_pushlightuserdata(L, eaAbilityList);
+//	luabind::object ret(luabind::from_stack(L, -1));
+//	lua_pop(L,1);
+//	return ret;
+//}
+
 void NotificationFocus(lua_State *L, playerNotification* pNote)
 {
 	switch (pNote->eType)
@@ -976,6 +1018,27 @@ GameTexturePortion* GetNotificationIcon(lua_State *L, playerNotification* pNote)
 const TCHAR* GetNotificationText(lua_State *L, playerNotification* pNote)
 {
 	return pNote ? _wcsdup(pNote->pchText) : NULL;
+}
+
+const TCHAR* GetAbilityName(lua_State *L, UnitAbility* pAbility)
+{
+	if (pAbility)
+	{
+		TCHAR* abilityName = _wcsdup(pAbility->pDef->displayName);
+		if (pAbility->cooldown <= 0)
+		{
+			return _wcsdup(pAbility->pDef->displayName);
+		}
+		else
+		{
+			TCHAR widebuf[128];
+			swprintf_s(widebuf, L"(%d) ", pAbility->cooldown);
+			wcscat_s(widebuf, abilityName);
+			return _wcsdup(widebuf);
+		}
+	}
+	else
+		return NULL;
 }
 
 float GetCurTechProgress(lua_State *L)
@@ -1109,51 +1172,36 @@ void DisableMapXWrap(lua_State *L, int disable)
 	g_DebugFlags.disableMapXWrap = disable;
 }
 
-int distCalc(POINT a, POINT b)
+int distCalc(POINT ptA, POINT ptB)
 {
-	//swap if necessary
-	if (a.y > b.y)
+	int x1, x2, y1, y2, z1, z2, q1, q2, r1, r2, dist;
+
+	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
+		return 0;
+
+	q1 = ptA.x;
+	q2 = ptB.x;
+	r1 = ptA.y;
+	r2 = ptB.y;
+
+	if (abs(q2 - q1) > 128/2)
 	{
-		POINT temp = a;
-		a = b;
-		b = temp;
+		if(q2>q1)
+			q2 -= 128;
+		else
+			q1 -= 128;
 	}
-	int y = b.y-a.y;
-	int halfY = y;
-	int x = b.x - a.x;
-	if (x > 128/2)
-		x = x-128;
-	else if (x < -128/2)
-		x = x+128;
 
-	//early out if horizontal line, this is required
-	if (a.y == b.y)
-		return x < 0 ? -x : x;
+	x1 = q1 - (r1 - (r1&1))/2;
+	x2 = q2 - (r2 - (r2&1))/2;
+	z1 = r1;
+	z2 = r2;
+	y1 = -x1 - z1;
+	y2 = -x2 - z2;
 
-	//if a is on an odd y-coordinate and halfY is odd, round up the division. Only if positive-x direction.
-	if (a.y & 1 && halfY & 1 && x > 0)
-		halfY++;
-	if (x < 0)
-	{
-		x = -x;
-		if (!(a.y & 1))
-			x--;
-	}
-	
-	halfY /= 2;
-	if (x < halfY)
-		return y;
-	
-	return y + (x-halfY);
-}
+	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
 
-void TestDistCalc(lua_State *L, int ax, int ay, int bx, int by)
-{
-	POINT a = {ax, ay};
-	POINT b = {bx, by};
-	TCHAR buf[5] = {0};
-	wsprintf(buf, L"%d", distCalc(a, b));
-	g_Console.AddConsoleString(buf);
+	return dist;
 }
 
 void ForceWireframe(lua_State *L, int enable)
@@ -1215,6 +1263,13 @@ void DistCalcUnitTest(lua_State *L)
 	wsprintf(buf, L"%d calculations performed.", i);
 	g_Console.AddConsoleString(buf);
 }
+void TargetAbility(lua_State *L, UnitAbility* pAbility)
+{
+	if (pAbility)
+	{
+		g_GameState.MouseHandlerPushState(kGameplayMouse_SelectAbilityTarget, pAbility, NULL);
+	}
+}
 
 void DoAllLuaBinds()
 {
@@ -1238,6 +1293,8 @@ void DoAllLuaBinds()
 		luabind::def("Layout_GetVarAsNotification", &GetLayoutVarAsNotification),
 		luabind::def("Layout_GetVarAsTechNodeDef", &GetLayoutVarAsTechNodeDef),
 		luabind::def("Layout_GetVarAsCityProject", &GetLayoutVarAsCityProject),
+		luabind::def("Layout_GetVarAsAbilityRef", &GetLayoutVarAsAbilityRef),
+		luabind::def("Layout_GetVarAsUnitAbility", &GetLayoutVarAsUnitAbility),
 		luabind::def("Tile_GetLoc", &GetTileLoc),
 		luabind::def("Tile_GetCity", &GetCityFromTile),
 		luabind::def("Gameplay_TilePtToScreen", &TileCoordToScreen),
@@ -1262,6 +1319,7 @@ void DoAllLuaBinds()
 		luabind::def("Notification_Dismiss", &NotificationKill),
 		luabind::def("Notification_GetIcon", &GetNotificationIcon),
 		luabind::def("Notification_GetText", &GetNotificationText),
+		luabind::def("Ability_GetName", &GetAbilityName),
 		luabind::def("Player_GetCurrentTechPct", &GetCurTechProgress),
 		luabind::def("Player_GetCurrentTechName", &GetCurTechName),
 		luabind::def("Tech_ScrollDisplay", &TechTreeScrollDisplay),
@@ -1275,11 +1333,13 @@ void DoAllLuaBinds()
 		luabind::def("Player_FormatTopInfoBar", &FormatTopInfoBarString),
 		luabind::def("Debug_GenerateMapFromDesc", &GenerateMapFromDesc),
 		luabind::def("Debug_DisableMapXWrap", &DisableMapXWrap),
-		luabind::def("Dist", &TestDistCalc),
-		luabind::def("DistUnitTest", &DistCalcUnitTest),
 		luabind::def("ForceWireframe", &ForceWireframe),
 		luabind::def("ForceTextureBlending", &ForceTextureBlending),
 		luabind::def("PrintMouseoverLoc", &PrintMouseoverLoc),
+		luabind::def("Debug_DistCalcUnitTest", &DistCalcUnitTest),
+		luabind::def("Abilities_ShowUI", &ShowAbilityUI),
+		luabind::def("Gameplay_GetAbilityList", &GetAbilityList),
+		luabind::def("Ability_Target", &TargetAbility),
 		class_<GameTexturePortion>("GameTexturePortion")
 		.def(constructor<>()),
 		class_<hexTile>("hexTile")
@@ -1299,6 +1359,10 @@ void DoAllLuaBinds()
 		class_<CHexUnit>("CHexUnit")
 		.def(constructor<>()),
 		class_<cityProject>("cityProject")
+		.def(constructor<>()),
+		class_<UnitAbilityRef>("UnitAbilityRef")
+		.def(constructor<>()),
+		class_<UnitAbility>("UnitAbility")
 		.def(constructor<>())
 	];
 }

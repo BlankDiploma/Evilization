@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "structparse.h"
 #include "earray.h"
-
+#include "Abilities.h"
 
 #pragma once
 
@@ -56,26 +56,19 @@ struct HEXPATH
 	POINT ptOrigin;
 };
 
-PARSE_STRUCT(hexAbilityDef)
-{
-	//	dungeonScript* pScript;
-	int cooldown;
-	int range;
-	int damage;
-	int flags;
-};
-
 PARSE_STRUCT(hexUnitDef)
 {
 	int movement;
 	int maxHealth;
+	int defense;
 	int TypeFlags;
 	int numAbilities;
 	int cost;
 	int meleeStr;
 	int attackRange;
 	int visRadius;
-	hexAbilityDef** pAbilities;
+	int maxMana;
+	UnitAbilityRef** eaAbilityRefs;
 	DEF_REF(GameTexturePortion) hTex;
 	const TCHAR* name;
 	const TCHAR* displayName;
@@ -119,15 +112,25 @@ PARSE_STRUCT(hexBuildingDef)
 struct HEXPATH;
 
 
-AUTO_ENUM(unitOrderType) {kOrder_Sleep = 0, kOrder_Move, kOrder_Melee, kOrder_AutoExplore};
+AUTO_ENUM(unitOrderType) {kOrder_Sleep = 0, kOrder_Move, kOrder_Melee, kOrder_AutoExplore, kOrder_Ability};
+AUTO_ENUM(UnitAttribute) {kUnitAttribute_MaxHealth = 0, kUnitAttribute_MaxMana, kUnitAttribute_MaxMovement, kUnitAttribute_MeleeStr, 
+						  kUnitAttribute_Defense, kUnitAttribute_Range, kUnitAttribute_VisRadius, kUnitAttribute_NumAttributes};
+
+struct UnitAttributes
+{
+	float stats[kUnitAttribute_NumAttributes];
+};
 
 struct hexUnitOrder
 {
 	unitOrderType eType;
 	HEXPATH* pPath;
+	UnitAbility* pAbility;
+	POINT targetPt;
 	hexUnitOrder()
 	{
 		pPath = NULL;
+		pAbility = NULL;
 	}
 	~hexUnitOrder()
 	{
@@ -135,6 +138,8 @@ struct hexUnitOrder
 		{
 			delete pPath;
 			pPath = NULL;
+			delete pAbility;
+			pAbility = NULL;
 		}
 	}
 };
@@ -144,20 +149,28 @@ class CHexUnit
 private:
 	hexUnitDef* pDef;
 	int health;
+	int mana;
 	int ownerID;
 	int movRemaining;
-	int* abilityCooldowns;
+	bool bIsDead;
 	hexUnitOrder** eaOrders;
 	POINT loc;
+	UnitAbility** eaAbilities;
+	UnitAttributes defaultAttributes;
+	UnitAttributes currentAttributes;
+	UnitAttributeModifier** eaAttributeMods;
 public:
 	CHexUnit()
 	{
 		pDef = NULL;
 		health = 100;
+		mana = 0;
 		ownerID = -1;
 		movRemaining = 0;
-		abilityCooldowns = NULL;
+		eaAbilities = NULL;
 		eaOrders = NULL;
+		bIsDead = false;
+		eaAttributeMods = NULL;
 	}
 	CHexUnit(hexUnitDef* def, CHexPlayer* pOwner);
 
@@ -165,7 +178,7 @@ public:
 	{
 		return false;
 	}
-	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath)
+	void OverwriteQueuedOrders(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility)
 	{
 		for (int i = 0; i < eaSize(&eaOrders); i++)
 		{
@@ -176,13 +189,19 @@ public:
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		if (pAbility)
+			eaOrders[eaSize(&eaOrders)-1]->pAbility = new UnitAbility(pAbility);
+		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 	}
-	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath)
+	void AddQueuedOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility)
 	{
 		eaPush(&eaOrders, new hexUnitOrder);
 		eaOrders[eaSize(&eaOrders)-1]->eType = eType;
 		if (pPath)
 			eaOrders[eaSize(&eaOrders)-1]->pPath = new HEXPATH(pPath);
+		if (pAbility)
+			eaOrders[eaSize(&eaOrders)-1]->pAbility = new UnitAbility(pAbility);
+		eaOrders[eaSize(&eaOrders)-1]->targetPt = targetPt;
 
 	}
 	hexUnitOrder* GetTopQueuedOrder()
@@ -235,9 +254,26 @@ public:
 		else if (_wcsicmp(pName, _T("maxmov")) == 0)
 		{
 			pOut->SetInt(pDef->movement);
-		}		else if (_wcsicmp(pName, _T("str")) == 0)
+		}
+		else if (_wcsicmp(pName, _T("str")) == 0)
 		{
 			pOut->SetInt(pDef->meleeStr);
+		}
+		else if (_wcsicmp(pName, _T("maxmana")) == 0)
+		{
+			pOut->SetInt(pDef->maxMana);
+		}
+		else if (_wcsicmp(pName, _T("mana")) == 0)
+		{
+			pOut->SetInt(mana);
+		}
+		else if (_wcsicmp(pName, _T("maxhealth")) == 0)
+		{
+			pOut->SetInt(pDef->maxHealth);
+		}
+		else if (_wcsicmp(pName, _T("health")) == 0)
+		{
+			pOut->SetInt(health);
 		}
 	}
 
@@ -245,6 +281,31 @@ public:
 	{
 		return pDef->attackRange;
 	}
+
+	int GetDefense()
+	{
+		return pDef->defense;
+	}
+
+	int GetStrength()
+	{
+		return pDef->meleeStr;
+	}
+	int TakeDamage(int attackerStr);
+	bool IsDead()
+	{
+		return bIsDead;
+	}
+	UnitAbilityRef** GetAbilityRefs()
+	{
+		return pDef->eaAbilityRefs;
+	}
+	UnitAbility** GetAbilities()
+	{
+		return eaAbilities;
+	}
+	void AddModifier(UnitAttributeModifierDef* pDef);
+	void UpdateUnit();
 };
 class CHexBuilding
 {

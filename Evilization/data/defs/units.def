@@ -1,21 +1,26 @@
 hexUnitDef stickfigure
 {
 	movement 3
-	maxHealth 10
+	maxHealth 100
+	defense 0
 	cost 50
-	meleeStr 1
-	attackRange 1
+	meleeStr 50
+	attackRange 3
 	visRadius 2
 	displayName "Stick Figure"
-	hTex stickfigure
+	hTex scout
+	maxMana 100
+	eaAbilityRefs basic_aoe
+	eaAbilityRefs basic_nuke
 }
 
 hexUnitDef barbarian
 {
 	movement 3
-	maxHealth 20
+	maxHealth 100
+	defense 2
 	cost 50
-	meleeStr 3
+	meleeStr 30
 	attackRange 1
 	visRadius 2
 	displayName "Barbarian"
@@ -25,9 +30,10 @@ hexUnitDef barbarian
 hexUnitDef skulker
 {
 	movement 4
-	maxHealth 10
+	maxHealth 100
+	defense 1
 	cost 30
-	meleeStr 2
+	meleeStr 20
 	visRadius 3
 	displayName "Skulker"
 	hTex skulker

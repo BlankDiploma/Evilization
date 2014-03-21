@@ -116,12 +116,18 @@ UIBoxDef UnitPane
 		Y 36
 		X -4
 	}
-	eaChildren AttackButton
+	eaChildren AbilityButton
 	{
 		Anchor Top Right
 		Y 68
 		X -4
 	}
+	eaChildren AbilityList
+	{
+		Anchor Top Right
+		Y 0
+		X 101
+	}		
 }
 
 UIButtonDef SleepButton
@@ -179,12 +185,69 @@ UIButtonDef AttackButton
 		mouseoverIdx 1
 		pressedIdx 2
 	}
+	
 	clickFunc <& SelectedUnit_IssueOrder(2) &>
 	
 	textFlags CenterX CenterY
 	text "Attack"
 	hFont courier_new
 	textcolor 0 0 0
+}
+
+UIButtonDef AbilityButton
+{
+	Width 74
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	//clickFunc <& Abilities_ShowUI() &>
+	
+	textFlags CenterX CenterY
+	text "Ability"
+	hFont courier_new
+	textcolor 0 0 0
+}
+
+UILayoutDef AbilityList
+{
+	listFunc <& return Gameplay_GetAbilityList() &>
+	eType Layout
+	eLayoutType Grid
+	bInvertGridYGrowth 0
+	
+	Width 102
+	Height 200
+	eaChildren Ability
+	{
+		Anchor Top
+	}
+}
+
+UIButtonDef Ability
+{
+	Width 100
+	Height 32
+	eType Button
+	
+	eaLayers Ninepatch
+	{
+		hTex interfacenines
+		ninepatchIdx 0
+		mouseoverIdx 1
+		pressedIdx 2
+	}
+	textFlags CenterX CenterY Dropshadow
+	textFunc <& return Ability_GetName(Layout_GetVarAsUnitAbility()) &>
+	hFont courier_new
+	textcolor 255 255 255
+	clickFunc <& Ability_Target(Layout_GetVarAsUnitAbility()) &>
 }
 
 UIBoxDef Portrait
@@ -204,7 +267,7 @@ UITextDef UnitText
 	eType Text
 	hFont courier_new
 	textcolor 255 255 255
-	textFunc <&  return Unit_FormatString(Player_GetSelectedUnit(), "    {name}{\n}{\n}{\n}{\n}{\n}{\n}{mov}/{maxmov} movement remaining{\n}  {str} combat strength") &>
+	textFunc <&  return Unit_FormatString(Player_GetSelectedUnit(), "    {name}{\n}{\n}{\n}{\n}{\n}{\n}    Health: {health}/{maxhealth}{\n}    Mana:   {mana}/{maxmana}{\n}    Movement: {mov}/{maxmov}{\n}    Strength: {str}")&>
 }
 
 UIBoxDef Minimap
@@ -283,7 +346,6 @@ UIButtonDef TechInfo
 		barPctFunc <& return Player_GetCurrentTechPct() &>
 	}
 	clickFunc <& TechTree_ShowUI() &>
-	
 	
 	textFlags CenterX CenterY DROPSHADOW
 	textFunc <& return Player_GetCurrentTechName() &>

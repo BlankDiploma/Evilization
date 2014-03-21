@@ -25,6 +25,13 @@ GameTexturePortion selectedtile
 	rSrc 0 0 128 128
 	offset 0 0
 }
+
+GameTexturePortion selectedtile_red
+{
+	hTex interface
+	rSrc 0 0 128 128
+	offset 0 0
+}
  
 GameTexturePortion terrain_shallow
 {
@@ -52,6 +59,13 @@ GameTexturePortion stickfigure
 	hTex interface
 	rSrc 128 17 160 109
 	offset -48 -18
+}
+
+GameTexturePortion scout
+{
+	hTex scout
+	rSrc 0 0 0 0
+	offset 0 0
 }
  
 GameTexturePortion terrain_grass

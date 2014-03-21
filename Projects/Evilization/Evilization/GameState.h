@@ -4,6 +4,7 @@
 #include "uilib.h"
 #include "techtree.h"
 #include "strhashmap.h"
+#include "FlexParticleSystem.h"
 
 #pragma once
 
@@ -308,6 +309,17 @@ public:
 			}
 		}
 	}
+	void RemoveOwnership(CHexUnit* pUnit)
+	{
+		for (int i = 0; i < eaSize(&eaUnits); i++)
+		{
+			if (pUnit == eaUnits[i])
+			{
+				eaRemove(&eaUnits, i);
+				return;
+			}
+		}
+	}
 	int GetTechProgress( LPCTSTR name );
 	int AddResearch( int res );
 	bool StartResearch( LPCTSTR name );
@@ -315,6 +327,13 @@ public:
 	bool CanResearchTech( techTreeNodeDef* pNode );
 	techTreeNodeDef* GetCurrentTech();
 	float GetTechPct( );
+	void UpdateUnits()
+	{
+		for (int i = 0; i < eaSize(&eaUnits); i++)
+		{
+			eaUnits[i]->UpdateUnit();
+		}
+	}
 };
 
 enum GameState {kGameState_Invalid = 0, kGameState_MainMenu, kGameState_Gameplay};
@@ -374,6 +393,7 @@ private:
 	GameState eCurState;
 	CHexUnit* curSelUnit;
 	CHexCity* curSelCity;
+	CHexUnit** eaDeadUnits;
 
 	int iCurPlayer;
 	int iNumPlayers;
@@ -389,8 +409,9 @@ private:
 	IDirect3DVertexBuffer9* CreateSplatVertBufferForTexture(GameTexturePortion* pTex, SplattableTextureGeo eGeo);
 	IDirect3DIndexBuffer9* CreateSplatIndexBufferForTexture(SplattableTextureGeo eGeo);
 	void CreateSplatBuffers();
-	void RenderTextureSplat(int x, int y, SplattableTexture eType, float rot, float scale);
+	void RenderTextureSplat(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
 	void RenderPath(CHexUnit* pUnit, HEXPATH* pPath, int alpha );
+	void DeleteUnit(CHexUnit* pUnit);
 
 public:
 	CGameState();
@@ -411,6 +432,8 @@ public:
 	FLOATPOINT PixelToMapIntersect(int x, int y);
 	void GameplayWindowMouseInput(UINT msg, POINT pt, WPARAM wParam, LPARAM lParam);
 	void RenderTileObject(int x, int y, GameTexturePortion* pPortion, float rot, float scale);
+	void RenderDamageText(int damage, POINT tarPt);
+	void AddUnitToDeadList(CHexUnit* pUnit);
 	
 	void MouseHandlerPushState(mouseHandlerType eType, void* pParam, bool bPopOnUIClick = false)
 	{
@@ -476,7 +499,7 @@ public:
 	void StartPlayerTurn(int idx);
 	void EndCurrentTurn();
 	void ExecuteQueuedActions();
-	void IssueOrder(unitOrderType eType, HEXPATH* pPath);
+	void IssueOrder(unitOrderType eType, HEXPATH* pPath, POINT targetPt, UnitAbility* pAbility);
 	void RenderSelectedUnit(POINT screenPt, float scale = 1.0);
 	CHexUnit* GetSelectedUnit();
 	POINT TilePtToScreenPt(int x, int y);
@@ -489,6 +512,7 @@ public:
 	void AdjustMapZoom( int rot );
 	POINT GetViewCenter();
 	void ShowTechTreeUI();
+	void ShowAbilityUI();
 	CHexPlayer* GetCurrentPlayer();
 
 	CHexMap* GetCurrentMap()
@@ -501,6 +525,10 @@ public:
 			return &pPlayers[id];
 
 		return NULL;
+	}
+	CHexUnit* GetCurSelUnit()
+	{
+		return curSelUnit;
 	}
 };
 

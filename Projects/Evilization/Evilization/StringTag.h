@@ -1,10 +1,13 @@
 #include "stdafx.h"
 class CHexUnit;
+class CHexCity;
+class UnitAbility;
 
 struct StringTagContext
 {
 	CHexUnit* pUnit;
 	CHexCity* pCity;
+	UnitAbility* pAbility;
 	wchar_t bracketChar;
 	StringTagContext()
 	{

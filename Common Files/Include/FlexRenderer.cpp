@@ -1277,7 +1277,10 @@ void FlexRenderer::AddStringToRenderList(const GameTexture* pFontTex, const TCHA
 			{
 			
 				if (bShadow)
-					AddSpriteToRenderList(pFontTex, wrappedX+1, wrappedY+1, &renderSrc, 0xFF000000);
+				{
+					DWORD shadowColor = savedColor & 0xFF000000;
+					AddSpriteToRenderList(pFontTex, wrappedX+1, wrappedY+1, &renderSrc, shadowColor);
+				}
 				AddSpriteToRenderList(pFontTex, wrappedX, wrappedY, &renderSrc, savedColor);
 				iVisibleLetters++;
 			}
@@ -1352,20 +1355,36 @@ void FlexRenderer::CreateTextureAtlasVertexBuffer(const GameTexture* pSrcTexture
 	
 	for (int i = 0; i < iNumEntries; i++)
 	{
-		float minU = ((float)eaPortions[i]->rSrc->left)/pSrcTexture->width;
-		float maxU = ((float)eaPortions[i]->rSrc->right)/pSrcTexture->width;
-		float minV = ((float)eaPortions[i]->rSrc->top)/pSrcTexture->height;
-		float maxV = ((float)eaPortions[i]->rSrc->bottom)/pSrcTexture->height;
-		float XYRatio = ((float)(eaPortions[i]->rSrc->right-eaPortions[i]->rSrc->left))/(eaPortions[i]->rSrc->bottom-eaPortions[i]->rSrc->top);
+		float minU, maxU, minV, maxV, XYRatio;
+		if ((float)eaPortions[i]->rSrc->left == 0 && (float)eaPortions[i]->rSrc->right == 0 && (float)eaPortions[i]->rSrc->top == 0 && (float)eaPortions[i]->rSrc->bottom == 0)
+		{
+			minU = 0;
+			maxU = 1.0f;
+			minV = 0;
+			maxV = 1.0f;
+			XYRatio = ((float)(pSrcTexture->width))/((float)(pSrcTexture->height));
+		}
+		else
+		{
+			minU = ((float)eaPortions[i]->rSrc->left)/pSrcTexture->width;
+			maxU = ((float)eaPortions[i]->rSrc->right)/pSrcTexture->width;
+			minV = ((float)eaPortions[i]->rSrc->top)/pSrcTexture->height;
+			maxV = ((float)eaPortions[i]->rSrc->bottom)/pSrcTexture->height;
+			XYRatio = ((float)(eaPortions[i]->rSrc->right-eaPortions[i]->rSrc->left))/(eaPortions[i]->rSrc->bottom-eaPortions[i]->rSrc->top);
+		}
 		eaPortions[i]->iVertIndexStart = i*4;
 		eaPortions[i]->pVerts = pNewBuf;
 
+		COLOR_ARGB color;
+		color = 0xFFFFFFFF;
+
+
 		FlexVertex verts[4] = 
 		{
-			{-XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,minU,minV},
-			{XYRatio*0.5f,	0.5f,	0.0f,	0xFFFFFFFF,maxU,minV},
-			{-XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,minU,maxV},
-			{XYRatio*0.5f,	-0.5f,	0.0f,	0xFFFFFFFF,maxU,maxV}
+			{-XYRatio*0.5f,	0.5f,	0.0f,	color,minU,minV},
+			{XYRatio*0.5f,	0.5f,	0.0f,	color,maxU,minV},
+			{-XYRatio*0.5f,	-0.5f,	0.0f,	color,minU,maxV},
+			{XYRatio*0.5f,	-0.5f,	0.0f,	color,maxU,maxV}
 		};
 		
 		memcpy(pVerts, verts, sizeof(verts));

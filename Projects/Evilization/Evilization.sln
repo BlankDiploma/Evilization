@@ -5,7 +5,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Evilization", "Evilization\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E9804A0E-E3CF-4807-BC91-19AA90B5AFE0}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\Evilization\data\shaders\Default3DWithoutNormals.fx = ..\..\Evilization\data\shaders\Default3DWithoutNormals.fx
+		..\..\Evilization\data\shaders\DefaultShaderNoNorms.fx = ..\..\Evilization\data\shaders\DefaultShaderNoNorms.fx
 	EndProjectSection
 EndProject
 Global
@@ -21,8 +21,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

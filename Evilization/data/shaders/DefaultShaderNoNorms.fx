@@ -217,7 +217,8 @@ technique TranslucentBlend3D
         FillMode = SOLID;
         CullMode = CCW;
 		ZEnable = TRUE;
-		ZWriteEnable = FALSE;
+		ZWriteEnable = TRUE;
+		ALPHATESTENABLE = TRUE;
 
 		MagFilter[0] = LINEAR;
 		MinFilter[0] = LINEAR;

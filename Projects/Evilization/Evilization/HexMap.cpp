@@ -1341,6 +1341,55 @@ bool CHexMap::ProcessOrder( CHexUnit* pUnit, hexUnitOrder* pOrder, CHexPlayer* p
 		{
 			//last path to that unit
 			//move path at end of turn
+			hexTile* pTarTile = GetTile(pOrder->targetPt);
+			CHexUnit* pTarUnit = pTarTile->pUnit;
+			int damageTaken = pTarUnit->TakeDamage(pUnit->GetStrength());
+			g_GameState.RenderDamageText(damageTaken, pTarUnit->GetLoc());
+			if (pTarUnit->IsDead())
+			{
+				g_GameState.AddUnitToDeadList(pTarUnit);
+			}
+			return true;
+		}break;
+	case kOrder_Ability:
+		{
+			AbilityAffectsFlags eAffects = pOrder->pAbility->pDef->eAffectsFlags;
+			int radius = pOrder->pAbility->pDef->radius;
+			if (radius >= 0)
+			{
+				int numTiles = (1+(radius*6 + 6)/2 * radius);
+				POINT* buf;
+				buf = (POINT*) malloc(numTiles * sizeof(POINT));
+				POINT targetPt = pOrder->targetPt;
+				GetTilesInRadius(targetPt, radius, buf);
+				for (int i = 0; i < numTiles; i++)
+				{
+					POINT curTilePt = buf[i];
+					hexTile* curTile = GetTile(curTilePt);
+					CHexUnit* curUnit = curTile->pUnit;
+					if (curUnit)
+					{
+						if (curUnit->GetOwnerID() != pUnit->GetOwnerID())
+						{
+							int damageTaken = curUnit->TakeDamage(pOrder->pAbility->pDef->damage);
+							if (damageTaken > 0)
+								g_GameState.RenderDamageText(damageTaken, curUnit->GetLoc());
+
+							UnitAttributeModifierDef** eaAttributeMods = pOrder->pAbility->pDef->eaUnitAttributeModList;
+							if (eaAttributeMods)
+							{
+								for (int i = 0; i < eaSize(&eaAttributeMods); i++)
+									curUnit->AddModifier(eaAttributeMods[i]);
+							}
+							if (curUnit->IsDead())
+							{
+								g_GameState.AddUnitToDeadList(curUnit);
+							}
+						}
+					}
+				}
+			}
+		return true;
 		}break;
 	}
 	return false;
@@ -1445,6 +1494,38 @@ bool CHexMap::BuildingCanBeBuiltOnTile(hexBuildingDef* pBuildingDef, POINT tileP
 		return true;
 
 	return false;
+}
+
+int CHexMap::GetDistanceBetweenTiles(POINT ptA, POINT ptB)
+{
+	int x1, x2, y1, y2, z1, z2, q1, q2, r1, r2, dist;
+
+	if ((ptA.x == ptB.x) && (ptA.y == ptB.y))
+		return 0;
+
+	q1 = ptA.x;
+	q2 = ptB.x;
+	r1 = ptA.y;
+	r2 = ptB.y;
+
+	if (abs(q2 - q1) > w/2)
+	{
+		if(q2>q1)
+			q2 -= w;
+		else
+			q1 -= w;
+	}
+
+	x1 = q1 - (r1 - (r1&1))/2;
+	x2 = q2 - (r2 - (r2&1))/2;
+	z1 = r1;
+	z2 = r2;
+	y1 = -x1 - z1;
+	y2 = -x2 - z2;
+
+	dist = (abs(x1-x2) + abs(y1-y2) + abs(z1-z2))/2;
+
+	return dist;
 }
 
 #include "Autogen\HexMap_h_ast.cpp"

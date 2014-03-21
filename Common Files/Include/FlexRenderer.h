@@ -29,6 +29,7 @@ PARSE_STRUCT(GameTexturePortion)
 	TEXTURE_REF hTex;
 	RECT* rSrc;
 	POINT* offset;
+	COLOR_ARGB color;
 	PARSE_IGNORE IDirect3DVertexBuffer9* pVerts;
 	PARSE_IGNORE int iVertIndexStart;
 	GameTexturePortion()
@@ -120,6 +121,8 @@ enum FlexRendererMode
 	kRendererMode_Wireframe3D,
 	kRendererMode_Count
 };
+
+
 
 class FlexFrustum
 {
@@ -315,6 +318,7 @@ class FlexRenderer
 	void EndFrame();
 	void Begin2D();
 	void End2D();
+	void AddParticlesToRenderList();
 
 	IDirect3DVertexBuffer9* pCubeVertBuffer;
 	

@@ -248,9 +248,25 @@ CHexUnit::CHexUnit(hexUnitDef* def, CHexPlayer* pOwner)
 	pDef = def;
 	ownerID = -1;
 	health = def->maxHealth;
+	mana = def->maxMana;
 	movRemaining = def->movement;
-	abilityCooldowns = new int[def->numAbilities];
 	eaOrders = NULL;
+	eaAbilities = NULL;
+	for (int i = 0; i < eaSize(&def->eaAbilityRefs); i++)
+	{
+		eaPush(&eaAbilities, new UnitAbility);
+		eaAbilities[eaSize(&eaAbilities)-1]->pDef = (UnitAbilityDef*) def->eaAbilityRefs[i]->hAbility.pObj;
+		eaAbilities[eaSize(&eaAbilities)-1]->cooldown = 0;
+	}
+	bIsDead = false;
+	defaultAttributes.stats[kUnitAttribute_MaxHealth] = (float) def->maxHealth;
+	defaultAttributes.stats[kUnitAttribute_MaxMana] = (float) def->maxMana;
+	defaultAttributes.stats[kUnitAttribute_MaxMovement] = (float) def->movement;
+	defaultAttributes.stats[kUnitAttribute_MeleeStr] = (float) def->meleeStr;
+	defaultAttributes.stats[kUnitAttribute_Defense] = (float) def->defense;
+	defaultAttributes.stats[kUnitAttribute_Range] = (float) def->attackRange;
+	defaultAttributes.stats[kUnitAttribute_VisRadius] = (float) def->visRadius;
+	eaAttributeMods = NULL;
 	if (pOwner)
 		pOwner->TakeOwnership(this);
 }
@@ -266,6 +282,88 @@ void CHexUnit::PopQueuedOrder()
 	{
 		delete eaOrders[eaSize(&eaOrders)-1];
 		eaRemove(&eaOrders, eaSize(&eaOrders)-1);
+	}
+}
+
+int CHexUnit::TakeDamage(int attackerStr)
+{
+	int damageDealt;
+	//int def = pDef->defense;
+	damageDealt = attackerStr; //- pDef->defense;
+
+	if (damageDealt < 0)
+		damageDealt = 0;
+
+	health -= damageDealt;
+	if (health <= 0)
+	{
+		bIsDead = true;
+	}
+
+	return damageDealt;
+}
+
+void CHexUnit::UpdateUnit()
+{
+	currentAttributes = defaultAttributes;
+
+	float percentAdditiveMods[kUnitAttribute_NumAttributes] = {};
+	float absoluteMods[kUnitAttribute_NumAttributes] = {};
+	float percentMultiplicativeMods[kUnitAttribute_NumAttributes];
+	for (int k = 0; k < kUnitAttribute_NumAttributes; k++)
+		percentMultiplicativeMods[k] = 1.0f;
+
+	//update mod durations, get all mods for each stat
+	for (int i = eaSize(&eaAttributeMods)-1; i >= 0; i--)
+	{
+		if (eaAttributeMods[i]->fDurationInTurns > 0)
+		{
+			eaAttributeMods[i]->fDurationInTurns--;
+		}
+		else
+		{
+			eaRemove(&eaAttributeMods, i);
+			continue;
+		}
+
+		UnitAttributeModType eModType = eaAttributeMods[i]->pDef->eModType;
+		switch (eModType)
+		{
+			case kUnitAttributeModType_Absolute:
+				absoluteMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->magnitude;
+				break;
+			case kUnitAttributeModType_PercentAdditive:
+				percentAdditiveMods[eaAttributeMods[i]->pDef->eAffects] += eaAttributeMods[i]->pDef->magnitude;
+				break;
+			case kUnitAttributeModType_PercentMultiplicative:
+				percentMultiplicativeMods[eaAttributeMods[i]->pDef->eAffects] *= 1 + eaAttributeMods[i]->pDef->magnitude;
+				break;
+		}
+	}
+	//apply mods
+	for (int j = 0; j < kUnitAttribute_NumAttributes; j++)
+	{
+		currentAttributes.stats[j] *= 1 + percentAdditiveMods[j];
+		currentAttributes.stats[j] *= percentMultiplicativeMods[j];
+		currentAttributes.stats[j] += absoluteMods[j];
+	}
+	//Make sure health/mana/movement are within bounds
+	if (health > currentAttributes.stats[kUnitAttribute_MaxHealth])
+		health = (int) currentAttributes.stats[kUnitAttribute_MaxHealth];
+	if (mana > currentAttributes.stats[kUnitAttribute_MaxMana])
+		mana = (int) currentAttributes.stats[kUnitAttribute_MaxMana];
+	if (movRemaining > currentAttributes.stats[kUnitAttribute_MaxMovement])
+		movRemaining = (int) currentAttributes.stats[kUnitAttribute_MaxMovement];
+}
+
+void CHexUnit::AddModifier(UnitAttributeModifierDef* pDef)
+{
+	if (pDef)
+	{
+		UnitAttributeModifier* pMod = new UnitAttributeModifier;
+		pMod->pDef = pDef;
+		pMod->fDurationInTurns = pDef->duration;
+		eaPush(&eaAttributeMods, pMod);
 	}
 }
 
